@@ -1,0 +1,102 @@
+/* ── Dropzone ───────────────────────────────────────────────────────────── */
+.audio-dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fafafa;
+    margin-bottom: 12px;
+  }
+  .audio-dropzone:hover,
+  .audio-dropzone.has-file {
+    border-color: #152a8a;
+    background: #f0f4ff;
+  }
+  
+  .audio-dropzone-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+  
+  .audio-file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .audio-file-icon { color: #152a8a; flex-shrink: 0; }
+  .audio-filename  { font-weight: 600; font-size: 0.875rem; color: #1e293b; margin: 0; }
+  .audio-filesize  { font-size: 0.75rem; color: #64748b; margin: 2px 0 0; }
+  .audio-remove-file {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .audio-remove-file:hover { color: #dc2626; }
+  
+  /* ── Player ─────────────────────────────────────────────────────────────── */
+  .audio-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 4px;
+  }
+  .player-play-btn {
+    background: #152a8a;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .player-play-btn:hover { background: #0e1e72; }
+  .player-time {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-family: "DM Mono", monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .player-seek {
+    flex: 1;
+    height: 4px;
+    accent-color: #152a8a;
+    cursor: pointer;
+  }
+  
+  /* ── Mini player (liste) ────────────────────────────────────────────────── */
+  .mini-player-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #152a8a;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .mini-player-btn:hover { background: #dbeafe; }

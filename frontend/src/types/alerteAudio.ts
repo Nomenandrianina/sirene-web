@@ -1,8 +1,13 @@
 export interface AlerteAudio {
-    id: number;
-    name: string | null;
-    description: string | null;
-    sous_categorie_alerte_id: number;
-    audio: string | null;
-  }
-  
+  id: number;
+  name?: string;
+  description?: string;
+  mobileId: string;
+  audio: string;          // chemin serveur ex: uploads/audios/xxx.mp3
+  originalFilename?: string;
+  fileSize?: number;
+  duration?: number;
+  sousCategorieAlerteId: number;
+  sousCategorie?: { id: number; name: string };
+  createdAt?: string;
+}

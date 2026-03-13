@@ -74,8 +74,7 @@ export class CustomersService {
     const isAdmin = currentUser?.role?.name === 'superadmin';
 
     const customer = await this.customerRepo.findOne({
-      where: { id },
-      relations: ['user'],
+      where: { id }
     });
 
     if (!customer) throw new NotFoundException(`Customer #${id} not found`);
@@ -95,7 +94,6 @@ export class CustomersService {
 
     const customer = await this.customerRepo.findOne({
       where: { id },
-      relations: ['user'],
     });
 
     if (!customer) throw new NotFoundException(`Customer #${id} not found`);

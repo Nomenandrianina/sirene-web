@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────
-//  roles.api.ts
-//  Routes : /roles
-// ─────────────────────────────────────────────
 import { get, post, patch, del } from './base';
 import type { Role } from '@/types/role';
 

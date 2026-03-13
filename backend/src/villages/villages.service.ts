@@ -52,7 +52,7 @@ export class VillagesService {
       longitude: createVillageDto.longitude,
       province,
       region,
-      distict: district,
+      district: district,
     });
     return await this.villageRepository.save(village);
   }
@@ -111,7 +111,7 @@ export class VillagesService {
       if (!district) {
         throw new NotFoundException(`District #${updateVillageDto.districtId} not found`);
       }
-      village.distict = district;
+      village.district = district;
     }
 
     return await this.villageRepository.save(village);

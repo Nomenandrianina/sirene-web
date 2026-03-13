@@ -1,13 +1,14 @@
 import { Village } from "./village";
 
 export interface Sirene {
-    id: number;
-    imei: string | null;
-    latitude: string | null;
-    longitude: string | null;
-    phone_number_brain: string | null;
-    phone_number_relai: string | null;
-    village_id: number;
-    is_active: boolean;
-    village?: Village;
+    id:               number;
+    imei:             string | null;
+    latitude:         string | null;
+    longitude:        string | null;
+    phoneNumberBrain: string | null;
+    phoneNumberRelai: string | null;
+    villageId:        number;
+    isActive:         number;
+    village?:         { id: number; name: string; latitude: string; longitude: string };
+    customers?:       { id: number; name: string }[];
 }

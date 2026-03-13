@@ -17,6 +17,9 @@ export class User extends BaseEntity {
 
   @Column({ unique: true })
   email: string;
+ 
+  @Column({ nullable: true })
+  avatar_url: string;
 
   @Column()
   password: string;
@@ -30,6 +33,7 @@ export class User extends BaseEntity {
   @ManyToOne(() => Role, { eager: true, nullable: true })
   @JoinColumn()
   role: Role;
+
 
   // ✅ FK client_id dans la table users
   @ManyToOne(() => Customer, (customer) => customer.users, {

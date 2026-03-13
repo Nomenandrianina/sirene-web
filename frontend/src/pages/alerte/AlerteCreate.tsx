@@ -1,0 +1,23 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout";
+import { AlerteForm, AlerteFormData } from "@/components/alerte/Alerteform";
+import { alertesApi } from "@/services/alertes.api";
+
+export default function AlerteCreate() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (data: AlerteFormData) => alertesApi.create(data),
+    onSuccess: () => { qc.invalidateQueries({queryKey:["alertes"]}); navigate("/alertes"); },
+  });
+  return (
+    <AppLayout>
+      <AlerteForm
+        onSubmit={async data => mutation.mutate(data)}
+        loading={mutation.isPending}
+        error={mutation.isError ? "Une erreur est survenue." : undefined}
+      />
+    </AppLayout>
+  );
+}

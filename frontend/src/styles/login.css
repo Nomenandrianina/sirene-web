@@ -120,23 +120,21 @@
 
 /* ── Brand ── */
 .brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 3rem;
-  animation: fadeIn 0.8s ease both;
+  margin-bottom: 40px;
 }
 
 .brand-logo img {
-  height: 56px;
-  width: auto;
-  filter: drop-shadow(0 2px 12px rgba(245,197,24,0.3));
+  width: 220px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 24px rgba(90, 180, 224, 0.35));
 }
 
+/* Supprimez ou cachez brand-text car le logo contient déjà le texte */
 .brand-text {
-  display: flex;
-  flex-direction: column;
+  display: none;
 }
+
 
 .brand-name {
   font-family: 'Syne', sans-serif;

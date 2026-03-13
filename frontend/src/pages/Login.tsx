@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Eye, EyeOff, Radio, MapPin, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
+import logoImg from "@/assets/logo.jpg";
 import "../styles/login.css";
 
 function RadarDot({ style }: { style: React.CSSProperties }) {
@@ -63,19 +64,21 @@ export default function Login() {
 
       {/* Left panel */}
       <div className="login-left">
-        <div className="brand-logo">
-          <img
-            src="/src/assets/logo.jpg"
-            alt="MITAO Forecast-Africa"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-          <div className="brand-text">
+      <div className="brand-logo">
+        <img
+          src={logoImg}
+          alt="MITAO Forecast-Africa"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      </div>
+
+        
+          {/* <div className="brand-text">
             <span className="brand-name">MITAO</span>
             <span className="brand-sub">Forecast-Africa</span>
-          </div>
-        </div>
+          </div> */}
 
         <h1 className="hero-headline">
           Réseau de sirènes<br />

@@ -3,9 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { usersApi } from "@/services";
-import { User, Lock, Building2, ShieldCheck,Pencil, Check, X, Loader2, Eye, EyeOff, } from "lucide-react";
+import {
+  User, Lock, Building2, ShieldCheck,
+  Pencil, Check, X, Loader2, Eye, EyeOff,
+} from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/profile.css";
+import { AvatarUpload } from "@/components/utilisateur/AvatartUpload";
 
 export default function Profile() {
   const { user, setUser } = useAuth();
@@ -98,7 +102,10 @@ export default function Profile() {
 
           {/* ── Carte identité gauche ── */}
           <div className="profile-card-identity">
-            <div className="profile-avatar-lg">{initials}</div>
+            <AvatarUpload
+              user={user as any}
+              onUpdated={(url) => setUser((prev: any) => ({ ...prev, avatar_url: url }))}
+            />
             <div className="profile-identity-name">{fullName}</div>
             <div className="profile-identity-email">{user?.email}</div>
 

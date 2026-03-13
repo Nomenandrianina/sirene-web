@@ -1,20 +1,29 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-export function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
-  const { isAuthenticated, loading, isSuperAdmin } = useAuth();
+interface Props {
+  children: React.ReactNode;
+  adminOnly?:  boolean;          // ancienne prop conservée
+  permission?: string;           // nouvelle prop — permission requise
+  any?:        string[];         // au moins une de ces permissions
+}
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Chargement...</div>;
-  }
+export function ProtectedRoute({ children, adminOnly, permission, any: anyPerms }: Props) {
+  const { isAuthenticated, isSuperAdmin, can, canAny, loading } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  if (loading) return null;
 
-  if (adminOnly && !isSuperAdmin) {
-    return <Navigate to="/" replace />;
-  }
+  // Non connecté → login
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  // adminOnly → réservé superadmin (comportement existant conservé)
+  if (adminOnly && !isSuperAdmin) return <Navigate to="/" replace />;
+
+  // Permission unique requise
+  if (permission && !can(permission)) return <Navigate to="/" replace />;
+
+  // Au moins une permission requise
+  if (anyPerms && !canAny(...anyPerms)) return <Navigate to="/" replace />;
 
   return <>{children}</>;
 }

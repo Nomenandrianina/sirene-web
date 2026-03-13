@@ -67,7 +67,7 @@ export function UtilisateurForm({
         is_active:   initialData.is_active   ?? f.is_active,
       }));
     }
-  }, [initialData?.id]);
+  }, [initialData?.id, roles.length]); 
 
   const set = (k: keyof UtilisateurFormData, v: unknown) =>
     setForm(f => ({ ...f, [k]: v }));

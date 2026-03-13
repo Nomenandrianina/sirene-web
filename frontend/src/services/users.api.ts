@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────
-//  users.api.ts
-//  Routes : /users
-// ─────────────────────────────────────────────
 import { get, post, put, del } from './base';
 import type { User } from '@/types/user';
 
@@ -67,4 +63,44 @@ export const usersApi = {
   /** Supprimer un utilisateur */
   remove: (id: number) =>
     del<void>(`/users/${id}`),
+};
+
+export const avatarApi = {
+  /** Upload ou remplacement de l'avatar */
+  upload: async (file: File): Promise<{ avatar_url: string }> => {
+    const token = localStorage.getItem('access_token');
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/users/avatar`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData, // Ne pas mettre Content-Type — le browser le gère
+      }
+    );
+
+    if (response.status === 401) {
+      localStorage.removeItem('access_token');
+      window.location.href = '/login';
+      throw new Error('Session expirée');
+    }
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Erreur upload' }));
+      throw new Error(err.message || 'Erreur upload avatar');
+    }
+    return response.json();
+  },
+
+  /** Supprimer l'avatar */
+  remove: (): Promise<{ message: string }> =>
+    import('./base').then(({ del }) => del('/users/avatar')),
+
+  /** URL complète depuis le filename */
+  getUrl: (filename: string | null | undefined): string | null => {
+    if (!filename) return null;
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    return `${base}/uploads/avatars/${filename}`;
+  },
 };

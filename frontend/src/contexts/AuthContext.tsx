@@ -19,6 +19,8 @@ interface User {
   country?: string;
   state?: string;
   role?: Role;
+  customer?: { id: number; name: string };
+  avatar_url?: string;
 }
 
 interface AuthContextType {
@@ -32,13 +34,17 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<{ data: any; error: any }>;
   resetPassword: (token: string, newPassword: string) => Promise<{ data: any; error: any }>;
   isAuthenticated: boolean;
-  isSuperAdmin: boolean;   // ← ajouté
+  isSuperAdmin: boolean;
   loading: boolean;
+  // ── Permissions ──────────────────────────────────────
+  permissions: string[];
+  can: (permission: string) => boolean;
+  canAny: (...permissions: string[]) => boolean;
+  canAll: (...permissions: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Nom de clé unique et cohérent partout
 const TOKEN_KEY   = "access_token";
 const REFRESH_KEY = "refresh_token";
 
@@ -47,8 +53,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate              = useNavigate();
 
-  // ── isSuperAdmin : true si le rôle contient "admin" (insensible à la casse)
   const isSuperAdmin = !!user?.role?.name?.toLowerCase().includes("superadmin");
+
+  // ── Extraire les permissions depuis role.permissions[] ──
+  const permissions: string[] = user?.role?.permissions?.map(p => p.name) ?? [];
+
+  console.log('permission all',permissions)
+  const can    = (p: string)       => isSuperAdmin || permissions.includes(p);
+  const canAny = (...ps: string[]) => isSuperAdmin || ps.some(p => permissions.includes(p));
+  const canAll = (...ps: string[]) => isSuperAdmin || ps.every(p => permissions.includes(p));
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
@@ -63,10 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) { setLoading(false); return; }
 
+      // Garder votre endpoint existant — s'assurer qu'il retourne role.permissions[]
       const res = await api.get("/users/profile");
       setUser(res.data.response);
     } catch {
-      // Token invalide ou expiré → déconnexion silencieuse
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(REFRESH_KEY);
       setUser(null);
@@ -136,8 +149,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateUser, signUp, login, logout,
       updatePassword, forgotPassword, resetPassword,
       isAuthenticated: !!user,
-      isSuperAdmin,          // ← exposé
+      isSuperAdmin,
       loading,
+      // permissions
+      permissions,
+      can,
+      canAny,
+      canAll,
     }}>
       {!loading && children}
     </AuthContext.Provider>

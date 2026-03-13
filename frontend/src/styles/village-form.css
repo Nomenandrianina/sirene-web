@@ -1,0 +1,156 @@
+/* ════════════════════════════════════════
+   VILLAGE FORM — layout carte + champs
+════════════════════════════════════════ */
+
+/* ── Page wrapper ── */
+.form-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 8px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Layout vertical : champs empilés + carte en bas */
+.village-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Colonne champs — empilement vertical */
+.village-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Les form-actions restent dans la colonne gauche */
+.village-form-fields .form-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── Conteneur carte — pleine largeur en bas ── */
+.village-map-container {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.village-map-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 0.8rem;
+  color: #5f6368;
+  background: #fafbfc;
+}
+
+.village-map {
+  height: 400px;
+  width: 100%;
+  cursor: crosshair !important;
+}
+
+/* ── GPS input row ── */
+.gps-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.gps-input {
+  flex: 1;
+  background: #f4f6f9 !important;
+  cursor: default !important;
+  color: #1a1f2e !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.82rem !important;
+}
+
+.gps-coords-detail {
+  display: flex;
+  gap: 1rem;
+  margin-top: 5px;
+  font-size: 0.72rem;
+  color: #9aa0a6;
+  font-family: 'DM Mono', monospace;
+}
+.gps-coords-detail strong { color: #1a35a0; }
+
+/* Bouton géolocalisation */
+.btn-geolocate {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e8eaed;
+  background: #fff;
+  color: #1a35a0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-geolocate:hover {
+  background: #eef2ff;
+  border-color: rgba(26,53,160,0.25);
+}
+
+/* ── Marqueur personnalisé Leaflet ── */
+.map-marker-pin {
+  width: 28px; height: 28px;
+  border-radius: 50% 50% 50% 0;
+  background: #1a35a0;
+  transform: rotate(-45deg);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+}
+.map-marker-pin::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .village-form-page {
+    margin: -1.75rem;
+    padding: 16px;
+  }
+  .village-map {
+    height: 260px;
+  }
+}
+
+/* ── Override form-actions global dans le contexte village ── */
+.village-form-fields .form-actions {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Override form-card pour qu'il n'ait pas margin inutile ── */
+.village-form-fields .form-card {
+  margin-bottom: 0;
+}

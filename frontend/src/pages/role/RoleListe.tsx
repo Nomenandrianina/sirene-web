@@ -19,7 +19,7 @@ interface RoleModalProps {
   role?: Role | null;
   permissions: Permission[];
   onClose: () => void;
-  onSave: (data: { name: string; permission_ids: number[] }, id?: number) => Promise<void>;
+  onSave: (data: { name: string; permissionIds: number[] }, id?: number) => Promise<void>;
   loading: boolean;
   error: string;
 }
@@ -40,9 +40,22 @@ function RoleModal({ role, permissions, onClose, onSave, loading, error }: RoleM
     p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const allSelected = filtered.length > 0 && filtered.every(p => selected.includes(p.id));
+  const someSelected = filtered.some(p => selected.includes(p.id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      // Décocher uniquement les permissions visibles (filtrées)
+      setSelected(s => s.filter(id => !filtered.some(p => p.id === id)));
+    } else {
+      // Cocher toutes les permissions visibles
+      setSelected(s => [...new Set([...s, ...filtered.map(p => p.id)])]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave({ name, permission_ids: selected }, role?.id);
+    await onSave({ name, permissionIds: selected }, role?.id);
   };
 
   return (
@@ -68,7 +81,27 @@ function RoleModal({ role, permissions, onClose, onSave, loading, error }: RoleM
 
           {/* Permissions */}
           <div className="form-field">
-            <label>Permissions ({selected.length} sélectionnée{selected.length > 1 ? "s" : ""})</label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ marginBottom: 0 }}>
+                Permissions ({selected.length} sélectionnée{selected.length > 1 ? "s" : ""})
+              </label>
+              <button
+                type="button"
+                onClick={toggleAll}
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--p-primary, #6366f1)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                  borderRadius: 4,
+                  fontWeight: 500,
+                }}
+              >
+                {allSelected ? "Tout décocher" : "Tout sélectionner"}
+              </button>
+            </div>
             <div className="search-wrap" style={{ maxWidth: "100%", marginBottom: 8 }}>
               <Search size={13} className="search-icon" />
               <input
@@ -169,9 +202,13 @@ export default function RoleListe() {
     : (permsRaw as any)?.data ?? (permsRaw as any)?.response ?? [];
 
   const filtered = useMemo(() => {
+    
     const q = search.toLowerCase();
+    
     return roles.filter(r => r.name.toLowerCase().includes(q));
   }, [roles, search]);
+
+  
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
