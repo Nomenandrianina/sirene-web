@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Req, UseGuards,UseInterceptors, UploadedFile, BadRequestException, } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { Public } from 'src/common/decarators/public.decorator';
@@ -8,6 +8,8 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LocalAuthGuard } from 'src/auth/guards/local-auth.guard';
 import { Audit } from 'src/audit-log/decorators/audit.decorator';
+import { avatarMulterConfig } from 'src/config/multer.config';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 interface RequestWithUser extends Request {
   user: {
@@ -164,4 +166,32 @@ export class UsersController {
       message: 'Utilisateur supprimé avec succès',
     };
   }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('avatar', avatarMulterConfig))
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser() user: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier reçu');
+    }
+    const result = await this.usersService.updateAvatar(user.sub, file.filename);
+    return {
+      status: 200,
+      message: 'Avatar mis à jour avec succès',
+      response: result,
+    };
+  }
+
+  // ── Supprimer avatar ──────────────────────────────────────────
+  @Delete('avatar')
+  async deleteAvatar(@GetUser() user: any) {
+    const result = await this.usersService.deleteAvatar(user.sub);
+    return {
+      status: 200,
+      message: result.message,
+    };
+  }
+  
 }

@@ -1,5 +1,10 @@
+import { Alerte } from "./alerte";
+import { CategorieAlerte } from "./categorieAlerte";
+
 export interface AlerteType {
     id: number;
     name: string;
-    Alerte_id: number;
-}
+    alerteId: number;
+    alerte?: Alerte;
+    categories?: CategorieAlerte[];
+  }

@@ -72,6 +72,8 @@ export class RolesService {
       throw new NotFoundException('Rôle non trouvé');
     }
 
+    console.log('role',role);
+
     if (dto.permissionIds) {
       const permissions = await this.permissionRepo.findBy({
         id: In(dto.permissionIds),

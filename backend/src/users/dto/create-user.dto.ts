@@ -14,7 +14,6 @@ export class CreateUserDto {
   
   @IsOptional()
   @IsString()
-  first_name?: string;
 
   @IsOptional()
   @IsString()
@@ -34,5 +33,6 @@ export class CreateUserDto {
  
   @IsOptional()
   @IsNumber()
-  customer_id?: number;
+  customer_id?: number;  first_name?: string;
+
 }

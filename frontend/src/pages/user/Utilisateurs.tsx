@@ -9,18 +9,16 @@ import {
   Search, Plus, Pencil, Trash2, X, Loader2,
   ChevronLeft, ChevronRight, UserCircle2, ShieldCheck, Building2,
 } from "lucide-react";
+import { UserAvatar } from "@/components/utilisateur/Useravatar";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { CanDo } from "@/components/Cando";
 
 // ─── Helpers ────────────────────────────────
 const fullName = (u: User) =>
   [u.first_name, u.last_name].filter(Boolean).join(" ") || "—";
-
-const initials = (u: User) =>
-  [u.first_name?.[0], u.last_name?.[0]]
-    .filter(Boolean).join("").toUpperCase() || u.email[0].toUpperCase();
 
 const ITEMS_PER_PAGE = 8;
 
@@ -187,19 +185,18 @@ function ConfirmModal({
 // ─── Page principale ─────────────────────────
 export default function Utilisateurs() {
   const qc = useQueryClient();
-  const [search, setSearch]       = useState("");
-  const [page, setPage]           = useState(1);
-  const [modalUser, setModalUser] = useState<User | null | undefined>(undefined); // undefined=fermé, null=créer, User=éditer
+  const [search, setSearch]         = useState("");
+  const [page, setPage]             = useState(1);
+  const [modalUser, setModalUser]   = useState<User | null | undefined>(undefined);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
-  const [mutError, setMutError]   = useState("");
+  const [mutError, setMutError]     = useState("");
+  const navigate = useNavigate();
 
-  // ── Queries ──
   const { data: usersRaw, isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: () => usersApi.getAll(),
   });
 
-  // L'API peut renvoyer un tableau direct OU { data: [...] } OU { response: [...] }
   const users: User[] = Array.isArray(usersRaw)
     ? usersRaw
     : (usersRaw as any)?.data ?? (usersRaw as any)?.response ?? [];
@@ -209,7 +206,6 @@ export default function Utilisateurs() {
     queryFn: () => rolesApi.getAll(),
   });
 
-  // ── Filtrage + pagination ──
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return users.filter(u =>
@@ -222,10 +218,8 @@ export default function Utilisateurs() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  // Reset page quand search change
   const handleSearch = (v: string) => { setSearch(v); setPage(1); };
 
-  // ── Mutations ──
   const saveMut = useMutation({
     mutationFn: ({ data, id }: { data: any; id?: number }) =>
       id ? usersApi.update(id, data) : usersApi.create(data),
@@ -255,7 +249,6 @@ export default function Utilisateurs() {
     <AppLayout>
       <div className="page-wrap">
 
-        {/* Header */}
         <div className="page-header">
           <div>
             <h1 className="page-title">Utilisateurs</h1>
@@ -264,14 +257,15 @@ export default function Utilisateurs() {
             </p>
           </div>
           <Link to="/utilisateurs/create">
-            <button className="btn-primary" onClick={() => setModalUser(null)}>
-              <Plus size={15} />
-              Nouvel utilisateur
-            </button>
+            <CanDo permission="users:create">
+              <button className="btn-primary">
+                <Plus size={15} />
+                Nouvel utilisateur
+              </button>
+            </CanDo>
           </Link>
         </div>
 
-        {/* Panel table */}
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">Liste des utilisateurs</span>
@@ -304,7 +298,7 @@ export default function Utilisateurs() {
                     <th>Utilisateur</th>
                     <th>Email</th>
                     <th>Rôle</th>
-                    <th>client</th>
+                    <th>Client</th>
                     <th>Statut</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
@@ -312,14 +306,23 @@ export default function Utilisateurs() {
                 <tbody>
                   {paginated.map(u => (
                     <tr key={u.id}>
-                      {/* Avatar + nom */}
+
+                      {/* ── Avatar photo ou initiales ── */}
                       <td>
                         <div className="user-cell">
-                          <div className="user-cell-avatar">{initials(u)}</div>
+                          <UserAvatar
+                            avatarUrl={(u as any).avatar_url}
+                            firstName={u.first_name}
+                            lastName={u.last_name}
+                            email={u.email}
+                            size="sm"
+                          />
                           <span className="user-cell-name">{fullName(u)}</span>
                         </div>
                       </td>
+
                       <td className="cell-phone">{u.email}</td>
+
                       {/* Rôle */}
                       <td>
                         {u.role ? (
@@ -329,18 +332,17 @@ export default function Utilisateurs() {
                           </span>
                         ) : "—"}
                       </td>
+
+                      {/* Client */}
                       <td>
-                        {u.role ? (
+                        {u.customer ? (
                           <span className="role-chip">
-                           {u.customer ? (
-                              <span className="role-chip">
-                                <Building2 size={11} />
-                              </span>
-                            ) : "—"}
-                            {u.customer?.name}
+                            <Building2 size={11} />
+                            {u.customer.name}
                           </span>
                         ) : "—"}
                       </td>
+
                       {/* Statut */}
                       <td>
                         <span className={`badge ${u.is_active ? "active" : "inactive"}`}>
@@ -348,17 +350,20 @@ export default function Utilisateurs() {
                           {u.is_active ? "Actif" : "Inactif"}
                         </span>
                       </td>
+
                       {/* Actions */}
                       <td>
                         <div className="action-btns">
-                          <button
-                            className="action-btn edit"
-                            title="Modifier"
-                            onClick={() => setModalUser(u)}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          {u.role?.name != "superadmin" && (
+                          <CanDo permission="users:update">
+                            <button
+                              className="action-btn edit"
+                              title="Modifier"
+                              onClick={() => navigate(`/utilisateurs/${u.id}/edit`)}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </CanDo>
+                          {u.role?.name !== "superadmin" && (
                             <button
                               className="action-btn delete"
                               title="Supprimer"
@@ -366,7 +371,7 @@ export default function Utilisateurs() {
                             >
                               <Trash2 size={14} />
                             </button>
-                             ) }
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -376,18 +381,14 @@ export default function Utilisateurs() {
             )}
           </div>
 
-          {/* Pagination */}
           {!isLoading && filtered.length > ITEMS_PER_PAGE && (
             <div className="pagination">
               <span className="pagination-info">
                 {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length}
               </span>
               <div className="pagination-controls">
-                <button
-                  className="page-btn"
-                  disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
-                >
+                <button className="page-btn" disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}>
                   <ChevronLeft size={15} />
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -401,20 +402,15 @@ export default function Utilisateurs() {
                     p === "..." ? (
                       <span key={`dots-${i}`} className="page-dots">…</span>
                     ) : (
-                      <button
-                        key={p}
+                      <button key={p}
                         className={`page-btn${page === p ? " active" : ""}`}
-                        onClick={() => setPage(p as number)}
-                      >
+                        onClick={() => setPage(p as number)}>
                         {p}
                       </button>
                     )
                   )}
-                <button
-                  className="page-btn"
-                  disabled={page === totalPages}
-                  onClick={() => setPage(p => p + 1)}
-                >
+                <button className="page-btn" disabled={page === totalPages}
+                  onClick={() => setPage(p => p + 1)}>
                   <ChevronRight size={15} />
                 </button>
               </div>
@@ -423,19 +419,6 @@ export default function Utilisateurs() {
         </div>
       </div>
 
-      {/* Modal création / édition */}
-      {modalUser !== undefined && (
-        <UserModal
-          user={modalUser}
-          roles={roles}
-          onClose={() => { setModalUser(undefined); setMutError(""); }}
-          onSave={handleSave}
-          loading={saveMut.isPending}
-          error={mutError}
-        />
-      )}
-
-      {/* Modal suppression */}
       {deleteUser && (
         <ConfirmModal
           user={deleteUser}

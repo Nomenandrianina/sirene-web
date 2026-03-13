@@ -69,8 +69,8 @@ export default function UtilisateurEdit() {
           first_name:   userData.first_name,
           last_name:    userData.last_name,
           email:        userData.email,
-          role_id:      userData.role_id,
-          customers_id: userData.customers_id,
+          role_id:      userData.role_id ?? userData.role?.id,   // ✅ fallback sur role.id
+          customer_id:  userData.customer_id ?? userData.customers_id ?? userData.customer?.id, // ✅ tous les cas
           is_active:    userData.is_active,
         }}
         onSubmit={handleSubmit}

@@ -1,7 +1,10 @@
+import { CategorieAlerte } from "./categorieAlerte";
+
 export interface SousCategorieAlerte {
     id: number;
     name: string;
-    categorie_alerte_id: number;
-    alerte_id: number;
-    alerte_type_id: number;
-}
+    categorieAlerteId: number;
+    alerteId: number;
+    alerteTypeId: number;
+    categorieAlerte?: CategorieAlerte;
+  }

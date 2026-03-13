@@ -1,0 +1,299 @@
+/* ── Layout général ─────────────────────────────────────────────────────── */
+.weather-page {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.weather-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.weather-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+  font-size: 0.9rem;
+  padding: 40px 0;
+  justify-content: center;
+}
+
+.weather-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c0392b;
+  background: #fdf0ef;
+  border: 1px solid #f5c6c2;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+}
+
+/* ── Tableau scroll horizontal ──────────────────────────────────────────── */
+.forecast-wrap,
+.arome-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.forecast-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.82rem;
+  color: #444;
+  white-space: nowrap;
+}
+
+/* ── Cellules ───────────────────────────────────────────────────────────── */
+.forecast-table th,
+.forecast-table td {
+  border: 1px solid #d0d3d8;
+  padding: 10px 14px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.col-label {
+  text-align: left !important;
+  min-width: 200px;
+  font-size: 0.8rem;
+  padding-left: 16px !important;
+}
+
+.col-day {
+  min-width: 110px;
+}
+
+.bg-gris {
+  background-color: #f4f6f9;
+  color: #555;
+}
+
+/* ── Ligne header jours ─────────────────────────────────────────────────── */
+.row-head th {
+  background-color: #2d2d3a;
+  color: #fff;
+  font-family: "Syne", sans-serif;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 14px 10px;
+}
+
+/* ── Ligne MATIN / APRÈS-MIDI ───────────────────────────────────────────── */
+.row-period td {
+  background-color: #36304a;
+  color: #fff !important;
+  font-size: 0.78rem;
+  padding: 10px 14px;
+}
+
+/* ── Flèche direction ───────────────────────────────────────────────────── */
+.wind-arrow {
+  display: inline-block;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.direction-n  { transform: rotate(180deg);  display: inline-block; }
+.direction-s  { transform: rotate(0deg);    display: inline-block; }
+.direction-e  { transform: rotate(270deg);  display: inline-block; }
+.direction-w  { transform: rotate(90deg);   display: inline-block; }
+.direction-ne { transform: rotate(225deg);  display: inline-block; }
+.direction-nw { transform: rotate(135deg);  display: inline-block; }
+.direction-se { transform: rotate(315deg);  display: inline-block; }
+.direction-sw { transform: rotate(45deg);   display: inline-block; }
+
+/* ── Icônes alerte ──────────────────────────────────────────────────────── */
+.alert-icons {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  font-size: 1.1rem;
+}
+
+.icon-interdit { color: #e74c3c; }
+.icon-wave     { color: #e67e22; }
+
+/* ── Section AROME ──────────────────────────────────────────────────────── */
+.arome-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.arome-title {
+  font-family: "Syne", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #152a8a;
+  margin: 0;
+}
+
+/* ── Hover rows ─────────────────────────────────────────────────────────── */
+.forecast-table tbody tr:not(.row-period):hover {
+  background-color: #f7f8fb;
+}
+
+/* ── Spin animation ─────────────────────────────────────────────────────── */
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Table info village ─────────────────────────────────────────────────── */
+.village-info-table {
+  width: 100%;
+  border: 1px solid #f0d080;
+  border-radius: 8px;
+  background: #fffbea;
+  border-collapse: collapse;
+}
+.village-info-table td {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  border: none;
+}
+.village-info-table td:first-child {
+  width: 120px;
+  color: #888;
+}
+
+/* ── Bouton export ──────────────────────────────────────────────────────── */
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #152a8a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-export:hover { background: #0e1e72; }
+
+/* ── Centrage flèches ───────────────────────────────────────────────────── */
+.col-day svg {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ── Export form card ───────────────────────────────────────────────────── */
+.export-form-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.export-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+  color: #152a8a;
+}
+.export-form-body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+.export-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+.export-field label {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+.export-field select,
+.export-field input[type="date"] {
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+}
+.export-field select:focus,
+.export-field input[type="date"]:focus {
+  border-color: #152a8a;
+}
+.export-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  align-items: flex-end;
+}
+.btn-cancel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.btn-cancel:hover { background: #f1f5f9; }
+.btn-confirm {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 16px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-confirm:hover { background: #15803d; }
+.btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.btn-icon:hover { color: #152a8a; }

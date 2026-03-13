@@ -8,6 +8,9 @@ import { Role } from 'src/roles/entities/role.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Customer } from 'src/customers/entity/customer.entity';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class UsersService {
@@ -210,4 +213,41 @@ export class UsersService {
             relations: ['role', 'role.permissions'], 
         });
     }
+
+
+    async updateAvatar(userId: number, filename: string): Promise<{ avatar_url: string }> {
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        if (!user) throw new NotFoundException(`Utilisateur #${userId} introuvable`);
+      
+        // Supprimer l'ancien fichier si existant
+        if (user.avatar_url) {
+          const oldPath = join(process.cwd(), 'uploads', 'avatars', user.avatar_url);
+          if (existsSync(oldPath)) {
+            await unlink(oldPath).catch(() => null); // silencieux si erreur
+          }
+        }
+      
+        user.avatar_url = filename;
+        await this.usersRepository.save(user);
+      
+        return { avatar_url: filename };
+      }
+      
+      // ── Supprimer avatar ──────────────────────────────────────────
+      async deleteAvatar(userId: number): Promise<{ message: string }> {
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        if (!user) throw new NotFoundException(`Utilisateur #${userId} introuvable`);
+      
+        if (user.avatar_url) {
+          const filePath = join(process.cwd(), 'uploads', 'avatars', user.avatar_url);
+          if (existsSync(filePath)) {
+            await unlink(filePath).catch(() => null);
+          }
+          user.avatar_url = null as any;
+          await this.usersRepository.save(user);
+        }
+      
+        return { message: 'Avatar supprimé' };
+      }
+          
 }

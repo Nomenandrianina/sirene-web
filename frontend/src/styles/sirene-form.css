@@ -1,0 +1,351 @@
+/* ── Page wrapper ───────────────────────────────────────────────────────── */
+.sirene-form-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 8px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.sirene-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.sirene-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1f2e;
+  font-family: 'Syne', sans-serif;
+  margin: 6px 0 0;
+}
+
+.sirene-subtitle {
+  font-size: 0.82rem;
+  color: #9aa0a6;
+  margin: 0;
+}
+
+/* ── Formulaire : layout vertical ───────────────────────────────────────── */
+.sirene-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Card ───────────────────────────────────────────────────────────────── */
+.sirene-form-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px 24px;
+}
+
+.sirene-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #152a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Grid champs 2 colonnes dans une card ───────────────────────────────── */
+.sirene-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+
+.sirene-fields-grid .sirene-field:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* ── Champ ──────────────────────────────────────────────────────────────── */
+.sirene-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sirene-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sirene-field input,
+.sirene-field select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.sirene-field input:focus,
+.sirene-field select:focus {
+  border-color: #152a8a;
+  box-shadow: 0 0 0 3px rgba(21,42,138,0.08);
+}
+
+.sirene-field select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ── GPS row ────────────────────────────────────────────────────────────── */
+.sirene-gps-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.sirene-gps-hint {
+  font-size: 0.73rem;
+  color: #94a3b8;
+  margin: 6px 0 0;
+}
+
+/* ── Localisation : 4 selects en 2x2 ───────────────────────────────────── */
+.sirene-location-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+
+/* ── Clients chips ──────────────────────────────────────────────────────── */
+.sirene-customers-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sirene-customer-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #fff;
+  user-select: none;
+}
+
+.sirene-customer-chip.checked {
+  background: #eff6ff;
+  border-color: #152a8a;
+  color: #152a8a;
+  font-weight: 600;
+}
+
+.sirene-customer-chip input { display: none; }
+
+.chip-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #d1d5db;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.sirene-customer-chip.checked .chip-dot { background: #152a8a; }
+
+/* ── Carte pleine largeur ───────────────────────────────────────────────── */
+.sirene-map-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.sirene-map-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.sirene-map-canvas {
+  height: 380px;
+  width: 100%;
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────── */
+.sirene-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+  padding-bottom: 24px;
+}
+
+/* ── Bouton géoloc ──────────────────────────────────────────────────────── */
+.btn-geolocate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #152a8a;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-geolocate:hover { background: #eff6ff; border-color: #152a8a; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .sirene-fields-grid,
+  .sirene-location-grid { grid-template-columns: 1fr; }
+  .sirene-gps-row { grid-template-columns: 1fr auto; }
+  .sirene-gps-row .sirene-field:last-of-type { grid-column: 1 / -1; }
+  .sirene-map-canvas { height: 260px; }
+  .sirene-form-page { margin: -1.75rem; padding: 16px; }
+}
+
+/* ── Compteur téléphone ─────────────────────────────────────────────────── */
+.phone-counter {
+  font-size: 0.7rem;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+/* ── Erreur champ ───────────────────────────────────────────────────────── */
+.field-error {
+  font-size: 0.73rem;
+  color: #dc2626;
+  margin-top: 2px;
+}
+
+.input-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.08) !important;
+}
+
+/* ── Select avec recherche ──────────────────────────────────────────────── */
+.select-search-wrap {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+.select-search-wrap:focus-within {
+  border-color: #152a8a;
+  box-shadow: 0 0 0 3px rgba(21,42,138,0.08);
+}
+
+.select-search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.select-search-icon { color: #94a3b8; flex-shrink: 0; }
+
+.select-search-input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-size: 0.82rem;
+  width: 100%;
+  background: transparent;
+}
+.select-search-input:disabled { background: transparent; cursor: not-allowed; }
+
+.select-scrollable {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 4px 0 !important;
+  font-size: 0.84rem;
+  width: 100%;
+  background: #fff;
+}
+.select-scrollable:disabled { background: #f8fafc; }
+.select-scrollable option { padding: 5px 12px; }
+.select-scrollable option:checked { background: #eff6ff; color: #152a8a; }
+
+/* ── Tags clients sélectionnés ──────────────────────────────────────────── */
+.selected-customers-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.customer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #152a8a;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.tag-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  transition: color 0.15s;
+}
+.tag-remove:hover { color: #dc2626; }
+
+/* ── Bouton tout désélectionner ─────────────────────────────────────────── */
+.btn-clear-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-clear-all:hover { background: #fef2f2; border-color: #fecaca; color: #dc2626; }

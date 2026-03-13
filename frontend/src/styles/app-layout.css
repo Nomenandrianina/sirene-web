@@ -92,16 +92,15 @@
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
+  
 }
 
 .sidebar-logo-full {
-  height: 36px;
-  width: auto;
-  object-fit: contain;
-  object-position: left center;
-  transition: opacity 0.2s;
-  /* filtre pour rendre le logo visible sur fond bleu */
-  filter: brightness(0) invert(1);
+  width: 160px;
+  height: auto;
+  display: block;
+  mix-blend-mode: screen;  /* fusionne avec le fond sombre, efface le blanc */
+  filter: brightness(1.1);
 }
 
 .sidebar-logo-icon {

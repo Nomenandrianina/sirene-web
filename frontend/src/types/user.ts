@@ -12,5 +12,6 @@ export interface User {
     customers_id: number | null;
     role?: Role;
     customer?: Customer;
+    avatar_url: string | null;
 }
   

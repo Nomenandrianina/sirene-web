@@ -1,10 +1,10 @@
 export interface Village {
     id: number;
     name: string;
-    latitude: string | null;
-    longitude: string | null;
-    province_id: number;
-    region_id: number;
-    district_id: number;
+    latitude: string ;
+    longitude: string;
+    provinceId: number;
+    regionId: number;
+    districtId: number;
   }
   
