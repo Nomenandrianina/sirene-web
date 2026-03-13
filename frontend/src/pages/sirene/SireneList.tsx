@@ -9,6 +9,7 @@ import {
   Wifi, WifiOff, ChevronLeft, ChevronRight, X, Send, Loader2,
 } from "lucide-react";
 import "@/styles/sirene.css";
+import { CanDo } from "@/components/Cando";
 
 const PER_PAGE = 10;
 
@@ -141,9 +142,11 @@ export default function SireneList() {
           <h1 className="sirene-title">Sirènes</h1>
           <p className="sirene-subtitle">{sirenes.length} sirène{sirenes.length > 1 ? "s" : ""} enregistrée{sirenes.length > 1 ? "s" : ""}</p>
         </div>
-        <button className="btn-primary" onClick={() => navigate("/sirenes/create")}>
-          <Plus size={16} /> Nouvelle sirène
-        </button>
+        <CanDo permission="sirenes:create">
+          <button className="btn-primary" onClick={() => navigate("/sirenes/create")}>
+            <Plus size={16} /> Nouvelle sirène
+          </button>
+        </CanDo>
       </div>
 
       {/* ── Onglets liste / carte ── */}
@@ -226,19 +229,23 @@ export default function SireneList() {
                             title="Envoyer alerte"
                             onClick={() => setAlertSirene(s)}
                           ><Bell size={14} /></button>
-                          <button
-                            className="btn-icon-action edit"
-                            title="Modifier"
-                            onClick={() => navigate(`/sirenes/${s.id}/edit`)}
-                          ><Edit2 size={14} /></button>
-                          <button
-                            className="btn-icon-action delete"
-                            title="Supprimer"
-                            onClick={() => {
-                              if (confirm(`Supprimer la sirène ${s.imei ?? s.id} ?`))
-                                deleteMutation.mutate(s.id);
-                            }}
-                          ><Trash2 size={14} /></button>
+                          <CanDo permission="sirenes:update">
+                            <button
+                              className="btn-icon-action edit"
+                              title="Modifier"
+                              onClick={() => navigate(`/sirenes/${s.id}/edit`)}
+                            ><Edit2 size={14} /></button>
+                          </CanDo>
+                          <CanDo permission="sirenes:delete">
+                            <button
+                              className="btn-icon-action delete"
+                              title="Supprimer"
+                              onClick={() => {
+                                if (confirm(`Supprimer la sirène ${s.imei ?? s.id} ?`))
+                                  deleteMutation.mutate(s.id);
+                              }}
+                            ><Trash2 size={14} /></button>
+                          </CanDo>
                         </div>
                       </td>
                     </tr>

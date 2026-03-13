@@ -7,6 +7,7 @@ import { AlerteDeleteDialog } from "@/components/alerte/Alertedeletedialog";
 import { Search, Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const PER_PAGE = 10;
 
@@ -34,7 +35,9 @@ export default function SousCategorieAlerteList() {
       <div className="page-wrap">
         <div className="page-header">
           <div><h1 className="page-title">Sous-catégories d'alerte</h1><p className="page-subtitle">{items.length} sous-catégorie{items.length>1?"s":""}</p></div>
-          <button className="btn-primary" onClick={()=>navigate("/sous-categorie-alertes/create")}><Plus size={15}/> Nouvelle sous-catégorie</button>
+          <CanDo permission="sous-categorie-alertes:create">
+            <button className="btn-primary" onClick={()=>navigate("/sous-categorie-alertes/create")}><Plus size={15}/> Nouvelle sous-catégorie</button>
+          </CanDo>
         </div>
         <div className="panel">
           <div className="panel-header">
@@ -56,8 +59,12 @@ export default function SousCategorieAlerteList() {
                       <td>{a.categorieAlerte?<span className="perm-tag">{a.categorieAlerte.name}</span>:<span style={{color:"var(--p-text-3)"}}>—</span>}</td>
                       <td><span className="perm-tag">{a.audios?.length??0} audio{(a.audios?.length??0)>1?"s":""}</span></td>
                       <td><div className="action-btns">
-                        <button className="action-btn edit" onClick={()=>navigate(`/sous-categorie-alertes/${a.id}/edit`)}><Pencil size={14}/></button>
-                        <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                        <CanDo permission="sous-categorie-alertes:update">
+                          <button className="action-btn edit" onClick={()=>navigate(`/sous-categorie-alertes/${a.id}/edit`)}><Pencil size={14}/></button>
+                        </CanDo>
+                        <CanDo permission="sous-categorie-alertes:delete">
+                          <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                        </CanDo>
                       </div></td>
                     </tr>
                   ))}

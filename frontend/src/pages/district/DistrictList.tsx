@@ -7,6 +7,7 @@ import type { District } from "@/types/district";
 import { Search, Plus, Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight, Map,} from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -88,9 +89,11 @@ export default function DistrictList() {
               {regions.length} région{regions.length > 1 ? "s" : ""} enregistrée{regions.length > 1 ? "s" : ""}
             </p>
           </div>
-          <button className="btn-primary" onClick={() => navigate("/districts/create")}>
-            <Plus size={15} /> Nouvelle district
-          </button>
+          <CanDo permission="districts:create">
+            <button className="btn-primary" onClick={() => navigate("/districts/create")}>
+              <Plus size={15} /> Nouvelle district
+            </button>
+          </CanDo>
         </div>
 
         <div className="panel">
@@ -149,20 +152,24 @@ export default function DistrictList() {
                       </td>
                       <td>
                         <div className="action-btns">
-                          <button
-                            className="action-btn edit"
-                            title="Modifier"
-                            onClick={() => navigate(`/regions/${r.id}/edit`)}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            className="action-btn delete"
-                            title="Supprimer"
-                            onClick={() => { setDelError(""); setDelDistrict(r); }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <CanDo permission="districts:update">
+                            <button
+                              className="action-btn edit"
+                              title="Modifier"
+                              onClick={() => navigate(`/regions/${r.id}/edit`)}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </CanDo>
+                          <CanDo permission="districts:delete">
+                            <button
+                              className="action-btn delete"
+                              title="Supprimer"
+                              onClick={() => { setDelError(""); setDelDistrict(r); }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </CanDo>
                         </div>
                       </td>
                     </tr>

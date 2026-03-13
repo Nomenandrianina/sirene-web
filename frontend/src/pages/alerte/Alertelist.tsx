@@ -7,6 +7,7 @@ import { AlerteDeleteDialog } from "@/components/alerte/Alertedeletedialog";
 import { Search, Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Bell } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const PER_PAGE = 10;
 
@@ -43,9 +44,11 @@ export default function AlerteList() {
             <h1 className="page-title">Alertes</h1>
             <p className="page-subtitle">{items.length} alerte{items.length>1?"s":""} enregistrée{items.length>1?"s":""}</p>
           </div>
-          <button className="btn-primary" onClick={() => navigate("/alertes/create")}>
-            <Plus size={15}/> Nouvelle alerte
-          </button>
+          <CanDo permission="alertes:create">
+            <button className="btn-primary" onClick={() => navigate("/alertes/create")}>
+              <Plus size={15}/> Nouvelle alerte
+            </button>
+          </CanDo>
         </div>
 
         <div className="panel">
@@ -87,8 +90,12 @@ export default function AlerteList() {
                       <td><span className="perm-tag">{a.types?.length ?? 0} type{(a.types?.length??0)>1?"s":""}</span></td>
                       <td>
                         <div className="action-btns">
-                          <button className="action-btn edit" onClick={()=>navigate(`/alertes/${a.id}/edit`)}><Pencil size={14}/></button>
-                          <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                          <CanDo permission="alertes:update">
+                            <button className="action-btn edit" onClick={()=>navigate(`/alertes/${a.id}/edit`)}><Pencil size={14}/></button>
+                          </CanDo>
+                          <CanDo permission="alertes:delete">
+                            <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                          </CanDo>
                         </div>
                       </td>
                     </tr>

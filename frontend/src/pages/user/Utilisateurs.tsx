@@ -14,6 +14,7 @@ import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { CanDo } from "@/components/Cando";
 
 // ─── Helpers ────────────────────────────────
 const fullName = (u: User) =>
@@ -256,10 +257,12 @@ export default function Utilisateurs() {
             </p>
           </div>
           <Link to="/utilisateurs/create">
-            <button className="btn-primary">
-              <Plus size={15} />
-              Nouvel utilisateur
-            </button>
+            <CanDo permission="users:create">
+              <button className="btn-primary">
+                <Plus size={15} />
+                Nouvel utilisateur
+              </button>
+            </CanDo>
           </Link>
         </div>
 
@@ -351,13 +354,15 @@ export default function Utilisateurs() {
                       {/* Actions */}
                       <td>
                         <div className="action-btns">
-                          <button
-                            className="action-btn edit"
-                            title="Modifier"
-                            onClick={() => navigate(`/utilisateurs/${u.id}/edit`)}
-                          >
-                            <Pencil size={14} />
-                          </button>
+                          <CanDo permission="users:update">
+                            <button
+                              className="action-btn edit"
+                              title="Modifier"
+                              onClick={() => navigate(`/utilisateurs/${u.id}/edit`)}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </CanDo>
                           {u.role?.name !== "superadmin" && (
                             <button
                               className="action-btn delete"

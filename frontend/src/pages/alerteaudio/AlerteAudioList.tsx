@@ -12,6 +12,7 @@ import {
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import "@/styles/alerte-audio.css";
+import { CanDo } from "@/components/Cando";
 
 const PER_PAGE = 10;
 
@@ -97,9 +98,11 @@ export default function AlerteAudioList() {
             <h1 className="page-title">Audios d'alerte</h1>
             <p className="page-subtitle">{items.length} audio{items.length>1?"s":""} enregistré{items.length>1?"s":""}</p>
           </div>
-          <button className="btn-primary" onClick={()=>navigate("/alerte-audios/create")}>
-            <Plus size={15}/> Nouvel audio
-          </button>
+          <CanDo permission="alerte-audios:create">
+            <button className="btn-primary" onClick={()=>navigate("/alerte-audios/create")}>
+              <Plus size={15}/> Nouvel audio
+            </button>
+          </CanDo>
         </div>
 
         <div className="panel">
@@ -153,13 +156,17 @@ export default function AlerteAudioList() {
                             style={{color:"#0891b2",border:"1px solid #cffafe",background:"#ecfeff"}}>
                             <Download size={14}/>
                           </button>
-                          <button className="action-btn edit" title="Modifier" onClick={()=>navigate(`/alerte-audios/${a.id}/edit`)}>
-                            <Pencil size={14}/>
-                          </button>
-                          <button className="action-btn delete" title="Supprimer"
-                            onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name||a.originalFilename||`Audio #${a.id}`});}}>
-                            <Trash2 size={14}/>
-                          </button>
+                          <CanDo permission="alerte-audios:update">
+                            <button className="action-btn edit" title="Modifier" onClick={()=>navigate(`/alerte-audios/${a.id}/edit`)}>
+                              <Pencil size={14}/>
+                            </button>
+                          </CanDo>
+                          <CanDo permission="alerte-audios:delete">
+                            <button className="action-btn delete" title="Supprimer"
+                              onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name||a.originalFilename||`Audio #${a.id}`});}}>
+                              <Trash2 size={14}/>
+                            </button>
+                          </CanDo>
                         </div>
                       </td>
                     </tr>

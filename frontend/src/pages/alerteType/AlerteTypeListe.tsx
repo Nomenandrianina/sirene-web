@@ -7,6 +7,7 @@ import { AlerteDeleteDialog } from "@/components/alerte/Alertedeletedialog";
 import { Search, Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const PER_PAGE = 10;
 
@@ -35,7 +36,9 @@ export default function AlerteTypeList() {
       <div className="page-wrap">
         <div className="page-header">
           <div><h1 className="page-title">Types d'alerte</h1><p className="page-subtitle">{items.length} type{items.length>1?"s":""}</p></div>
-          <button className="btn-primary" onClick={()=>navigate("/alerte-types/create")}><Plus size={15}/> Nouveau type</button>
+          <CanDo permission="alerte-types:create">
+            <button className="btn-primary" onClick={()=>navigate("/alerte-types/create")}><Plus size={15}/> Nouveau type</button>
+          </CanDo>
         </div>
         <div className="panel">
           <div className="panel-header">
@@ -55,8 +58,12 @@ export default function AlerteTypeList() {
                       <td>{a.alerte?<span className="perm-tag">{a.alerte.name}</span>:<span style={{color:"var(--p-text-3)"}}>—</span>}</td>
                       <td><span className="perm-tag">{a.categories?.length??0} catégorie{(a.categories?.length??0)>1?"s":""}</span></td>
                       <td><div className="action-btns">
-                        <button className="action-btn edit" onClick={()=>navigate(`/alerte-types/${a.id}/edit`)}><Pencil size={14}/></button>
-                        <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                        <CanDo permission="alerte-types:update">
+                          <button className="action-btn edit" onClick={()=>navigate(`/alerte-types/${a.id}/edit`)}><Pencil size={14}/></button>
+                        </CanDo>
+                        <CanDo permission="alerte-types:delete">
+                          <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                        </CanDo>
                       </div></td>
                     </tr>
                   ))}

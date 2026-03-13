@@ -7,6 +7,7 @@ import { AlerteDeleteDialog } from "@/components/alerte/Alertedeletedialog";
 import { Search, Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, FolderOpen } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const PER_PAGE = 10;
 
@@ -35,7 +36,9 @@ export default function CategorieAlerteList() {
       <div className="page-wrap">
         <div className="page-header">
           <div><h1 className="page-title">Catégories d'alerte</h1><p className="page-subtitle">{items.length} catégorie{items.length>1?"s":""}</p></div>
-          <button className="btn-primary" onClick={()=>navigate("/categorie-alertes/create")}><Plus size={15}/> Nouvelle catégorie</button>
+          <CanDo permission="categorie-alertes:create">
+            <button className="btn-primary" onClick={()=>navigate("/categorie-alertes/create")}><Plus size={15}/> Nouvelle catégorie</button>
+          </CanDo>
         </div>
         <div className="panel">
           <div className="panel-header">
@@ -56,8 +59,12 @@ export default function CategorieAlerteList() {
                       <td>{a.alerteType?<span className="perm-tag">{a.alerteType.name}</span>:<span style={{color:"var(--p-text-3)"}}>—</span>}</td>
                       <td><span className="perm-tag">{a.sousCategories?.length??0}</span></td>
                       <td><div className="action-btns">
-                        <button className="action-btn edit" onClick={()=>navigate(`/categorie-alertes/${a.id}/edit`)}><Pencil size={14}/></button>
+                        <CanDo permission="categorie-alertes:update">
+                          <button className="action-btn edit" onClick={()=>navigate(`/categorie-alertes/${a.id}/edit`)}><Pencil size={14}/></button>
+                        </CanDo>
+                        <CanDo permission="categorie-alertes:delete">
                         <button className="action-btn delete" onClick={()=>{setDelError("");setDelItem({id:a.id,name:a.name});}}><Trash2 size={14}/></button>
+                        </CanDo>
                       </div></td>
                     </tr>
                   ))}

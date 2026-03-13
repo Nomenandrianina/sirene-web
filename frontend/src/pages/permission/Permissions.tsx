@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -142,9 +143,11 @@ export default function Permissions() {
             <h1 className="page-title">Permissions</h1>
             <p className="page-subtitle">{perms.length} permission{perms.length > 1 ? "s" : ""} définies</p>
           </div>
-          <button className="btn-primary" onClick={() => setModal(null)}>
-            <Plus size={15} /> Nouvelle permission
-          </button>
+          <CanDo permission="permissions:create">
+            <button className="btn-primary" onClick={() => setModal(null)}>
+              <Plus size={15} /> Nouvelle permission
+            </button>
+          </CanDo>
         </div>
 
         <div className="panel">
@@ -180,14 +183,18 @@ export default function Permissions() {
                       </td>
                       <td>
                         <div className="action-btns">
-                          <button className="action-btn edit" title="Modifier"
-                            onClick={() => { setMutError(""); setModal(p); }}>
-                            <Pencil size={14} />
-                          </button>
-                          <button className="action-btn delete" title="Supprimer"
-                            onClick={() => setDelPerm(p)}>
-                            <Trash2 size={14} />
-                          </button>
+                          <CanDo permission="permissions:update">
+                            <button className="action-btn edit" title="Modifier"
+                              onClick={() => { setMutError(""); setModal(p); }}>
+                              <Pencil size={14} />
+                            </button>
+                          </CanDo>
+                          <CanDo permission="permissions:delete">
+                            <button className="action-btn delete" title="Supprimer"
+                              onClick={() => setDelPerm(p)}>
+                              <Trash2 size={14} />
+                            </button>
+                          </CanDo>
                         </div>
                       </td>
                     </tr>

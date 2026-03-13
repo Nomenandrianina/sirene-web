@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -91,9 +92,11 @@ export default function RegionList() {
               {regions.length} région{regions.length > 1 ? "s" : ""} enregistrée{regions.length > 1 ? "s" : ""}
             </p>
           </div>
-          <button className="btn-primary" onClick={() => navigate("/regions/create")}>
-            <Plus size={15} /> Nouvelle région
-          </button>
+          <CanDo permission="regions:create">
+            <button className="btn-primary" onClick={() => navigate("/regions/create")}>
+              <Plus size={15} /> Nouvelle région
+            </button>
+          </CanDo>
         </div>
 
         <div className="panel">
@@ -152,20 +155,24 @@ export default function RegionList() {
                       </td>
                       <td>
                         <div className="action-btns">
-                          <button
-                            className="action-btn edit"
-                            title="Modifier"
-                            onClick={() => navigate(`/regions/${r.id}/edit`)}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            className="action-btn delete"
-                            title="Supprimer"
-                            onClick={() => { setDelError(""); setDelRegion(r); }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <CanDo permission="regions:update">
+                            <button
+                              className="action-btn edit"
+                              title="Modifier"
+                              onClick={() => navigate(`/regions/${r.id}/edit`)}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </CanDo>
+                          <CanDo permission="regions:delete">
+                            <button
+                              className="action-btn delete"
+                              title="Supprimer"
+                              onClick={() => { setDelError(""); setDelRegion(r); }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </CanDo>
                         </div>
                       </td>
                     </tr>

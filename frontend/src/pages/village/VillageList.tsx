@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
+import { CanDo } from "@/components/Cando";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -93,9 +94,11 @@ export default function VillageList() {
               {villages.length} village{villages.length > 1 ? "s" : ""} enregistré{villages.length > 1 ? "s" : ""}
             </p>
           </div>
-          <button className="btn-primary" onClick={() => navigate("/villages/create")}>
-            <Plus size={15} /> Nouveau village
-          </button>
+          <CanDo permission="villages:create">
+            <button className="btn-primary" onClick={() => navigate("/villages/create")}>
+              <Plus size={15} /> Nouveau village
+            </button>
+          </CanDo>
         </div>
 
         <div className="panel">
@@ -168,14 +171,18 @@ export default function VillageList() {
                       </td>
                       <td>
                         <div className="action-btns">
-                          <button className="action-btn edit" title="Modifier"
-                            onClick={() => navigate(`/villages/${v.id}/edit`)}>
-                            <Pencil size={14} />
-                          </button>
-                          <button className="action-btn delete" title="Supprimer"
-                            onClick={() => openDelete(v)}>
-                            <Trash2 size={14} />
-                          </button>
+                          <CanDo permission="villages:update">
+                            <button className="action-btn edit" title="Modifier"
+                              onClick={() => navigate(`/villages/${v.id}/edit`)}>
+                              <Pencil size={14} />
+                            </button>
+                          </CanDo>
+                          <CanDo permission="villages:delete">
+                            <button className="action-btn delete" title="Supprimer"
+                              onClick={() => openDelete(v)}>
+                              <Trash2 size={14} />
+                            </button>
+                          </CanDo>
                           <button onClick={() => navigate(`/villages/${v.id}/weather`)}>⚡</button>
                         </div>
                       </td>
