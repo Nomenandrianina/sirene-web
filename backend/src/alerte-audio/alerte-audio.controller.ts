@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Patch, Delete,
   Param, Body, Query, ParseIntPipe,
-  UseInterceptors, UploadedFile, BadRequestException,
+  UseInterceptors, UploadedFile, BadRequestException, Res, Req,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
@@ -9,6 +9,8 @@ import { extname } from "path";
 import { AlerteAudioService } from "./alerte-audio.service";
 import { CreateAlerteAudioDto } from "./dto/create-alerte-audio.dto";
 import { UpdateAlerteAudioDto } from "./dto/update-alerte-audio.dto";
+import { Response } from 'express';
+import { Public } from "@/common/decarators/public.decorator";
 
 const audioStorage = diskStorage({
   destination: "./uploads/audios",
@@ -38,6 +40,26 @@ export class AlerteAudioController {
   @Get("used-sous-categories")
   getUsedSousCategorieIds() {
     return this.service.getUsedSousCategorieIds();
+  }
+
+  // alerte-audio.controller.ts
+  @Public()
+  @Get('public/sync-all')
+  async syncAll(@Res() res: import('express').Response) {
+    const audios = await this.service.findAll();
+    const baseUrl = process.env.APP_URL ;
+
+    const data = (Array.isArray(audios) ? audios : (audios as any).response ?? [])
+      .map((a: any) => ({
+        id_web:      a.mobileId,
+        name:        a.name ?? '',
+        description: a.description ?? '',
+        audio:       a.originalFilename ?? '',
+        downloadUrl: `${baseUrl}/${a.audio.replace(/\\/g, '/')}`,
+        updatedAt:   a.updatedAt ?? null,
+      }));
+
+    return res.json(data);
   }
 
   @Get(":id")

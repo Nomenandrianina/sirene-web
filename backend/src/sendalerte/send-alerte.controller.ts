@@ -17,11 +17,13 @@ export class SendAlerteController {
     @Query("provinceIds")  provinceIds?:  string,
     @Query("regionIds")    regionIds?:    string,
     @Query("districtIds")  districtIds?:  string,
+    @Query("villageIds")   villageIds?:   string,   // ← nouveau
   ) {
     return this.service.preview({
       provinceIds:  provinceIds  ? provinceIds.split(",").map(Number)  : [],
       regionIds:    regionIds    ? regionIds.split(",").map(Number)    : [],
       districtIds:  districtIds  ? districtIds.split(",").map(Number)  : [],
+      villageIds:   villageIds   ? villageIds.split(",").map(Number)   : [],  // ← nouveau
     });
   }
 }

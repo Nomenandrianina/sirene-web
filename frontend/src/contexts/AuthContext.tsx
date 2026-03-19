@@ -58,7 +58,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── Extraire les permissions depuis role.permissions[] ──
   const permissions: string[] = user?.role?.permissions?.map(p => p.name) ?? [];
 
-  console.log('permission all',permissions)
   const can    = (p: string)       => isSuperAdmin || permissions.includes(p);
   const canAny = (...ps: string[]) => isSuperAdmin || ps.some(p => permissions.includes(p));
   const canAll = (...ps: string[]) => isSuperAdmin || ps.every(p => permissions.includes(p));

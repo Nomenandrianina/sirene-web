@@ -8,11 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import SendAlert from "./pages/SendAlert";
-import Sirenes from "./pages/Sirenes";
 import Audios from "./pages/Audios";
-import Notifications from "./pages/Notifications";
-import Users from "./pages/Users";
-import Customers from "./pages/Customers";
 import Geography from "./pages/Geography";
 import NotFound from "./pages/NotFound";
 import Utilisateurs from "./pages/user/Utilisateurs";
@@ -55,7 +51,6 @@ import AlerteAudioCreate from "@/pages/alerteaudio/AlerteAudioCreate";
 import AlerteAudioEdit   from "@/pages/alerteaudio/AlerteAudioEdit";
 import NotificationList   from "@/pages/notification/NotificationList";
 
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -78,7 +73,7 @@ const App = () => (
               <Route path="/roles"   element={<ProtectedRoute adminOnly><RoleListe /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute adminOnly><Clients /></ProtectedRoute>} />
               <Route path="/permissions" element={<ProtectedRoute adminOnly><Permissions /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute adminOnly><Profile /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute ><Profile /></ProtectedRoute>} />
               <Route path="/provinces"              element={<ProtectedRoute><ProvinceList /></ProtectedRoute>} />
               <Route path="/provinces/create"       element={<ProtectedRoute><ProvinceCreate /></ProtectedRoute>} />
               <Route path="/provinces/:id/edit"     element={<ProtectedRoute><ProvinceEdit /></ProtectedRoute>} />

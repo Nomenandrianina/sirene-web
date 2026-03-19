@@ -4,6 +4,10 @@ export class CreateSireneDto {
     
     @IsNotEmpty()
     @IsString()
+    name: string | null;
+  
+    @IsNotEmpty()
+    @IsString()
     imei: string | null;
     
     @IsNotEmpty()

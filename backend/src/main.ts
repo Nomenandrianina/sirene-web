@@ -15,7 +15,7 @@ async function bootstrap() {
 
   // Servir les fichiers statiques — accessibles via /uploads/avatars/fichier.jpg
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads',
+    prefix: '/backend/uploads',
   });
 
   app.setGlobalPrefix('backend');

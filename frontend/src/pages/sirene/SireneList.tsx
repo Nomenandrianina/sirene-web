@@ -182,6 +182,7 @@ export default function SireneList() {
               <table className="sirene-table">
                 <thead>
                   <tr>
+                    <th>Désignation</th>
                     <th>IMEI</th>
                     <th>Village</th>
                     <th>N° Brain</th>
@@ -196,6 +197,9 @@ export default function SireneList() {
                     <tr><td colSpan={7} className="empty-row">Aucune sirène trouvée</td></tr>
                   ) : paginated.map(s => (
                     <tr key={s.id}>
+                      <td>
+                        <span className="imei-code">{s.name ?? "—"}</span>
+                      </td>
                       <td>
                         <span className="imei-code">{s.imei ?? "—"}</span>
                       </td>

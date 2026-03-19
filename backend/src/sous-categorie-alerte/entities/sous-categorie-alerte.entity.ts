@@ -25,7 +25,7 @@ export class SousCategorieAlerte {
   @JoinColumn({ name: "categorie_alerte_id" })
   categorieAlerte: CategorieAlerte;
 
-  @ManyToOne(() => Alerte, { eager: false })
+  @ManyToOne(() => Alerte, { eager: true })
   @JoinColumn({ name: "alerte_id" })
   alerte: Alerte;
 

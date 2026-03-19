@@ -9,6 +9,7 @@ import { AlerteAudio } from "@/alerte-audio/entities/alerte-audio.entity";
 import { Notification, NotificationStatus } from "@/notification/entities/notification.entity";
 import { SmsService }          from "@/services/sms.service";
 import { SendAlerteDto }       from "./dto/send-alerte.dto";
+
 @Injectable()
 export class SendAlerteService {
   private readonly logger = new Logger(SendAlerteService.name);
@@ -22,8 +23,26 @@ export class SendAlerteService {
     private readonly smsService: SmsService,
   ) {}
  
+  // ── Construction du message ──────────────────────────────────────────────
+  // Format : "<mobileId> <repeatCount>"
+  //       ou "<mobileId> <repeatCount> <repeatInterval>" si repeatCount > 1
+  private buildMessage(mobileId: string, repeatCount = 1, repeatInterval?: number): string {
+    if (repeatCount <= 1) {
+      return `${mobileId} ${repeatCount} 0`;
+    }
+    return `${mobileId} ${repeatCount} ${repeatInterval ?? 1}`;
+  }
+ 
   async sendAlerte(dto: SendAlerteDto): Promise<{ created: number; sent: number; planned: number }> {
-    const { sousCategorieAlerteId, provinceIds, regionIds, districtIds, sendingTimeAfterAlerte, userId } = dto;
+    const {
+      sousCategorieAlerteId,
+      provinceIds, regionIds, districtIds,
+      villageIds,                           // ← nouveau
+      sendingTimeAfterAlerte,
+      repeatCount = 1,                      // ← nouveau (défaut 1)
+      repeatInterval,                       // ← nouveau
+      userId,
+    } = dto;
  
     // 1. Vérifier que la sous-catégorie existe
     const sousCat = await this.sousCatRepo.findOne({ where: { id: sousCategorieAlerteId } });
@@ -33,33 +52,47 @@ export class SendAlerteService {
     const audio = await this.audioRepo.findOne({ where: { sousCategorieAlerteId } });
  
     // 3. Trouver les villages selon les zones sélectionnées
-    const villageQb = this.villageRepo
-      .createQueryBuilder("v")
-      .leftJoin("v.district", "d")
-      .leftJoin("d.region", "r")
-      .leftJoin("r.province", "p")
-      .select("v.id");
+    //    Priorité : villageIds directs > districts > régions > provinces
+    const hasVillageFilter  = !!(villageIds?.length);
+    const hasDistrictFilter = !!(districtIds?.length);
+    const hasRegionFilter   = !!(regionIds?.length);
+    const hasProvinceFilter = !!(provinceIds?.length);
+    const hasZoneFilter     = hasVillageFilter || hasDistrictFilter || hasRegionFilter || hasProvinceFilter;
  
-    const hasZoneFilter = !!(provinceIds?.length || regionIds?.length || districtIds?.length);
+    let resolvedVillageIds: number[] = [];
+ 
     if (hasZoneFilter) {
-      const conditions: string[] = [];
-      if (provinceIds?.length)  conditions.push("p.id IN (:...provinceIds)");
-      if (regionIds?.length)    conditions.push("r.id IN (:...regionIds)");
-      if (districtIds?.length)  conditions.push("d.id IN (:...districtIds)");
-      villageQb.where(conditions.join(" OR "), { provinceIds, regionIds, districtIds });
-    }
+      if (hasVillageFilter) {
+        // Sélection directe par villages — pas besoin de remonter la hiérarchie
+        resolvedVillageIds = villageIds!;
+      } else {
+        // Remonter la hiérarchie via le query builder habituel
+        const villageQb = this.villageRepo
+          .createQueryBuilder("v")
+          .leftJoin("v.district", "d")
+          .leftJoin("d.region", "r")
+          .leftJoin("r.province", "p")
+          .select("v.id");
  
-    const villages   = await villageQb.getMany();
-    const villageIds = villages.map(v => v.id);
+        const conditions: string[] = [];
+        if (hasProvinceFilter) conditions.push("p.id IN (:...provinceIds)");
+        if (hasRegionFilter)   conditions.push("r.id IN (:...regionIds)");
+        if (hasDistrictFilter) conditions.push("d.id IN (:...districtIds)");
+        villageQb.where(conditions.join(" OR "), { provinceIds, regionIds, districtIds });
+ 
+        const villages = await villageQb.getMany();
+        resolvedVillageIds = villages.map(v => v.id);
+      }
+    }
  
     // 4. Trouver les sirènes actives dans ces villages
     const sireneQb = this.sireneRepo
       .createQueryBuilder("s")
       .where("s.isActive = true");
  
-    if (hasZoneFilter && villageIds.length) {
-      sireneQb.andWhere("s.villageId IN (:...villageIds)", { villageIds });
-    } else if (hasZoneFilter && !villageIds.length) {
+    if (hasZoneFilter && resolvedVillageIds.length) {
+      sireneQb.andWhere("s.villageId IN (:...resolvedVillageIds)", { resolvedVillageIds });
+    } else if (hasZoneFilter && !resolvedVillageIds.length) {
       return { created: 0, sent: 0, planned: 0 };
     }
  
@@ -68,30 +101,30 @@ export class SendAlerteService {
       throw new BadRequestException("Aucune sirène active trouvée dans les zones sélectionnées");
     }
  
-    // 5. Le message = mobileId de l'audio (ou fallback)
-    const message  = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
+    // 5. Construction du message avec répétition
+    const mobileId = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
+    const message  = this.buildMessage(mobileId, repeatCount, repeatInterval);
+ 
     const isNow    = !sendingTimeAfterAlerte;
     const planDate = sendingTimeAfterAlerte ? new Date(sendingTimeAfterAlerte) : null;
  
     let sent = 0, planned = 0;
  
-    // 6. Créer une notification par sirène — une par une pour éviter l'ambiguïté de create()
+    // 6. Créer une notification par sirène
     for (const sirene of sirenes) {
-      // Construire l'objet manuellement pour éviter la surcharge create([])
       const notif = new Notification();
-      notif.message               = message;
-      notif.sireneId              = sirene.id;
-      notif.sousCategorieAlerteId = sousCategorieAlerteId;
-      notif.alerteAudioId         = audio?.id ?? null;
-      notif.phoneNumber           = sirene.phoneNumberBrain;
-      notif.operator              = "Orange";
-      notif.type                  = sousCat.name;
-      notif.userId                = userId ?? null;
-      notif.status                = NotificationStatus.PENDING;
+      notif.message                = message;       // ← contient maintenant "ALERTE_767 5 0.5"
+      notif.sireneId               = sirene.id;
+      notif.sousCategorieAlerteId  = sousCategorieAlerteId;
+      notif.alerteAudioId          = audio?.id ?? null;
+      notif.phoneNumber            = sirene.phoneNumberBrain;
+      notif.operator               = "Orange";
+      notif.type                   = sousCat.name;
+      notif.userId                 = userId ?? null;
+      notif.status                 = NotificationStatus.PENDING;
       notif.sendingTimeAfterAlerte = planDate ?? null;
-      notif.sendingTime           = isNow ? new Date() : null;
+      notif.sendingTime            = isNow ? new Date() : null;
  
-      // save() sur un objet unique retourne bien un Notification (pas un tableau)
       const saved: Notification = await this.notifRepo.save(notif);
  
       if (isNow) {
@@ -108,18 +141,21 @@ export class SendAlerteService {
   async dispatchSms(notif: Notification): Promise<void> {
     if (!notif.phoneNumber) {
       this.logger.warn(`Notification #${notif.id} ignorée — numéro de téléphone manquant`);
-      await this.notifRepo.update(notif.id, { status: NotificationStatus.FAILED, observation: "Numéro de téléphone manquant" });
+      await this.notifRepo.update(notif.id, {
+        status:      NotificationStatus.FAILED,
+        observation: "Numéro de téléphone manquant",
+      });
       return;
     }
     try {
       const response = await this.smsService.sendSms(notif.phoneNumber, notif.message);
  
-      const resourceURL: string = response?.outboundSMSMessageRequest?.resourceURL ?? "";
+      const resourceURL: string     = response?.outboundSMSMessageRequest?.resourceURL ?? "";
       const messageId: string | undefined = resourceURL ? resourceURL.split("/").pop() : undefined;
  
       await this.notifRepo.update(notif.id, {
         status:         NotificationStatus.SENT,
-        messageId: messageId ?? undefined,
+        messageId:      messageId ?? undefined,
         sendingTime:    new Date(),
         operatorStatus: "sent",
       });
@@ -138,9 +174,9 @@ export class SendAlerteService {
  
     const pending: Notification[] = await this.notifRepo
       .createQueryBuilder("n")
-      .where("n.status = :status", { status: NotificationStatus.PENDING })
+      .where("n.status = :status",                      { status: NotificationStatus.PENDING })
       .andWhere("n.sendingTimeAfterAlerte IS NOT NULL")
-      .andWhere("n.sendingTimeAfterAlerte <= :now", { now })
+      .andWhere("n.sendingTimeAfterAlerte <= :now",     { now })
       .andWhere("n.sendingTime IS NULL")
       .getMany();
  
@@ -153,27 +189,39 @@ export class SendAlerteService {
     }
   }
  
+  // ── Preview — inclut maintenant le filtre par villages ───────────────────
   async preview(dto: Partial<SendAlerteDto>): Promise<{ sireneCount: number; sirenes: any[] }> {
-    const { provinceIds, regionIds, districtIds } = dto;
-    const hasZoneFilter = !!(provinceIds?.length || regionIds?.length || districtIds?.length);
+    const { provinceIds, regionIds, districtIds, villageIds } = dto;
  
-    const villageQb = this.villageRepo
-      .createQueryBuilder("v")
-      .leftJoin("v.district", "d")
-      .leftJoin("d.region", "r")
-      .leftJoin("r.province", "p")
-      .select("v.id");
+    const hasVillageFilter  = !!(villageIds?.length);
+    const hasDistrictFilter = !!(districtIds?.length);
+    const hasRegionFilter   = !!(regionIds?.length);
+    const hasProvinceFilter = !!(provinceIds?.length);
+    const hasZoneFilter     = hasVillageFilter || hasDistrictFilter || hasRegionFilter || hasProvinceFilter;
+ 
+    let resolvedVillageIds: number[] = [];
  
     if (hasZoneFilter) {
-      const conditions: string[] = [];
-      if (provinceIds?.length)  conditions.push("p.id IN (:...provinceIds)");
-      if (regionIds?.length)    conditions.push("r.id IN (:...regionIds)");
-      if (districtIds?.length)  conditions.push("d.id IN (:...districtIds)");
-      villageQb.where(conditions.join(" OR "), { provinceIds, regionIds, districtIds });
-    }
+      if (hasVillageFilter) {
+        resolvedVillageIds = villageIds!;
+      } else {
+        const villageQb = this.villageRepo
+          .createQueryBuilder("v")
+          .leftJoin("v.district", "d")
+          .leftJoin("d.region", "r")
+          .leftJoin("r.province", "p")
+          .select("v.id");
  
-    const villages   = await villageQb.getMany();
-    const villageIds = villages.map(v => v.id);
+        const conditions: string[] = [];
+        if (hasProvinceFilter) conditions.push("p.id IN (:...provinceIds)");
+        if (hasRegionFilter)   conditions.push("r.id IN (:...regionIds)");
+        if (hasDistrictFilter) conditions.push("d.id IN (:...districtIds)");
+        villageQb.where(conditions.join(" OR "), { provinceIds, regionIds, districtIds });
+ 
+        const villages = await villageQb.getMany();
+        resolvedVillageIds = villages.map(v => v.id);
+      }
+    }
  
     const sireneQb = this.sireneRepo
       .createQueryBuilder("s")
@@ -181,9 +229,9 @@ export class SendAlerteService {
       .addSelect(["s.id", "s.imei", "s.phoneNumberBrain", "v.name"])
       .where("s.isActive = true");
  
-    if (hasZoneFilter && villageIds.length) {
-      sireneQb.andWhere("s.villageId IN (:...villageIds)", { villageIds });
-    } else if (hasZoneFilter && !villageIds.length) {
+    if (hasZoneFilter && resolvedVillageIds.length) {
+      sireneQb.andWhere("s.villageId IN (:...resolvedVillageIds)", { resolvedVillageIds });
+    } else if (hasZoneFilter && !resolvedVillageIds.length) {
       return { sireneCount: 0, sirenes: [] };
     }
  

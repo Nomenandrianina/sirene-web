@@ -27,7 +27,7 @@ export class CustomersService {
   /** Admin → tous les clients | User → son propre client uniquement */
   async findAll(currentUser: { sub: number; role?: { name: string } }): Promise<Customer[]> {
     const isAdmin = currentUser?.role?.name === 'superadmin';
-    console.log('Current User:', currentUser);
+    
     if (isAdmin) {
       // Admin : tous les clients avec relations
       const customers = await this.customerRepo.find({

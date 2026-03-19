@@ -42,6 +42,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
   const [villageSearch,  setVillageSearch]  = useState("");
 
   const [form, setForm] = useState<SireneFormData>({
+    name:             initialData?.name             ?? "",
     imei:             initialData?.imei             ?? "",
     latitude:         initialData?.latitude         ?? "",
     longitude:        initialData?.longitude        ?? "",
@@ -64,6 +65,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
   useEffect(() => {
     if (initialData?.id) {
       setForm({
+        name:             initialData.name             ?? "",
         imei:             initialData.imei             ?? "",
         latitude:         initialData.latitude         ?? "",
         longitude:        initialData.longitude        ?? "",
@@ -258,10 +260,10 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
           <div className="sirene-section-title">Informations</div>
           <div className="sirene-fields-grid">
             <div className="sirene-field">
-              <label>IMEI</label>
-              <input value={form.imei ?? ""} onChange={e => set("imei", e.target.value)} placeholder="Ex: 356938035643809" />
-            </div>
-            <div className="sirene-field">
+              <div className="sirene-field">
+                <label>Désignation</label>
+                <input value={form.name ?? ""} onChange={e => set("name", e.target.value)} placeholder="Sirène"  />
+              </div>
               <label>Statut</label>
               <select value={form.isActive} onChange={e => set("isActive", Number(e.target.value))}>
                 <option value={1}>Active</option>
@@ -269,8 +271,13 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
               </select>
             </div>
 
-            {/* Brain */}
             <div className="sirene-field">
+              <label>IMEI</label>
+              <input value={form.imei ?? ""} onChange={e => set("imei", e.target.value)} placeholder="Ex: 356938035643809" />
+            </div>
+
+            {/* Brain */}
+            <div className="sirene-field ">
               <label>
                 Numéro Brain
                 <span className="phone-counter" style={{ color: (form.phoneNumberBrain?.length ?? 0) >= PHONE_MAX ? "#dc2626" : "#94a3b8" }}>

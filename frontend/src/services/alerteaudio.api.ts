@@ -51,5 +51,8 @@ export const alerteAudiosApi = {
     getUsedSousCategorieIds: () => get("/alerte-audios/used-sous-categories"),
 
     // URL publique du fichier audio
-    audioUrl: (audioPath: string) => `${BASE.replace("/api","")}/${audioPath}`,
-  };
+    audioUrl: (audioPath: string) => {
+      const normalized = audioPath.replace(/\\/g, "/");
+      return `${BASE.replace("/api", "")}/${normalized}`;
+    },
+};

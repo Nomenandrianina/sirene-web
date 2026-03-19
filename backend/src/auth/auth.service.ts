@@ -49,6 +49,7 @@ export class AuthService {
       email:       fullUser.email,
       role:        { id: fullUser.role?.id, name: fullUser.role?.name },
       permissions, // ["users:read", "users:create", ...]
+      customerId:  fullUser.customer?.id ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -93,7 +94,9 @@ export class AuthService {
       const permissions = user?.role?.permissions?.map(p => p.name) ?? [];
 
       const newAccessToken = this.jwtService.sign(
-        { sub: payload.sub, email: payload.email, role: { id: user?.role?.id, name: user?.role?.name }, permissions },
+        { sub: payload.sub, email: payload.email, role: { id: user?.role?.id, name: user?.role?.name }, permissions,
+        customerId: user?.customer?.id ?? null, 
+      },
         { secret: process.env.JWT_SECRET, expiresIn: "60m" },
       );
       return { access_token: newAccessToken };

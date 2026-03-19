@@ -6,23 +6,23 @@ export class AlerteAudio {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 45, nullable: true })
-  name: string;
+  @Column({ type: "varchar", length: 45, nullable: true })
+  name: string | null;
 
-  @Column({ length: 255, nullable: true })
-  description: string;
+  @Column({ type: "varchar", length: 255, nullable: true })
+  description: string | null;
 
   // Identifiant unique généré côté app mobile pour sync offline
-  @Column({ name: "mobile_id", length: 100, unique: true })
-  mobileId: string;
+  @Column({ type: "varchar", name: "mobile_id", length: 100, unique: true })
+  mobileId: string| null;
 
   // Chemin du fichier stocké sur le serveur (ex: /uploads/audios/filename.mp3)
   @Column({ length: 255 })
   audio: string;
 
   // Nom original du fichier uploadé
-  @Column({ name: "original_filename", length: 255, nullable: true })
-  originalFilename: string;
+  @Column({ name: "original_filename", type: "varchar", length: 255, nullable: true })
+  originalFilename: string | null;
 
   // Taille en bytes
   @Column({ name: "file_size", type: "int", nullable: true })
@@ -30,7 +30,7 @@ export class AlerteAudio {
 
   // Durée en secondes (à renseigner côté client ou via ffprobe)
   @Column({ name: "duration", type: "float", nullable: true })
-  duration: number;
+  duration: number | null;
 
   @Index({ unique: true })
   @Column({ name: "sous_categorie_alerte_id" })

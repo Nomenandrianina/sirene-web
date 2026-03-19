@@ -44,6 +44,7 @@ export class SirenesService {
 
   async create(dto: CreateSireneDto, userId: number) {
     const sirene = this.sireneRepo.create({
+      name:             dto.name,
       imei:             dto.imei,
       latitude:         dto.latitude,
       longitude:        dto.longitude,
@@ -66,6 +67,7 @@ export class SirenesService {
     const old    = { ...sirene };
 
     Object.assign(sirene, {
+      name:             dto.name             ?? sirene.name,
       imei:             dto.imei             ?? sirene.imei,
       latitude:         dto.latitude         ?? sirene.latitude,
       longitude:        dto.longitude        ?? sirene.longitude,
@@ -87,7 +89,7 @@ export class SirenesService {
 
   async remove(id: number, userId: number) {
     const sirene = await this.findOne(id);
-    await this.sireneRepo.softDelete(id);
+    await this.sireneRepo.delete(id);
     return { message: `Sirène #${id} supprimée` };
   }
 
