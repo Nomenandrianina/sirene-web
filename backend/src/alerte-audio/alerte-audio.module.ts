@@ -4,10 +4,11 @@ import { MulterModule } from "@nestjs/platform-express";
 import { AlerteAudio } from "./entities/alerte-audio.entity";
 import { AlerteAudioService } from "./alerte-audio.service";
 import { AlerteAudioController } from "./alerte-audio.controller";
+import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AlerteAudio]),
+    TypeOrmModule.forFeature([AlerteAudio,SousCategorieAlerte]),
     MulterModule.register({ dest: "./uploads/audios" }),
   ],
   controllers: [AlerteAudioController],

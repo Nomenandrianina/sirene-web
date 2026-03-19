@@ -104,7 +104,8 @@ export class UsersController {
 
   @Put('change-password')
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
-    const result = await this.usersService.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
+    console.log('DTO reçu:', dto); 
+    const result = await this.usersService.changePassword(req.user.sub, dto.current_password, dto.new_password);
 
     return {
       status: 200,

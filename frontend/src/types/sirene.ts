@@ -2,6 +2,7 @@ import { Village } from "./village";
 
 export interface Sirene {
     id:               number;
+    name:             string | null;
     imei:             string | null;
     latitude:         string | null;
     longitude:        string | null;

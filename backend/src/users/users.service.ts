@@ -172,26 +172,33 @@ export class UsersService {
     async changePassword(userId: number, currentPassword: string, newPassword: string) {
         const user = await this.usersRepository.findOne({
             where: { id: userId },
+            select: ['id', 'password', 'password_changed_at'], // ← forcer la sélection
         });
 
+        console.log('user found:', user);
+        console.log('user.password:', user?.password);
+        console.log('currentPassword:', currentPassword);
+    
         if (!user) {
             throw new UnauthorizedException();
         }
-
-        const isSamePassword = await bcrypt.compare(newPassword, user.password);
-        if (isSamePassword) {
-            throw new BadRequestException('New password must be different from the current password');   return { message: 'Password updated successfully' };
-        }
-
+    
+        // Vérifier d'abord le mot de passe actuel
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
-            throw new BadRequestException('Current password is incorrect'); return { message: 'Current password is incorrect' };
+            throw new BadRequestException('Current password is incorrect');
         }
-
+    
+        // Ensuite vérifier que le nouveau est différent
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword) {
+            throw new BadRequestException('New password must be different from the current password');
+        }
+    
         user.password = await bcrypt.hash(newPassword, 10);
         user.password_changed_at = new Date();
         await this.usersRepository.save(user);
-
+    
         return { message: 'Password updated successfully' };
     }
 

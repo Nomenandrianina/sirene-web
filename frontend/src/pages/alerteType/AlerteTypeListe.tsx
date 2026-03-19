@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { alerteTypesApi } from "@/services/alertetypes.api";
 import { AlerteDeleteDialog } from "@/components/alerte/Alertedeletedialog";
-import { Search, Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Tag } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Tag ,Building2} from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import { CanDo } from "@/components/Cando";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PER_PAGE = 10;
 
@@ -17,6 +18,7 @@ export default function AlerteTypeList() {
   const [search,setSearch]=useState(""); const [page,setPage]=useState(1);
   const [delItem,setDelItem]=useState<{id:number;name:string}|null>(null);
   const [delError,setDelError]=useState("");
+  const { isSuperAdmin } = useAuth();
 
   const { data:raw, isLoading } = useQuery({ queryKey:["alerte-types"], queryFn:()=>alerteTypesApi.getAll() });
   const items = Array.isArray(raw)?raw:(raw as any)?.response??[];
@@ -50,13 +52,39 @@ export default function AlerteTypeList() {
             :paginated.length===0?(<div className="empty-state"><Tag size={28}/><p>Aucun type trouvé</p></div>)
             :(
               <table className="data-table">
-                <thead><tr><th>Nom</th><th>Alerte parente</th><th>Catégories</th><th style={{textAlign:"right"}}>Actions</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Alerte parente</th>
+                    <th>Catégories</th>
+                    <th>Catégories</th>
+                    {isSuperAdmin && <th>Clients assignés</th>}
+
+                    <th style={{textAlign:"right"}}>Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {paginated.map((a:any)=>(
                     <tr key={a.id}>
                       <td><div className="user-cell"><div className="role-avatar"><Tag size={14}/></div><span className="user-cell-name">{a.name}</span></div></td>
                       <td>{a.alerte?<span className="perm-tag">{a.alerte.name}</span>:<span style={{color:"var(--p-text-3)"}}>—</span>}</td>
                       <td><span className="perm-tag">{a.categories?.length??0} catégorie{(a.categories?.length??0)>1?"s":""}</span></td>
+                      {isSuperAdmin && (
+                        <td>
+                          {a.customers?.length > 0 ? (
+                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                              {a.customers.slice(0, 3).map((c: any) => (
+                                <span key={c.id} className="perm-tag" style={{ background: "#f0fdf4", color: "#16a34a", borderColor: "#bbf7d0" }}>
+                                  <Building2 size={10} style={{ marginRight: 3 }} />{c.name}
+                                </span>
+                              ))}
+                              {a.customers.length > 3 && <span className="perm-tag">+{a.customers.length - 3}</span>}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Aucun client</span>
+                          )}
+                        </td>
+                      )}
                       <td><div className="action-btns">
                         <CanDo permission="alerte-types:update">
                           <button className="action-btn edit" onClick={()=>navigate(`/alerte-types/${a.id}/edit`)}><Pencil size={14}/></button>

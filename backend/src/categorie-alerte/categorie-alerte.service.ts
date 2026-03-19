@@ -37,7 +37,7 @@ export class CategorieAlerteService {
 
   async remove(id: number) {
     await this.findOne(id);
-    await this.repo.softDelete(id);
+    await this.repo.delete(id);
     return { message: "Catégorie supprimée" };
   }
 }

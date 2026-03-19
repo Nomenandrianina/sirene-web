@@ -13,6 +13,9 @@ import { Notification } from '@/notification/entities/notification.entity';
     id: number;
   
     @Column({ type: 'varchar', length: 45, nullable: true })
+    name: string | null;
+
+    @Column({ type: 'varchar', length: 45, nullable: true , unique: true })
     imei: string | null;
   
     @Column({ type: 'varchar', length: 45, nullable: true })

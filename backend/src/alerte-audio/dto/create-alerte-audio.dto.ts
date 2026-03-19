@@ -10,7 +10,7 @@ export class CreateAlerteAudioDto {
 
   // Envoyé dans le body multipart
   @IsNotEmpty() @IsString()
-  mobileId: string;
+  mobileId?: string;
 
   @IsNotEmpty() @IsNumber() @Type(() => Number)
   sousCategorieAlerteId: number;
@@ -18,6 +18,7 @@ export class CreateAlerteAudioDto {
   @IsOptional() @IsNumber() @Type(() => Number)
   duration?: number;
 
+  
   // audio, originalFilename, fileSize sont renseignés automatiquement
   // depuis le fichier uploadé (Multer) — ne pas envoyer depuis le client
 }

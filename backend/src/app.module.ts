@@ -54,10 +54,12 @@ import { AlerteAudio } from './alerte-audio/entities/alerte-audio.entity';
 import { NotificationModule } from './notification/notification.module';
 import { Notification } from './notification/entities/notification.entity';
 import { SendAlerteModule } from './sendalerte/send-alerte.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(), 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule], // importe ConfigModule pour l’injection
       inject: [ConfigService],

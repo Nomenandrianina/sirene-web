@@ -172,7 +172,7 @@
 
 .hero-desc {
   font-size: 1.05rem;
-  color: var(--muted);
+  color: var(--white);
   max-width: 420px;
   line-height: 1.7;
   margin-bottom: 2.5rem;

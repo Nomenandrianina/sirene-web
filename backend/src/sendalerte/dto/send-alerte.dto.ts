@@ -24,6 +24,9 @@ export class SendAlerteDto {
   @IsOptional() @IsArray() @Type(()=>Number)
   districtIds?: number[];
 
+  @IsOptional() @IsArray() @Type(()=>Number)
+  villageIds?:   number[]; 
+
   // Heure planifiée — absent = maintenant
   @IsOptional() @IsDateString()
   sendingTimeAfterAlerte?: string;
@@ -31,4 +34,12 @@ export class SendAlerteDto {
   // Utilisateur qui déclenche l'envoi
   @IsOptional() @Type(()=>Number) @IsNumber()
   userId?: number;
+
+  // Répétition audio
+  @IsNotEmpty() @Type(()=>Number) @IsNumber()
+  repeatCount?:    number;        
+  
+  @IsNotEmpty() @Type(()=>Number) @IsNumber() 
+  repeatInterval?: number;        
+  
 }

@@ -5,6 +5,7 @@ import {
 import { SirenesService }   from './sirene.service';
 import { CreateSireneDto }  from './dto/create-sirene.dto';
 import { UpdateSireneDto }  from './dto/update-sirene.dto';
+import { SmsService } from '@/services/sms.service';
 
 class SendAlertDto {
   message: string;
@@ -12,7 +13,7 @@ class SendAlertDto {
 
 @Controller('sirenes')
 export class SirenesController {
-  constructor(private readonly sirenesService: SirenesService) {}
+  constructor(private readonly sirenesService: SirenesService,private readonly smsService: SmsService) {}
 
   @Get()
   findAll(@Request() req) {
@@ -20,7 +21,14 @@ export class SirenesController {
     const isSuperAdmin = user.isSuperAdmin ?? user.role?.name === 'superadmin';
     const customerId   = user.customerId   ?? user.customer?.id;
     return this.sirenesService.findAll(isSuperAdmin, customerId);
+  } 
+
+  
+  @Get('messageavailable')
+  getmessageavalaible(@Request() req) {
+    return this.smsService.getAdminContracts();
   }
+  
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -45,6 +53,7 @@ export class SirenesController {
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.sirenesService.remove(id, req.user.id);
   }
+
 
   /** POST /sirenes/:id/alert — déclencher une alerte SMS */
   // @Post(':id/alert')
