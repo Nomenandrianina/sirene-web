@@ -87,7 +87,7 @@ export default function RegionList() {
 
         <div className="page-header">
           <div>
-            <h1 className="page-title">Régions</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Régions</h1>
             <p className="page-subtitle">
               {regions.length} région{regions.length > 1 ? "s" : ""} enregistrée{regions.length > 1 ? "s" : ""}
             </p>
@@ -126,7 +126,6 @@ export default function RegionList() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Nom</th>
                     <th>Province</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
@@ -135,9 +134,6 @@ export default function RegionList() {
                 <tbody>
                   {paginated.map((r, i) => (
                     <tr key={r.id}>
-                      <td className="cell-gps">
-                        {(page - 1) * ITEMS_PER_PAGE + i + 1}
-                      </td>
                       <td>
                         <div className="user-cell">
                           <div className="role-avatar">

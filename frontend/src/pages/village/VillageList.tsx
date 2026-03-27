@@ -4,20 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { villagesApi } from "@/services/village.api";
 import type { Village } from "@/types/village";
-import {
-  Search, Plus, Pencil, Trash2,
-  Loader2, ChevronLeft, ChevronRight, Home, TriangleAlert,
-} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Search, Plus, Pencil, Trash2,Loader2, ChevronLeft, ChevronRight, Home, TriangleAlert,} from "lucide-react";
+import {AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle,} from "@/components/ui/alert-dialog";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import { CanDo } from "@/components/Cando";
@@ -89,7 +77,7 @@ export default function VillageList() {
 
         <div className="page-header">
           <div>
-            <h1 className="page-title">Villages</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Villages</h1>
             <p className="page-subtitle">
               {villages.length} village{villages.length > 1 ? "s" : ""} enregistré{villages.length > 1 ? "s" : ""}
             </p>
@@ -132,6 +120,8 @@ export default function VillageList() {
                     <th>Province</th>
                     <th>Région</th>
                     <th>District</th>
+                    <th>Commune</th>
+                    <th>Fokontany</th>
                     <th>Coordonnées GPS</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
@@ -158,6 +148,16 @@ export default function VillageList() {
                       <td>
                         {(v as any).district?.name
                           ? <span className="perm-tag">{(v as any).district.name}</span>
+                          : <span style={{ color: "var(--p-text-3)" }}>—</span>}
+                      </td>
+                      <td>
+                        {(v as any).commune?.name
+                          ? <span className="perm-tag">{(v as any).commune.name}</span>
+                          : <span style={{ color: "var(--p-text-3)" }}>—</span>}
+                      </td>
+                      <td>
+                        {(v as any).fokontany?.name
+                          ? <span className="perm-tag">{(v as any).fokontany.name}</span>
                           : <span style={{ color: "var(--p-text-3)" }}>—</span>}
                       </td>
                       <td>

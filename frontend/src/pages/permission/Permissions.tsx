@@ -140,7 +140,7 @@ export default function Permissions() {
       <div className="page-wrap">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Permissions</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Permissions</h1>
             <p className="page-subtitle">{perms.length} permission{perms.length > 1 ? "s" : ""} définies</p>
           </div>
           <CanDo permission="permissions:create">

@@ -55,6 +55,10 @@ import { NotificationModule } from './notification/notification.module';
 import { Notification } from './notification/entities/notification.entity';
 import { SendAlerteModule } from './sendalerte/send-alerte.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CommuneModule } from './commune/commune.module';
+import { FokontanyModule } from './fokontany/fokontany.module';
+import { Commune } from './commune/entities/commune.entity';
+import { Fokontany } from './fokontany/entities/fokontany.entity';
 
 @Module({
   imports: [
@@ -70,12 +74,12 @@ import { ScheduleModule } from '@nestjs/schedule';
         username: config.get<string>('DB_USERNAME'), 
         password: config.get<string>('DB_PASSWORD'), 
         database: config.get<string>('DB_DATABASE'),
-        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification],
+        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany],
         synchronize: true,
       }),
     })
     ,RolesModule, PermissionsModule, UsersModule,CustomersModule,AuthModule, ProvincesModule, RegionsModule, DistrictsModule, VillagesModule, FlowsModule, WeathersModule, ColorCodeModule, AlertLevelModule, SettingsModule, TimeSettingModule,ExportModule,
-    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule
+    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule
     
   ],
   controllers: [AppController],

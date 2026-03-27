@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, DeleteDateColumn, CreateDateColumn, UpdateDateColumn,Index } from "typeorm";
 import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
+import { Sirene } from "@/sirene/entities/sirene.entity";
 
 @Entity("alerte_audio")
 export class AlerteAudio {
@@ -32,14 +33,20 @@ export class AlerteAudio {
   @Column({ name: "duration", type: "float", nullable: true })
   duration: number | null;
 
-  @Index({ unique: true })
-  @Column({ name: "sous_categorie_alerte_id" })
+  @Column({ name: 'sous_categorie_alerte_id' })
   sousCategorieAlerteId: number;
+
+  @Column({ name: 'sirene_id' })
+  sireneId: number;
 
   
   @ManyToOne(() => SousCategorieAlerte, s => s.audios, { onDelete: "CASCADE" })
   @JoinColumn({ name: "sous_categorie_alerte_id" })
   sousCategorie: SousCategorieAlerte;
+
+  @ManyToOne(() => Sirene, { eager: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'sirene_id' })
+  sirene: Sirene;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

@@ -1022,3 +1022,88 @@
   padding: 2px 8px;
 }
  
+
+.sa-schedule-toggle {
+  display: flex;
+  gap: 8px;
+  background: var(--surface-secondary, #f1f5f9);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+}
+ 
+.sa-schedule-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sa-schedule-toggle-btn:hover {
+  color: var(--text-primary, #1e293b);
+}
+.sa-schedule-toggle-btn.selected {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+ 
+.sa-schedule-delay-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--surface-secondary, #f8fafc);
+  border-radius: 10px;
+  border: 1px solid var(--border, #e2e8f0);
+}
+ 
+.sa-schedule-time-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+}
+ 
+.sa-schedule-time-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #dbeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d4ed8;
+  flex-shrink: 0;
+}
+ 
+.sa-schedule-time-main {
+  font-size: 13px;
+  color: #1e3a5f;
+}
+.sa-schedule-time-main strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+.sa-schedule-time-tz {
+  font-size: 11px;
+  color: #64748b;
+}
+.sa-schedule-time-date {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}

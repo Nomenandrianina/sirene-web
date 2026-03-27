@@ -41,7 +41,7 @@ export default function AlerteList() {
       <div className="page-wrap">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Alertes</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Alertes</h1>
             <p className="page-subtitle">{items.length} alerte{items.length>1?"s":""} enregistrée{items.length>1?"s":""}</p>
           </div>
           <CanDo permission="alertes:create">

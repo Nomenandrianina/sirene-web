@@ -9,11 +9,12 @@ import { SousCategorieAlerte }  from "@/sous-categorie-alerte/entities/sous-cate
 import { AlerteAudio } from "@/alerte-audio/entities/alerte-audio.entity";
 import { Notification }         from "@/notification/entities/notification.entity";
 import { SmsModule }            from "../sms/sms.module";
+import { User } from "@/users/entities/user.entity";
 
 @Module({
   imports: [
     ScheduleModule.forRoot(), // à mettre aussi dans AppModule si pas déjà fait
-    TypeOrmModule.forFeature([Sirene, Village, SousCategorieAlerte, AlerteAudio, Notification]),
+    TypeOrmModule.forFeature([Sirene, Village, SousCategorieAlerte, AlerteAudio, Notification,User]),
     SmsModule,
   ],
   controllers: [SendAlerteController],

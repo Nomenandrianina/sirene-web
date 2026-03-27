@@ -84,7 +84,7 @@ export default function ProvinceList() {
 
         <div className="page-header">
           <div>
-            <h1 className="page-title">Provinces</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Provinces</h1>
             <p className="page-subtitle">
               {provinces.length} province{provinces.length > 1 ? "s" : ""} enregistrée{provinces.length > 1 ? "s" : ""}
             </p>
@@ -123,7 +123,6 @@ export default function ProvinceList() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Nom</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
@@ -131,9 +130,6 @@ export default function ProvinceList() {
                 <tbody>
                   {paginated.map((p, i) => (
                     <tr key={p.id}>
-                      <td className="cell-gps">
-                        {(page - 1) * ITEMS_PER_PAGE + i + 1}
-                      </td>
                       <td>
                         <div className="user-cell">
                           <div className="role-avatar">

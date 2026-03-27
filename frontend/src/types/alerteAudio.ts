@@ -9,5 +9,6 @@ export interface AlerteAudio {
   duration?: number;
   sousCategorieAlerteId: number;
   sousCategorie?: { id: number; name: string };
+  Sirene?: {id:number;vname:string}
   createdAt?: string;
 }

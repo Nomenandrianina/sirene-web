@@ -6,5 +6,8 @@ export interface Village {
     provinceId: number;
     regionId: number;
     districtId: number;
+    communeId: number;
+    fokontanyId: number;
+
   }
   

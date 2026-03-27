@@ -6,9 +6,11 @@ import { Region } from 'src/regions/entities/region.entity';
 import { Province } from 'src/provinces/entities/province.entity';
 import { Village } from './entities/village.entity';
 import { District } from 'src/districts/entities/district.entity';
+import { Commune } from '@/commune/entities/commune.entity';
+import { Fokontany } from '@/fokontany/entities/fokontany.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Village,Region, Province,District])],
+  imports: [TypeOrmModule.forFeature([Village,Region, Province,District,Commune,Fokontany])],
   controllers: [VillagesController],
   providers: [VillagesService],
   exports: [VillagesService],

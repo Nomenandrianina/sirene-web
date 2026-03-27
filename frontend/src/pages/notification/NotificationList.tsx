@@ -123,7 +123,7 @@ export default function NotificationList() {
         {/* Header */}
         <div className="page-header">
           <div>
-            <h1 className="page-title">Notifications</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Notifications</h1>
             <p className="page-subtitle">Historique des alertes envoyées</p>
           </div>
         </div>
@@ -214,7 +214,6 @@ export default function NotificationList() {
                   <tr>
                     <th>Statut</th>
                     <th>Sirène</th>
-                    <th>Téléphone</th>
                     <th>Message</th>
                     <th>Sous-catégorie</th>
                     <th>Opérateur</th>
@@ -229,10 +228,9 @@ export default function NotificationList() {
                       <td><StatusBadge status={n.status}/></td>
                       <td>
                         {n.sirene
-                          ? <span className="cell-imei">{n.sirene.imei}</span>
+                          ? <span className="cell-imei">{n.sirene.name}</span>
                           : <span style={{ color: "var(--p-text-3)" }}>—</span>}
                       </td>
-                      <td><span style={{ fontSize: "0.82rem" }}>{n.phoneNumber || "—"}</span></td>
                       <td>
                         <span className="notif-message-cell" title={n.message}>
                           {n.message?.length > 60 ? n.message.slice(0, 60) + "…" : n.message}

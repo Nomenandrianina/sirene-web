@@ -17,7 +17,7 @@ import {
     @Column({ name: 'village_id' })
     village_id: number;
   
-    @Column({ type: 'json', nullable: true })
+    @Column({ type: 'longtext', nullable: true })
     gfs: object;
   
     @Column({ type: 'json', nullable: true })

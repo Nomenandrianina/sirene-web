@@ -93,6 +93,12 @@ export class SirenesService {
     return { message: `Sirène #${id} supprimée` };
   }
 
+
+  async findSireneByImei(imei: string) {
+    return this.sireneRepo.findOne({
+      where: { imei },
+    });
+  }
  
 
   // ── Historique alertes ────────────────────────────────────────────────

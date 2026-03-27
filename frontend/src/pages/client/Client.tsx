@@ -5,18 +5,97 @@ import { customersApi } from "@/services";
 import type { Customer } from "@/types/customer";
 import {
   Search, Plus, Pencil, Trash2, X, Loader2,
-  ChevronLeft, ChevronRight, Building2,
+  ChevronLeft, ChevronRight, Building2, Zap, Minus,
 } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 
 const ITEMS_PER_PAGE = 8;
 
-// ─── Modal ───────────────────────────────────
+// ── Badge priorité ────────────────────────────────────────────────────
+function PriorityBadge({ priority }: { priority: "urgent" | "normal" }) {
+  if (priority === "urgent") {
+    return (
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        background: "#fef2f2", color: "#b91c1c",
+        border: "1px solid #fecaca",
+        borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 600,
+      }}>
+        <Zap size={10} /> Haute
+      </span>
+    );
+  }
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      background: "#f8fafc", color: "#64748b",
+      border: "1px solid #e2e8f0",
+      borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 500,
+    }}>
+      <Minus size={10} /> Normal
+    </span>
+  );
+}
+
+// ── Sélecteur priorité dans le modal ─────────────────────────────────
+function PrioritySelector({ value, onChange }: {
+  value: "urgent" | "normal";
+  onChange: (v: "urgent" | "normal") => void;
+}) {
+  const options = [
+    {
+      value: "normal" as const,
+      label: "Normal",
+      desc: "Ordre standard de diffusion",
+      icon: <Minus size={14} />,
+      bg: "#f8fafc", color: "#475569",
+      border: "#e2e8f0", selectedBorder: "#475569",
+    },
+    {
+      value: "urgent" as const,
+      label: "Haute",
+      desc: "Diffusé en priorité sur les sirènes",
+      icon: <Zap size={14} />,
+      bg: "#fef2f2", color: "#b91c1c",
+      border: "#fecaca", selectedBorder: "#ef4444",
+    },
+  ];
+
+  return (
+    <div style={{ display: "flex", gap: 10 }}>
+      {options.map(opt => (
+        <button key={opt.value} type="button"
+          onClick={() => onChange(opt.value)}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 14px", borderRadius: 10, cursor: "pointer",
+            border: `1.5px solid ${value === opt.value ? opt.selectedBorder : opt.border}`,
+            background: value === opt.value ? opt.bg : "#fff",
+            transition: "all 0.15s", textAlign: "left",
+          }}>
+          <span style={{ color: opt.color, flexShrink: 0 }}>{opt.icon}</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: opt.color }}>{opt.label}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{opt.desc}</div>
+          </div>
+          {value === opt.value && (
+            <span style={{
+              marginLeft: "auto", width: 8, height: 8,
+              borderRadius: "50%", background: opt.selectedBorder, flexShrink: 0,
+            }} />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Modal création / édition ──────────────────────────────────────────
 function ClientModal({ client, onClose, onSave, loading, error }: {
   client?: Customer | null;
   onClose: () => void;
-  onSave: (data: { name: string; company?: string; description?: string; adresse?: string }, id?: number) => Promise<void>;
+  onSave: (data: any, id?: number) => Promise<void>;
   loading: boolean;
   error: string;
 }) {
@@ -26,6 +105,7 @@ function ClientModal({ client, onClose, onSave, loading, error }: {
     company:     client?.company     ?? "",
     description: client?.description ?? "",
     adresse:     client?.adresse     ?? "",
+    priority:    (client?.priority   ?? "normal") as "urgent" | "normal",
   });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -43,6 +123,7 @@ function ClientModal({ client, onClose, onSave, loading, error }: {
             company:     form.company     || undefined,
             description: form.description || undefined,
             adresse:     form.adresse     || undefined,
+            priority:    form.priority,
           }, client?.id);
         }}>
           <div className="form-row">
@@ -67,6 +148,21 @@ function ClientModal({ client, onClose, onSave, loading, error }: {
             <input type="text" placeholder="Notes ou description…" value={form.description}
               onChange={e => set("description", e.target.value)} />
           </div>
+
+          {/* ── Priorité de diffusion ── */}
+          <div className="form-field">
+            <label>
+              Priorité de diffusion
+              <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 6, fontWeight: 400 }}>
+                — détermine l'ordre de lecture sur les sirènes
+              </span>
+            </label>
+            <PrioritySelector
+              value={form.priority}
+              onChange={v => setForm(f => ({ ...f, priority: v }))}
+            />
+          </div>
+
           {error && <div className="form-error">{error}</div>}
           <div className="modal-footer">
             <button type="button" className="btn-cancel" onClick={onClose}>Annuler</button>
@@ -107,14 +203,14 @@ function ConfirmModal({ name, onClose, onConfirm, loading }: {
   );
 }
 
-// ─── Page ────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────
 export default function Clients() {
   const qc = useQueryClient();
-  const [search, setSearch]       = useState("");
-  const [page, setPage]           = useState(1);
-  const [modal, setModal]         = useState<Customer | null | undefined>(undefined);
+  const [search,    setSearch]    = useState("");
+  const [page,      setPage]      = useState(1);
+  const [modal,     setModal]     = useState<Customer | null | undefined>(undefined);
   const [delClient, setDelClient] = useState<Customer | null>(null);
-  const [mutError, setMutError]   = useState("");
+  const [mutError,  setMutError]  = useState("");
 
   const { data: raw, isLoading } = useQuery({
     queryKey: ["customers"],
@@ -154,7 +250,6 @@ export default function Clients() {
     onError: (err: any) => setMutError(err.message || "Erreur suppression"),
   });
 
-  // Initiales pour l'avatar
   const avatarLetter = (c: Customer) => c.name[0]?.toUpperCase() ?? "C";
 
   return (
@@ -162,8 +257,15 @@ export default function Clients() {
       <div className="page-wrap">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Clients</h1>
-            <p className="page-subtitle">{clients.length} client{clients.length > 1 ? "s" : ""} enregistré{clients.length > 1 ? "s" : ""}</p>
+            <h1 className="text-xl font-semibold text-slate-900">Clients</h1>
+            <p className="page-subtitle">
+              {clients.length} client{clients.length > 1 ? "s" : ""} enregistré{clients.length > 1 ? "s" : ""}
+              {clients.filter(c => c.priority === "urgent").length > 0 && (
+                <span style={{ marginLeft: 8, color: "#b91c1c", fontSize: "0.8rem" }}>
+                  · {clients.filter(c => c.priority === "urgent").length} urgent{clients.filter(c => c.priority === "urgent").length > 1 ? "s" : ""}
+                </span>
+              )}
+            </p>
           </div>
           <button className="btn-primary" onClick={() => setModal(null)}>
             <Plus size={15} /> Nouveau client
@@ -192,6 +294,7 @@ export default function Clients() {
                     <th>Client</th>
                     <th>Entreprise</th>
                     <th>Adresse</th>
+                    <th>Priorité</th>
                     <th>Créé le</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
@@ -201,7 +304,12 @@ export default function Clients() {
                     <tr key={c.id}>
                       <td>
                         <div className="user-cell">
-                          <div className="client-avatar">{avatarLetter(c)}</div>
+                          <div className="client-avatar"
+                            style={c.priority === "urgent" ? {
+                              background: "#fef2f2", color: "#b91c1c", border: "1.5px solid #fecaca",
+                            } : undefined}>
+                            {avatarLetter(c)}
+                          </div>
                           <div>
                             <div className="user-cell-name">{c.name}</div>
                             {c.description && (
@@ -215,6 +323,9 @@ export default function Clients() {
                       </td>
                       <td style={{ color: "var(--p-text-2)", fontSize: "0.875rem" }}>
                         {c.adresse || <span style={{ color: "var(--p-text-3)" }}>—</span>}
+                      </td>
+                      <td>
+                        <PriorityBadge priority={c.priority ?? "normal"} />
                       </td>
                       <td className="cell-gps">
                         {new Date(c.createdAt).toLocaleDateString("fr-FR")}

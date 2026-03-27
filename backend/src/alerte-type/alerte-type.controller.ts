@@ -12,7 +12,6 @@ export class AlerteTypeController {
     const user         = req?.user;
     const isSuperAdmin = !user || user.role?.name?.toLowerCase() === "superadmin";
     const customerId   = user?.customerId ?? user?.customer?.id;
-    console.log("customerid",customerId);
     return this.service.findAll(
       alerteId ? +alerteId : undefined,
       isSuperAdmin,

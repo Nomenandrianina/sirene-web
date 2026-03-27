@@ -139,7 +139,7 @@ export default function SireneList() {
       {/* ── Header ── */}
       <div className="sirene-header">
         <div>
-          <h1 className="sirene-title">Sirènes</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Sirènes</h1>
           <p className="sirene-subtitle">{sirenes.length} sirène{sirenes.length > 1 ? "s" : ""} enregistrée{sirenes.length > 1 ? "s" : ""}</p>
         </div>
         <CanDo permission="sirenes:create">

@@ -251,7 +251,7 @@ export default function Utilisateurs() {
 
         <div className="page-header">
           <div>
-            <h1 className="page-title">Utilisateurs</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Utilisateurs</h1>
             <p className="page-subtitle">
               {users.filter(u => u.is_active).length} actifs sur {users.length}
             </p>

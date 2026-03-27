@@ -5,11 +5,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { alerteAudiosApi } from "@/services/alerteaudio.api";
 import { AlerteAudio } from "@/types/alerteAudio";
 import { AlerteDeleteDialog } from "@/components/alerte/Alertedeletedialog";
-import {
-  Search, Plus, Pencil, Trash2, Loader2,
-  ChevronLeft, ChevronRight, Music, Play, Pause, Download,
-  Volume2, X, SkipBack,
-} from "lucide-react";
+import {  Search, Plus, Pencil, Trash2, Loader2,  ChevronLeft, ChevronRight, Music, Play, Pause, Download,Volume2, X, SkipBack,} from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import "@/styles/alerte-audio.css";
@@ -327,7 +323,7 @@ export default function AlerteAudioList() {
       <div className="page-wrap" style={{ paddingBottom: player ? 80 : undefined }}>
         <div className="page-header">
           <div>
-            <h1 className="page-title">Audios d'alerte</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Audios d'alerte</h1>
             <p className="page-subtitle">{items.length} audio{items.length > 1 ? "s" : ""} enregistré{items.length > 1 ? "s" : ""}</p>
           </div>
           <CanDo permission="alerte-audios:create">
@@ -358,6 +354,7 @@ export default function AlerteAudioList() {
                   <tr>
                     <th>Audio</th>
                     <th>Mobile ID</th>
+                    <th>Sirène</th>
                     <th>Sous-catégorie</th>
                     <th>Durée</th>
                     <th>Taille</th>
@@ -394,6 +391,16 @@ export default function AlerteAudioList() {
                           </div>
                         </td>
                         <td><span className="cell-imei">{a.mobileId}</span></td>
+                        {/* <td><span className="cell-imei">{a.mobileId}</span></td> */}
+                        <td>
+                            {a.sirene ?(
+                              <span className="perm-tag">
+                                {a.sirene.name}
+                              </span>
+                            ) : (
+                              <span style={{ color: "var(--p-text-3)" }}>—</span>
+                            )}
+                          </td>
                         <td>
                           {a.sousCategorie
                             ? <span className="perm-tag">{a.sousCategorie.name}</span>
