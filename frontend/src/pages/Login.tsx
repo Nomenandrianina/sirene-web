@@ -74,16 +74,10 @@ export default function Login() {
         />
       </div>
 
-        
-          {/* <div className="brand-text">
-            <span className="brand-name">MITAO</span>
-            <span className="brand-sub">Forecast-Africa</span>
-          </div> */}
 
         <h1 className="hero-headline">
-          Réseau de sirènes<br />
-          <span>géolocalisées</span><br />
-          à Madagascar
+          Community Public Address And <br />
+          <span>Digital Awareness Systems</span><br />
         </h1>
 
         <p className="hero-desc">

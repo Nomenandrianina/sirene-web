@@ -1,4 +1,4 @@
 export interface Province {
-    id: number;
-    name: string;
-  }
+  id: number;
+  name: string;
+}

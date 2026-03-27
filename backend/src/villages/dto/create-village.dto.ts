@@ -23,4 +23,12 @@ export class CreateVillageDto {
     @IsNotEmpty()
     @IsNumber()
     districtId:number;
+
+    @IsNotEmpty()
+    @IsNumber()
+    communeId: number;
+   
+    @IsNotEmpty()
+    @IsNumber()
+    fokontanyId: number;
 }

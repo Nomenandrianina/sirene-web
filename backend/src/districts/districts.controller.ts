@@ -32,7 +32,13 @@ export class DistrictsController {
 
   @Audit('DELETE', 'Districts')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.districtsService.remove(+id);
+  async remove(@Param('id') id: string) {
+    await this.districtsService.remove(+id);
+  
+    return {
+      success: true,
+      message: 'District supprimée avec succès',
+    };
   }
+
 }

@@ -32,7 +32,13 @@ export class RegionsController {
 
   @Audit('DELETE', 'Region')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.regionsService.remove(+id);
+  async remove(@Param('id') id: string) {
+    await this.regionsService.remove(+id);
+  
+    return {
+      success: true,
+      message: 'Region supprimée avec succès',
+    };
   }
+  
 }

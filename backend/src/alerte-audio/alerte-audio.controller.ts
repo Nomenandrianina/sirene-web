@@ -9,9 +9,10 @@ import { extname } from "path";
 import { AlerteAudioService } from "./alerte-audio.service";
 import { CreateAlerteAudioDto } from "./dto/create-alerte-audio.dto";
 import { UpdateAlerteAudioDto } from "./dto/update-alerte-audio.dto";
-import { Response } from 'express';
 import { Public } from "@/common/decarators/public.decorator";
+import { SirenesService } from "@/sirene/sirene.service";
 
+// Gardez vos configs multer existantes :
 const audioStorage = diskStorage({
   destination: "./uploads/audios",
   filename: (_req, file, cb) => {
@@ -27,29 +28,82 @@ const audioFilter = (_req: any, file: Express.Multer.File, cb: any) => {
   else cb(new BadRequestException(`Format non supporté: ${ext}`), false);
 };
 
-@Controller("alerte-audios")
-export class AlerteAudioController {
-  constructor(private readonly service: AlerteAudioService) {}
 
+@Controller('alerte-audios')
+export class AlerteAudioController {
+  constructor(private readonly service: AlerteAudioService,private readonly sireneservice:SirenesService) {}
+
+  // GET /alerte-audios
   @Get()
-  findAll(@Query("sousCategorieAlerteId") sousCategorieAlerteId?: string) {
+  findAll(@Query('sousCategorieAlerteId') sousCategorieAlerteId?: string) {
     return this.service.findAll(sousCategorieAlerteId ? +sousCategorieAlerteId : undefined);
   }
 
-  // Endpoint pour récupérer les sous-catégories déjà utilisées (frontend)
-  @Get("used-sous-categories")
+  // GET /alerte-audios/used-sous-categories  — préservé
+  @Get('used-sous-categories')
   getUsedSousCategorieIds() {
     return this.service.getUsedSousCategorieIds();
   }
 
-  // alerte-audio.controller.ts
+  // ✅ NOUVEAU — GET /alerte-audios/used-combinations
+  // Retourne [{ sousCategorieAlerteId, sireneId }] déjà pris
+  @Get('used-combinations')
+  getUsedCombinations() {
+    return this.service.getUsedCombinations();
+  }
+
+  // ✅ NOUVEAU — GET /alerte-audios/sirene/:sireneId
+  @Get('sirene/:sireneId')
+  findBySirene(@Param('sireneId', ParseIntPipe) sireneId: number) {
+    return this.service.findBySirene(sireneId);
+  }
+
+  // GET /alerte-audios/public/sync-all  — préservé + ajout sirene_id
   @Public()
   @Get('public/sync-all')
-  async syncAll(@Res() res: import('express').Response) {
-    const audios = await this.service.findAll();
-    const baseUrl = process.env.APP_URL ;
+  async syncAll(@Query('imei') imei: string, @Res() res: import('express').Response) {
+      if (!imei) {
+        return res.status(400).json({ message: "IMEI requis" });
+      }
 
-    const data = (Array.isArray(audios) ? audios : (audios as any).response ?? [])
+      const baseUrl = process.env.APP_URL ?? '';
+
+      // 1. Trouver la sirène via IMEI
+      const sirene = await this.sireneservice.findSireneByImei(imei);
+
+      if (!sirene) {
+        return res.status(404).json({ message: "Sirène introuvable" });
+      }
+
+      // 2. Récupérer les audios de cette sirène
+      const audios = await this.service.findBySirene(sirene.id);
+
+      // 3. Mapper
+      const data = audios.map((a: any) => ({
+        id_web:      a.mobileId,
+        sirene_id:   a.sireneId,
+        name:        a.name ?? '',
+        description: a.description ?? '',
+        audio:       a.originalFilename ?? '',
+        downloadUrl: `${baseUrl}/${a.audio.replace(/\\/g, '/')}`,
+        updatedAt:   a.updatedAt ?? null,
+      }));
+
+      return res.json(data);
+  }
+
+  // ✅ NOUVEAU — GET /alerte-audios/public/sync/:sireneImei
+  // La sirène ne télécharge QUE ses propres audios
+  @Public()
+  @Get('public/sync/:sireneImei')
+  async syncBySirene(
+    @Param('sireneImei') sireneImei: string,
+    @Res() res: import('express').Response,
+  ) {
+    const baseUrl = process.env.APP_URL ?? '';
+    const all = await this.service.findAll();
+    const data = (Array.isArray(all) ? all : [])
+      .filter((a: any) => a.sirene?.imei === sireneImei)
       .map((a: any) => ({
         id_web:      a.mobileId,
         name:        a.name ?? '',
@@ -58,34 +112,40 @@ export class AlerteAudioController {
         downloadUrl: `${baseUrl}/${a.audio.replace(/\\/g, '/')}`,
         updatedAt:   a.updatedAt ?? null,
       }));
-
     return res.json(data);
   }
 
-  @Get(":id")
-  findOne(@Param("id", ParseIntPipe) id: number) {
+  // GET /alerte-audios/:id
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
+  // POST /alerte-audios — retourne AlerteAudio[] (un par sirène)
   @Post()
-  @UseInterceptors(FileInterceptor("file", { storage: audioStorage, fileFilter: audioFilter }))
-  create(@UploadedFile() file: Express.Multer.File, @Body() dto: CreateAlerteAudioDto) {
-    if (!file) throw new BadRequestException("Le fichier audio est obligatoire");
+  @UseInterceptors(FileInterceptor('file', { storage: audioStorage, fileFilter: audioFilter }))
+  create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateAlerteAudioDto,
+  ) {
+    if (!file) throw new BadRequestException('Le fichier audio est obligatoire');
     return this.service.create(dto, file);
   }
 
-  @Patch(":id")
-  @UseInterceptors(FileInterceptor("file", { storage: audioStorage, fileFilter: audioFilter }))
+  // PATCH /alerte-audios/:id — inchangé
+  @Patch(':id')
+  @UseInterceptors(FileInterceptor('file', { storage: audioStorage, fileFilter: audioFilter }))
   update(
-    @Param("id", ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAlerteAudioDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.service.update(id, dto, file);
   }
 
-  @Delete(":id")
-  remove(@Param("id", ParseIntPipe) id: number) {
+  // DELETE /alerte-audios/:id
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
 }

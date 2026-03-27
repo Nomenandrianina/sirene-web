@@ -27,6 +27,8 @@ const dataItems: NavItem[] = [
   { title: "Provinces", url: "/provinces", icon: MapPin, permission: "provinces:read" },
   { title: "Régions",   url: "/regions",   icon: MapPin, permission: "regions:read"   },
   { title: "Districts", url: "/districts", icon: MapPin, permission: "districts:read" },
+  { title: "Communes",  url: "/communes",  icon: MapPin, permission: "communes:read"  },
+  { title: "Fokontany",  url: "/fokontany",  icon: MapPin, permission: "fokontany:read"  },
   { title: "Villages",  url: "/villages",  icon: MapPin, permission: "villages:read"  },
 ];
 
@@ -35,7 +37,7 @@ const alertItems: NavItem[] = [
   { title: "Types d'alerte",          url: "/alerte-types",           icon: Tag,           permission: "alerte-types:read"            },
   { title: "Catégories",              url: "/categorie-alertes",      icon: FolderOpen,    permission: "categorie-alertes:read"       },
   { title: "Sous-catégories",         url: "/sous-categorie-alertes", icon: Layers,        permission: "sous-categorie-alertes:read"  },
-  { title: "Audios alerte",           url: "/alerte-audios",          icon: Music,         permission: "alerte-audios:read"           },
+  { title: "Audios/Sons ",           url: "/alerte-audios",          icon: Music,         permission: "alerte-audios:read"           },
   { title: "Notifications",           url: "/notifications",          icon: LayoutList,    permission: "notifications:read"           },
 ];
 

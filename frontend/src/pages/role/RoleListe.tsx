@@ -238,7 +238,7 @@ export default function RoleListe() {
       <div className="page-wrap">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Rôles</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Rôles</h1>
             <p className="page-subtitle">{roles.length} rôle{roles.length > 1 ? "s" : ""} configuré{roles.length > 1 ? "s" : ""}</p>
           </div>
           <button className="btn-primary" onClick={() => setModal(null)}>

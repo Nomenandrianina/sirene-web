@@ -19,12 +19,12 @@ interface User {
   country?: string;
   state?: string;
   role?: Role;
-  customer?: { id: number; name: string };
+  customer?: { id: number; name: string; priority?: "normal" | "urgent" }; // ← ajouter priority
   avatar_url?: string;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: User | null;  
   setUser: (user: any) => void;
   updateUser: (data: any) => Promise<string>;
   signUp: (data: any) => Promise<string>;

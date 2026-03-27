@@ -14,6 +14,7 @@ export default function AlerteAudioCreate() {
           name:                  data.name || undefined,
           description:           data.description || undefined,
           mobileId:              data.mobileId,
+          sireneIds:             data.sireneIds,
           duration:              data.duration ? Number(data.duration) : undefined,
           sousCategorieAlerteId: data.sousCategorieAlerteId,
         }, file),

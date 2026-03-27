@@ -65,6 +65,7 @@ export class DistrictsService {
 
   async remove(id: number): Promise<void> {
     const district = await this.findOne(id);
+    console.log('district',district)
     await this.districtRepository.remove(district);
   }
 }

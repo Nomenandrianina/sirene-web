@@ -34,7 +34,6 @@ export class UsersService {
             throw new ConflictException('Email already exists');
         }
 
-        console.log('donnes recuperer: ',createUserDto)
         const user = new User();
         user.email = createUserDto?.email;
         user.first_name = createUserDto?.first_name;

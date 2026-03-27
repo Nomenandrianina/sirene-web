@@ -42,4 +42,7 @@ export class SendAlerteDto {
   @IsNotEmpty() @Type(()=>Number) @IsNumber() 
   repeatInterval?: number;        
   
+  @IsNotEmpty() @Type(()=>Number) @IsNumber() 
+  alertPriority?: string;        
+  
 }

@@ -37,7 +37,7 @@ export default function AlerteTypeList() {
     <AppLayout>
       <div className="page-wrap">
         <div className="page-header">
-          <div><h1 className="page-title">Types d'alerte</h1><p className="page-subtitle">{items.length} type{items.length>1?"s":""}</p></div>
+          <div><h1 className="text-xl font-semibold text-slate-900">Types d'alerte</h1><p className="page-subtitle">{items.length} type{items.length>1?"s":""}</p></div>
           <CanDo permission="alerte-types:create">
             <button className="btn-primary" onClick={()=>navigate("/alerte-types/create")}><Plus size={15}/> Nouveau type</button>
           </CanDo>

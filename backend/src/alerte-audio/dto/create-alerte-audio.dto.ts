@@ -1,4 +1,4 @@
-import { IsOptional, IsNotEmpty, IsString, IsNumber } from "class-validator";
+import { IsOptional, IsNotEmpty, IsString, IsNumber,IsArray,IsInt } from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreateAlerteAudioDto {
@@ -18,6 +18,10 @@ export class CreateAlerteAudioDto {
   @IsOptional() @IsNumber() @Type(() => Number)
   duration?: number;
 
+
+  @IsArray()
+  @IsInt({ each: true })
+  sireneIds: number[];
   
   // audio, originalFilename, fileSize sont renseignés automatiquement
   // depuis le fichier uploadé (Multer) — ne pas envoyer depuis le client

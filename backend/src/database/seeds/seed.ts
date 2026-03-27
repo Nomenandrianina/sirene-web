@@ -18,6 +18,8 @@ import { seedColorCodes }   from './colocode.seed';
 import { seedTimeSettings } from './timesetting.seed';
 import { seedSettings }     from './setting.seed';
 import { seedAlertes }      from './alert.seed';
+import { seedCommuneFokontanyPermissions }      from './communefokontany.seed';
+import { seedZone }      from './zone.seed';
 
 const AppDataSource = new DataSource({
   type:     'mysql',
@@ -45,6 +47,8 @@ async function runSeeders() {
     await seedTimeSettings(AppDataSource);
     await seedSettings(AppDataSource);
     await seedAlertes(AppDataSource);
+    await seedCommuneFokontanyPermissions(AppDataSource);
+    await seedZone(AppDataSource);
 
     console.log('\n🌱 All seeders completed!');
   } catch (error) {

@@ -50,6 +50,12 @@ import AlerteAudioList   from "@/pages/alerteaudio/AlerteAudioList";
 import AlerteAudioCreate from "@/pages/alerteaudio/AlerteAudioCreate";
 import AlerteAudioEdit   from "@/pages/alerteaudio/AlerteAudioEdit";
 import NotificationList   from "@/pages/notification/NotificationList";
+import CommuneList   from "@/pages/commune/CommuneList";
+import CommuneCreate from "./pages/commune/CommuneCreate";
+import CommuneEdit from "./pages/commune/CommuneEdit";
+import FokontanyList from "./pages/fokontany/FokontanyList";
+import FokontanyCreate from "./pages/fokontany/fokontanyCreate";
+import FokontanyEdit from "./pages/fokontany/fokontanyEdit";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +112,12 @@ const App = () => (
               <Route path="/alerte-audios/create"   element={<ProtectedRoute><AlerteAudioCreate /></ProtectedRoute>} />
               <Route path="/alerte-audios/:id/edit" element={<ProtectedRoute><AlerteAudioEdit /></ProtectedRoute>} />
               <Route path="/notifications"       element={<ProtectedRoute><NotificationList /></ProtectedRoute>} />
+              <Route path="/communes"       element={<ProtectedRoute><CommuneList /></ProtectedRoute>} />
+              <Route path="/communes/create"   element={<ProtectedRoute><CommuneCreate /></ProtectedRoute>} />
+              <Route path="/communes/:id/edit" element={<ProtectedRoute><CommuneEdit /></ProtectedRoute>} />
+              <Route path="/fokontany"       element={<ProtectedRoute><FokontanyList /></ProtectedRoute>} />
+              <Route path="/fokontany/create"   element={<ProtectedRoute><FokontanyCreate /></ProtectedRoute>} />
+              <Route path="/fokontany/:id/edit" element={<ProtectedRoute><FokontanyEdit /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
         </TooltipProvider>

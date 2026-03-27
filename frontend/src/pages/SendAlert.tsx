@@ -17,9 +17,14 @@ import { sendAlerteApi, SendAlertePayload } from "@/services/sendalerte.api";
 import {
   CheckCircle, ChevronRight, ChevronLeft, Send, Loader2,
   AlertTriangle, Radio, Play, Pause, Music, Clock, Zap,
-  Layers, Plus, X, List, RotateCcw, Timer, Bell,
+  Layers, Plus, X, List, RotateCcw, Timer, Bell, Minus,
 } from "lucide-react";
 import "@/styles/send-alerte.css";
+import { useAuth } from "@/contexts/AuthContext";
+
+import { ZonesStep } from "@/components/zone/ZoneItem";
+import { communesApi }  from "@/services/commune.api";
+import { fokontanyApi } from "@/services/fokontany.api";
 
 const EXCLUDED_ALERTE_NAMES = ["alerte automatique"];
 
@@ -52,6 +57,10 @@ const SCHEDULE_OPTIONS = [
   { value: "24h",  label: "Dans 24 heures", hours: 24 },
 ];
 
+
+
+type ScheduleUnit = "min" | "h";
+
 // ── Unités de temps pour l'intervalle ──────────────────────────────────────────
 type IntervalUnit = "min" | "h" | "j";
 
@@ -83,6 +92,36 @@ const INTERVAL_PRESETS: Record<IntervalUnit, { value: number; label: string }[]>
     { value: 7, label: "1 sem."  },
   ],
 };
+
+// Convertit délai (valeur + unité) en millisecondes
+function delayToMs(value: number, unit: ScheduleUnit): number {
+  return unit === "min" ? value * 60_000 : value * 3_600_000;
+}
+ 
+// Formate une date en heure locale Madagascar (UTC+3)
+function toMadagascarTime(date: Date): string {
+  return date.toLocaleTimeString("fr-FR", {
+    timeZone: "Indian/Antananarivo",
+    hour:     "2-digit",
+    minute:   "2-digit",
+    hour12:   false,
+  });
+}
+ 
+// Formate date complète Madagascar
+function toMadagascarDateTime(date: Date): string {
+  return date.toLocaleString("fr-FR", {
+    timeZone: "Indian/Antananarivo",
+    day:      "2-digit",
+    month:    "2-digit",
+    year:     "numeric",
+    hour:     "2-digit",
+    minute:   "2-digit",
+    hour12:   false,
+  });
+}
+ 
+
 
 // Convertit la valeur affichée + unité en minutes (pour le message envoyé)
 function toMinutes(value: number, unit: IntervalUnit): number {
@@ -183,99 +222,162 @@ function StepperBar({ steps, step }: { steps: typeof STEPS_SIMPLE; step: number 
   );
 }
 
-function ZonesStep({
-  provinces, filteredRegions, filteredDistricts, filteredVillages,
-  selectedProvinces, selectedRegions, selectedDistricts, selectedVillages,
-  toggleFn, previewLoading, sireneCount, sirenePrev,
-}: any) {
-  return (
-    <div className="sa-zones">
-      {[
-        { label: "Provinces", items: provinces,         sel: selectedProvinces, setFn: (id: number) => toggleFn(selectedProvinces, "provinces", id), hint: "" },
-        { label: "Régions",   items: filteredRegions,   sel: selectedRegions,   setFn: (id: number) => toggleFn(selectedRegions, "regions", id),   hint: selectedProvinces.length > 0 ? "(filtrées par province)" : "" },
-        { label: "Districts", items: filteredDistricts, sel: selectedDistricts, setFn: (id: number) => toggleFn(selectedDistricts, "districts", id), hint: selectedRegions.length > 0 ? "(filtrés par région)" : "" },
-        {
-          label: "Villages", items: filteredVillages, sel: selectedVillages,
-          setFn: (id: number) => toggleFn(selectedVillages, "villages", id),
-          hint: selectedDistricts.length > 0 ? "(filtrés par district)" : selectedRegions.length > 0 ? "(filtrés par région)" : "(optionnel — affiner par village)",
-        },
-      ].map(({ label, items, sel, setFn, hint }) => (
-        <div key={label} className="sa-zone-group">
-          <h4>{label}{hint && <span className="sa-zone-filter-hint">{hint}</span>}</h4>
-          <div className="sa-checkboxes">
-            {items.length === 0
-              ? <span className="sa-zone-empty">Aucun élément disponible</span>
-              : items.map((item: any) => (
-                <label key={item.id} className={`sa-checkbox${sel.includes(item.id) ? " checked" : ""}`}>
-                  <input type="checkbox" checked={sel.includes(item.id)} onChange={() => setFn(item.id)} />
-                  {item.name}
-                </label>
-              ))}
-          </div>
-        </div>
-      ))}
-      <div className="sa-sirene-preview">
-        <div className="sa-sirene-preview-header">
-          <Radio size={14} />
-          {previewLoading
-            ? <span>Calcul en cours…</span>
-            : <span><strong>{sireneCount}</strong> sirène{sireneCount > 1 ? "s" : ""} active{sireneCount > 1 ? "s" : ""} dans les zones sélectionnées</span>}
-        </div>
-        {sirenePrev.length > 0 && (
-          <div className="sa-sirene-list">
-            {sirenePrev.slice(0, 8).map((s: any) => (
-              <span key={s.id} className="sa-sirene-chip">{s.imei}{s.village?.name ? ` — ${s.village.name}` : ""}</span>
-            ))}
-            {sirenePrev.length > 8 && <span className="sa-sirene-chip sa-sirene-more">+{sirenePrev.length - 8} autres</span>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ── PlanificationStep avec intervalle multi-unités ────────────────────────────
 
 function PlanificationStep({
-  schedule, setSchedule,
-  repeatCount, setRepeatCount,
+  // Heure d'envoi
+  scheduleNow,    setScheduleNow,
+  scheduleDelay,  setScheduleDelay,
+  scheduleUnit,   setScheduleUnit,
+  // Répétition
+  repeatCount,    setRepeatCount,
   repeatInterval, setRepeatInterval,
-  intervalUnit, setIntervalUnit,
+  intervalUnit,   setIntervalUnit,
+  // Priorité
+  isUrgentClient, alertPriority, setAlertPriority,
 }: any) {
   const presets = INTERVAL_PRESETS[intervalUnit as IntervalUnit];
-  const intervalInMinutes = repeatCount > 1 ? repeatInterval : "0";
-
-  //  toMinutes(repeatInterval, intervalUnit as IntervalUnit);
-
+ 
+  // Calcul de l'heure d'envoi prévue
+  const scheduledDate = scheduleNow
+    ? new Date()
+    : new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit));
+ 
+  const scheduledTimeStr   = toMadagascarTime(scheduledDate);
+  const scheduledDateStr   = toMadagascarDateTime(scheduledDate);
+  const isToday            = new Date().toDateString() === scheduledDate.toDateString();
+ 
   return (
     <div className="sa-planification">
-
+ 
       {/* ── Heure d'envoi ── */}
       <div className="sa-plan-section">
-        <div className="sa-plan-section-title"><Clock size={15} /><span>Heure d'envoi</span></div>
-        <div className="sa-schedule">
-          {SCHEDULE_OPTIONS.map(opt => (
-            <button key={opt.value} type="button"
-              className={`sa-schedule-card${schedule === opt.value ? " selected" : ""}`}
-              onClick={() => setSchedule(opt.value)}>
-              {opt.value === "now" ? <Zap size={16} /> : <Clock size={16} />}
-              <span>{opt.label}</span>
-              {schedule === opt.value && <CheckCircle size={14} className="sa-option-check" />}
-            </button>
-          ))}
+        <div className="sa-plan-section-title">
+          <Clock size={15} /><span>Heure d'envoi</span>
+        </div>
+ 
+        {/* Toggle Maintenant / Planifier */}
+        <div className="sa-schedule-toggle">
+          <button type="button"
+            className={`sa-schedule-toggle-btn${scheduleNow ? " selected" : ""}`}
+            onClick={() => setScheduleNow(true)}>
+            <Zap size={15} />
+            Maintenant
+          </button>
+          <button type="button"
+            className={`sa-schedule-toggle-btn${!scheduleNow ? " selected" : ""}`}
+            onClick={() => setScheduleNow(false)}>
+            <Clock size={15} />
+            Planifier
+          </button>
+        </div>
+ 
+        {/* Saisie libre du délai */}
+        {!scheduleNow && (
+          <div className="sa-schedule-delay-wrap">
+            <span className="sa-repeat-hint">Dans</span>
+ 
+            {/* Input valeur */}
+            <div className="sa-repeat-stepper">
+              <button type="button" className="sa-repeat-btn"
+                onClick={() => setScheduleDelay((v: number) => Math.max(1, v - 1))}>−</button>
+              <input
+                type="number"
+                className="sa-repeat-input"
+                min={1} max={999} step={1}
+                value={scheduleDelay}
+                onChange={e => setScheduleDelay(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+              <button type="button" className="sa-repeat-btn"
+                onClick={() => setScheduleDelay((v: number) => Math.min(999, v + 1))}>+</button>
+            </div>
+ 
+            {/* Sélecteur unité min/h */}
+            <div className="sa-interval-unit-tabs">
+              {(["min", "h"] as ScheduleUnit[]).map(u => (
+                <button key={u} type="button"
+                  className={`sa-interval-unit-tab${scheduleUnit === u ? " selected" : ""}`}
+                  onClick={() => {
+                    setScheduleUnit(u);
+                    setScheduleDelay(u === "min" ? 30 : 1);
+                  }}>
+                  {u === "min" ? "Minutes" : "Heures"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+ 
+        {/* Affichage heure exacte Madagascar */}
+        <div className="sa-schedule-time-preview">
+          <div className="sa-schedule-time-icon">
+            <Clock size={14} />
+          </div>
+          <div>
+            <div className="sa-schedule-time-main">
+              {scheduleNow ? "Envoi immédiat" : `Envoi dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute" + (scheduleDelay > 1 ? "s" : "") : "heure" + (scheduleDelay > 1 ? "s" : "")}`}
+              {" — "}
+              <strong>{scheduledTimeStr}</strong>
+              {" "}
+              <span className="sa-schedule-time-tz">heure de Madagascar</span>
+            </div>
+            {!scheduleNow && !isToday && (
+              <div className="sa-schedule-time-date">{scheduledDateStr}</div>
+            )}
+          </div>
         </div>
       </div>
-
+ 
+      {/* ── Priorité (clients urgents) ── */}
+      {isUrgentClient && (
+        <div className="sa-plan-section">
+          <div className="sa-plan-section-title">
+            <Zap size={15} /><span>Niveau d'urgence de cette alerte</span>
+          </div>
+          <p className="sa-plan-section-desc">
+            En tant que client prioritaire, vous pouvez choisir le niveau d'urgence pour cette alerte.
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            {[
+              { value: "P1", label: "Prioritaire", desc: "Diffusé avant les autres alertes",
+                color: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },
+              { value: "P2", label: "Normal",      desc: "Ordre standard de diffusion",
+                color: "#475569", bg: "#f8fafc", border: "#e2e8f0" },
+            ].map(opt => (
+              <button key={opt.value} type="button"
+                onClick={() => setAlertPriority(opt.value)}
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", gap: 10,
+                  padding: "12px 14px", borderRadius: 10, cursor: "pointer",
+                  border: `1.5px solid ${alertPriority === opt.value ? opt.color : opt.border}`,
+                  background: alertPriority === opt.value ? opt.bg : "#fff",
+                  transition: "all 0.15s",
+                }}>
+                {opt.value === "P1" ? <Zap size={16} color={opt.color} /> : <Minus size={16} color={opt.color} />}
+                <div style={{ textAlign: "left" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: opt.color }}>{opt.label}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{opt.desc}</div>
+                </div>
+                {alertPriority === opt.value && (
+                  <CheckCircle size={14} color={opt.color} style={{ marginLeft: "auto" }} />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+ 
       {/* ── Répétition ── */}
       <div className="sa-plan-section">
-        <div className="sa-plan-section-title"><RotateCcw size={15} /><span>Répétition de la diffusion</span></div>
+        <div className="sa-plan-section-title">
+          <RotateCcw size={15} /><span>Répétition de la diffusion</span>
+        </div>
         <p className="sa-plan-section-desc">
           Définissez combien de fois l'alerte audio sera répétée et l'intervalle entre chaque diffusion.
         </p>
-
+ 
         <div className="sa-repeat-grid">
-
-          {/* Nombre de répétitions */}
           <div className="sa-repeat-field">
             <label className="sa-repeat-label"><RotateCcw size={13} />Nombre de répétitions</label>
             <div className="sa-repeat-stepper">
@@ -290,12 +392,9 @@ function PlanificationStep({
               {repeatCount === 1 ? "Diffusé 1 seule fois" : `Diffusé ${repeatCount} fois`}
             </span>
           </div>
-
-          {/* Intervalle avec choix d'unité */}
+ 
           <div className="sa-repeat-field">
             <label className="sa-repeat-label"><Timer size={13} />Intervalle entre diffusions</label>
-
-            {/* Sélecteur d'unité */}
             <div className="sa-interval-unit-tabs">
               {INTERVAL_UNIT_OPTIONS.map(u => (
                 <button key={u.value} type="button"
@@ -303,15 +402,12 @@ function PlanificationStep({
                   disabled={repeatCount <= 1}
                   onClick={() => {
                     setIntervalUnit(u.value);
-                    // Reset au premier preset de la nouvelle unité
                     setRepeatInterval(INTERVAL_PRESETS[u.value][0].value);
                   }}>
                   {u.label}
                 </button>
               ))}
             </div>
-
-            {/* Presets selon l'unité */}
             <div className="sa-interval-options">
               {presets.map(opt => (
                 <button key={opt.value} type="button"
@@ -322,12 +418,10 @@ function PlanificationStep({
                 </button>
               ))}
             </div>
-
-            {/* Saisie manuelle */}
             <div className="sa-interval-custom">
               <span className="sa-repeat-hint">Valeur personnalisée :</span>
               <input type="number" className="sa-repeat-input sa-repeat-input--sm"
-                min={1} max={999} 
+                min={1} max={999}
                 value={repeatInterval}
                 disabled={repeatCount <= 1}
                 onChange={e => setRepeatInterval(Math.max(1, parseFloat(e.target.value)))} />
@@ -335,7 +429,6 @@ function PlanificationStep({
                 {INTERVAL_UNIT_OPTIONS.find(u => u.value === intervalUnit)?.label.toLowerCase()}
               </span>
             </div>
-
             {repeatCount <= 1 && (
               <span className="sa-repeat-hint sa-repeat-hint--warn">
                 L'intervalle n'est actif qu'avec 2 répétitions ou plus
@@ -343,8 +436,8 @@ function PlanificationStep({
             )}
           </div>
         </div>
-
-        {/* Aperçu du message */}
+ 
+        {/* Aperçu message */}
         <div className="sa-message-preview">
           <div className="sa-message-preview-header">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -353,7 +446,6 @@ function PlanificationStep({
             </svg>
             <span>Aperçu du message</span>
           </div>
-
           <div className="sa-message-preview-parts">
             <div className="sa-msg-part sa-msg-part--id">
               <span className="sa-msg-part-label">identifiant audio</span>
@@ -365,20 +457,17 @@ function PlanificationStep({
             </div>
             <span className="sa-msg-plus">+</span>
             <div className={`sa-msg-part${repeatCount <= 1 ? " sa-msg-part--disabled" : ""}`}>
-              <span className="sa-msg-part-label">intervalle ({intervalUnit}) </span>
-              <code className="sa-msg-part-val">
-                {repeatCount > 1 ? intervalInMinutes : "0"}
-              </code>
+              <span className="sa-msg-part-label">intervalle ({intervalUnit})</span>
+              <code className="sa-msg-part-val">{repeatCount > 1 ? repeatInterval : "0"}</code>
             </div>
           </div>
-
           <div className="sa-message-preview-example">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
             </svg>
             <span>Exemple :</span>
-            <code>ALERTE_767 {repeatCount}{repeatCount > 1 ? ` ${intervalInMinutes}${intervalUnit}` : " 0"}</code>
+            <code>ALERTE_767 {repeatCount}{repeatCount > 1 ? ` ${repeatInterval}${intervalUnit}` : " 0"}</code>
             {repeatCount > 1 && (
               <span className="sa-msg-interval-human">
                 = {displayInterval(repeatInterval, intervalUnit as IntervalUnit)} entre chaque diffusion
@@ -390,6 +479,7 @@ function PlanificationStep({
     </div>
   );
 }
+ 
 
 // ═══════════════════════════════════════════════════════════════════════
 // Écran d'accueil
@@ -458,7 +548,7 @@ function ModeSelectionScreen({ onSelect }: { onSelect: (mode: "simple" | "multi"
         </svg>
         <div className="sa-hero-left">
           <div className="sa-hero-badge"><span className="sa-hero-pulse" />Système actif</div>
-          <h1 className="sa-hero-title">Envoyer une alerte</h1>
+          <h1 className="sa-hero-title">Envoyer une diffusion</h1>
           <p className="sa-hero-desc">Déclenchez une diffusion audio vers les sirènes ciblées — en temps réel ou planifiée, simple ou groupée.</p>
         </div>
         <div className="sa-hero-right">
@@ -538,7 +628,10 @@ export default function SendAlerte() {
   const [selectedProvinces, setSelectedProvinces] = useState<number[]>([]);
   const [selectedRegions,   setSelectedRegions]   = useState<number[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<number[]>([]);
-  const [selectedVillages,  setSelectedVillages]  = useState<number[]>([]);
+  const [selectedVillages,  setSelectedVillages]  = useState<number[]>([]);  
+  const [selectedCommunes,  setSelectedCommunes]  = useState<number[]>([]);
+  const [selectedFokontany, setSelectedFokontany] = useState<number[]>([]);
+  
   const [schedule,          setSchedule]          = useState("now");
   const [repeatCount,       setRepeatCount]       = useState(1);
   const [repeatInterval,    setRepeatInterval]    = useState(1);
@@ -564,6 +657,10 @@ export default function SendAlerte() {
   const { data: rawRegions }   = useQuery({ queryKey: ["regions"],                queryFn: () => regionsApi.getAll() });
   const { data: rawDistricts } = useQuery({ queryKey: ["districts"],              queryFn: () => districtsApi.getAll() });
   const { data: rawVillages }  = useQuery({ queryKey: ["villages"],               queryFn: () => villagesApi.getAll() });
+   
+  const { data: rawCommunes }  = useQuery({ queryKey: ["communes"],  queryFn: () => communesApi.getAll() });
+  const { data: rawFokontany } = useQuery({ queryKey: ["fokontany"], queryFn: () => fokontanyApi.getAll() });
+ 
 
   const alertes      = useMemo(() => toArr(rawAlertes).filter((a: any) => !EXCLUDED_ALERTE_NAMES.includes(a.name.toLowerCase())), [rawAlertes]);
   const allTypes     = useMemo(() => toArr(rawTypes),    [rawTypes]);
@@ -574,6 +671,9 @@ export default function SendAlerte() {
   const allRegions   = useMemo(() => toArr(rawRegions),  [rawRegions]);
   const allDistricts = useMemo(() => toArr(rawDistricts),[rawDistricts]);
   const allVillages  = useMemo(() => toArr(rawVillages), [rawVillages]);
+  const allCommunes  = useMemo(() => toArr(rawCommunes),  [rawCommunes]);
+  const allFokontany = useMemo(() => toArr(rawFokontany), [rawFokontany]);
+ 
 
   const types    = useMemo(() => alerteId     ? allTypes.filter((t: any) => Number(t.alerteId)        === alerteId)     : [], [allTypes, alerteId]);
   const cats     = useMemo(() => alerteTypeId ? allCats.filter((c: any)  => Number(c.alerteTypeId)    === alerteTypeId) : [], [allCats, alerteTypeId]);
@@ -623,6 +723,18 @@ export default function SendAlerte() {
   // useMemo(() =>
   //   repeatCount > 1 ? toMinutes(repeatInterval, intervalUnit) : undefined, [repeatCount, repeatInterval, intervalUnit]);
 
+  const { user , isSuperAdmin  } = useAuth();
+  
+  // Priorité du client connecté
+  const isUrgentClient = user?.customer?.priority === "urgent" || isSuperAdmin; 
+  
+  // State priorité alerte — uniquement utile pour les urgents
+  const [alertPriority, setAlertPriority] = useState<"P1" | "P2">("P1");
+
+  const [scheduleNow,   setScheduleNow]   = useState(true);
+  const [scheduleDelay, setScheduleDelay] = useState(1);
+  const [scheduleUnit,  setScheduleUnit]  = useState<ScheduleUnit>("h");
+
   function toggleZone(arr: number[], type: string, id: number) {
     const setters: any = { provinces: setSelectedProvinces, regions: setSelectedRegions, districts: setSelectedDistricts, villages: setSelectedVillages };
     setters[type]((p: number[]) => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
@@ -670,20 +782,25 @@ export default function SendAlerte() {
     onSuccess: (result) => setSuccess({ ...result, mode: "multi" }),
   });
 
-  function buildScheduledDate() {
-    if (schedule === "now") return undefined;
-    return new Date(Date.now() + SCHEDULE_OPTIONS.find(o => o.value === schedule)!.hours * 3600000).toISOString();
+  
+
+    function buildScheduledDate() {
+    if (scheduleNow) return undefined;
+    return new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)).toISOString();
   }
 
   function handleSendSimple() {
-    console.log('intervalInMinutes:',intervalInMinutes)
     sendSimpleMut.mutate({
       alerteId: alerteId!, alerteTypeId: alerteTypeId!,
       categorieAlerteId: categorieId!, sousCategorieAlerteId: sousCategorieId!,
       provinceIds: selectedProvinces, regionIds: selectedRegions,
       districtIds: selectedDistricts, villageIds: selectedVillages,
+      communeIds:   selectedCommunes,
+      fokontanyIds: selectedFokontany,
       repeatCount, repeatInterval: intervalInMinutes   ,
       sendingTimeAfterAlerte: buildScheduledDate(),
+      alertPriority: isUrgentClient ? alertPriority : undefined, 
+      userId: user?.id
     });
   }
 
@@ -695,6 +812,8 @@ export default function SendAlerte() {
       districtIds: selectedDistricts, villageIds: selectedVillages,
       repeatCount, repeatInterval: intervalInMinutes,
       sendingTimeAfterAlerte: buildScheduledDate(),
+      alertPriority: isUrgentClient ? alertPriority : undefined,
+      userId: user?.id
     })));
   }
 
@@ -706,6 +825,9 @@ export default function SendAlerte() {
     setSelectedProvinces([]); setSelectedRegions([]); setSelectedDistricts([]); setSelectedVillages([]);
     setRepeatCount(1); setRepeatInterval(1); setIntervalUnit("min");
     setSchedule("now"); setSuccess(null);
+    setScheduleNow(true); setScheduleDelay(1); setScheduleUnit("h");
+    setSelectedCommunes([]);
+    setSelectedFokontany([]);
   }
 
   function canNext() {
@@ -715,8 +837,8 @@ export default function SendAlerte() {
         case 1: return !!alerteTypeId;
         case 2: return !!categorieId;
         case 3: return !!sousCategorieId;
-        case 4: return (selectedProvinces.length + selectedRegions.length + selectedDistricts.length + selectedVillages.length) > 0;
-        case 5: return !!schedule && repeatCount >= 1;
+        case 4: return (selectedProvinces.length + selectedRegions.length + selectedDistricts.length + selectedCommunes.length  + selectedFokontany.length  + selectedVillages.length) > 0;
+        case 5: return (scheduleNow || scheduleDelay >= 1) && repeatCount >= 1;
         default: return true;
       }
     } else {
@@ -724,7 +846,7 @@ export default function SendAlerte() {
         case 0: return !!alerteId;
         case 1: return !!alerteTypeId;
         case 2: return selections.length > 0;
-        case 3: return (selectedProvinces.length + selectedRegions.length + selectedDistricts.length + selectedVillages.length) > 0;
+        case 3: return (selectedProvinces.length + selectedRegions.length + selectedDistricts.length +  selectedCommunes.length  + selectedFokontany.length  + selectedVillages.length) > 0;
         case 4: return !!schedule && repeatCount >= 1;
         default: return true;
       }
@@ -740,6 +862,8 @@ export default function SendAlerte() {
     selectedProvinces.length ? `${selectedProvinces.length} prov.` : null,
     selectedRegions.length   ? `${selectedRegions.length} rég.`    : null,
     selectedDistricts.length ? `${selectedDistricts.length} dist.` : null,
+    selectedCommunes.length   ? `${selectedCommunes.length} comm.`        : null,
+    selectedFokontany.length  ? `${selectedFokontany.length} fokontany`   : null,
     selectedVillages.length  ? `${selectedVillages.length} vill.`  : null,
   ].filter(Boolean).join(" · ") || "—";
 
@@ -852,10 +976,34 @@ export default function SendAlerte() {
             )}
 
             {mode === "simple" && step === 4 && (
-              <ZonesStep provinces={provinces} filteredRegions={filteredRegions} filteredDistricts={filteredDistricts}
-                filteredVillages={filteredVillages} selectedProvinces={selectedProvinces} selectedRegions={selectedRegions}
-                selectedDistricts={selectedDistricts} selectedVillages={selectedVillages}
-                toggleFn={toggleZone} previewLoading={previewLoading} sireneCount={sireneCount} sirenePrev={sirenePrev} />
+              // <ZonesStep provinces={provinces} filteredRegions={filteredRegions} filteredDistricts={filteredDistricts}
+              //   filteredVillages={filteredVillages} selectedProvinces={selectedProvinces} selectedRegions={selectedRegions}
+              //   selectedDistricts={selectedDistricts} selectedVillages={selectedVillages}
+              //   toggleFn={toggleZone} previewLoading={previewLoading} sireneCount={sireneCount} sirenePrev={sirenePrev} />
+              <ZonesStep
+                provinces={provinces}
+                allRegions={allRegions}
+                allDistricts={allDistricts}
+                allCommunes={allCommunes}
+                allFokontany={allFokontany}
+                allVillages={allVillages}
+                selectedProvinces={selectedProvinces}
+                selectedRegions={selectedRegions}
+                selectedDistricts={selectedDistricts}
+                selectedCommunes={selectedCommunes}
+                selectedFokontany={selectedFokontany}
+                selectedVillages={selectedVillages}
+                setSelectedProvinces={setSelectedProvinces}
+                setSelectedRegions={setSelectedRegions}
+                setSelectedDistricts={setSelectedDistricts}
+                setSelectedCommunes={setSelectedCommunes}
+                setSelectedFokontany={setSelectedFokontany}
+                setSelectedVillages={setSelectedVillages}
+                previewLoading={previewLoading}
+                sireneCount={sireneCount}
+                sirenePrev={sirenePrev}
+              />
+              
             )}
 
             {mode === "simple" && step === 5 && (
@@ -864,6 +1012,12 @@ export default function SendAlerte() {
                 repeatCount={repeatCount} setRepeatCount={setRepeatCount}
                 repeatInterval={repeatInterval} setRepeatInterval={setRepeatInterval}
                 intervalUnit={intervalUnit} setIntervalUnit={setIntervalUnit}
+                isUrgentClient={isUrgentClient}        // ← nouveau
+                alertPriority={alertPriority}          // ← nouveau
+                setAlertPriority={setAlertPriority}    // ← nouveau
+                scheduleNow={scheduleNow}     setScheduleNow={setScheduleNow}
+                scheduleDelay={scheduleDelay} setScheduleDelay={setScheduleDelay}
+                scheduleUnit={scheduleUnit}   setScheduleUnit={setScheduleUnit}
               />
             )}
 
@@ -876,7 +1030,7 @@ export default function SendAlerte() {
                     ["Catégorie",       cats.find((c: any) => c.id === categorieId)?.name],
                     ["Sous-catégorie",  sousCats.find((s: any) => s.id === sousCategorieId)?.name],
                     ["Zones",           zoneSummary],
-                    ["Planification",   selSchedule?.label],
+                    ["Planification",    scheduleNow   ? "Maintenant"  : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — ${toMadagascarTime(new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)))} (Madagascar)`],
                     ["Répétitions",     repeatCount > 1
                       ? `${repeatCount} fois — ${displayInterval(repeatInterval, intervalUnit)} entre chaque`
                       : "1 fois (sans répétition)"],
@@ -904,7 +1058,7 @@ export default function SendAlerte() {
                 <div className="sa-confirm-warning">
                   <AlertTriangle size={15} />
                   <span>
-                    {schedule === "now" ? `${sireneCount} SMS vont être envoyés immédiatement.` : `${sireneCount} SMS seront envoyés ${selSchedule?.label?.toLowerCase()}.`}
+                    {scheduleNow? "Maintenant" : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — ${toMadagascarTime(new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)))} (Madagascar)`}
                     {repeatCount > 1 && ` L'audio sera répété ${repeatCount} fois, toutes les ${displayInterval(repeatInterval, intervalUnit)}.`}
                   </span>
                 </div>
@@ -997,10 +1151,34 @@ export default function SendAlerte() {
             )}
 
             {mode === "multi" && step === 3 && (
-              <ZonesStep provinces={provinces} filteredRegions={filteredRegions} filteredDistricts={filteredDistricts}
-                filteredVillages={filteredVillages} selectedProvinces={selectedProvinces} selectedRegions={selectedRegions}
-                selectedDistricts={selectedDistricts} selectedVillages={selectedVillages}
-                toggleFn={toggleZone} previewLoading={previewLoading} sireneCount={sireneCount} sirenePrev={sirenePrev} />
+              // <ZonesStep provinces={provinces} filteredRegions={filteredRegions} filteredDistricts={filteredDistricts}
+              //   filteredVillages={filteredVillages} selectedProvinces={selectedProvinces} selectedRegions={selectedRegions}
+              //   selectedDistricts={selectedDistricts} selectedVillages={selectedVillages}
+              //   toggleFn={toggleZone} previewLoading={previewLoading} sireneCount={sireneCount} sirenePrev={sirenePrev} />
+              <ZonesStep
+                provinces={provinces}
+                allRegions={allRegions}
+                allDistricts={allDistricts}
+                allCommunes={allCommunes}
+                allFokontany={allFokontany}
+                allVillages={allVillages}
+                selectedProvinces={selectedProvinces}
+                selectedRegions={selectedRegions}
+                selectedDistricts={selectedDistricts}
+                selectedCommunes={selectedCommunes}
+                selectedFokontany={selectedFokontany}
+                selectedVillages={selectedVillages}
+                setSelectedProvinces={setSelectedProvinces}
+                setSelectedRegions={setSelectedRegions}
+                setSelectedDistricts={setSelectedDistricts}
+                setSelectedCommunes={setSelectedCommunes}
+                setSelectedFokontany={setSelectedFokontany}
+                setSelectedVillages={setSelectedVillages}
+                previewLoading={previewLoading}
+                sireneCount={sireneCount}
+                sirenePrev={sirenePrev}
+              />
+              
             )}
 
             {mode === "multi" && step === 4 && (
@@ -1009,7 +1187,13 @@ export default function SendAlerte() {
                 repeatCount={repeatCount} setRepeatCount={setRepeatCount}
                 repeatInterval={repeatInterval} setRepeatInterval={setRepeatInterval}
                 intervalUnit={intervalUnit} setIntervalUnit={setIntervalUnit}
-              />
+                isUrgentClient={isUrgentClient}    
+                alertPriority={alertPriority}       
+                setAlertPriority={setAlertPriority} 
+                scheduleNow={scheduleNow}     setScheduleNow={setScheduleNow}
+                scheduleDelay={scheduleDelay} setScheduleDelay={setScheduleDelay}
+                scheduleUnit={scheduleUnit}   setScheduleUnit={setScheduleUnit}
+             />
             )}
 
             {mode === "multi" && step === 5 && (
@@ -1020,7 +1204,7 @@ export default function SendAlerte() {
                     ["Type",             types.find((t: any) => t.id === alerteTypeId)?.name],
                     ["Sous-catégories",  `${selections.length} sélectionnée${selections.length > 1 ? "s" : ""}`],
                     ["Zones",            zoneSummary],
-                    ["Planification",    selSchedule?.label],
+                    ["Planification",     scheduleNow ? "Maintenant" : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — ${toMadagascarTime(new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)))} (Madagascar)`],
                     ["Répétitions",      repeatCount > 1
                       ? `${repeatCount} fois — ${displayInterval(repeatInterval, intervalUnit)} entre chaque`
                       : "1 fois (sans répétition)"],
@@ -1046,7 +1230,7 @@ export default function SendAlerte() {
                   <AlertTriangle size={15} />
                   <span>
                     {selections.length} alerte{selections.length > 1 ? "s" : ""} × {sireneCount} sirène{sireneCount > 1 ? "s" : ""} = <strong>{sireneCount * selections.length} SMS</strong>
-                    {schedule === "now" ? " envoyés immédiatement." : ` ${selSchedule?.label?.toLowerCase()}.`}
+                    {scheduleNow? "Maintenant" : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — ${toMadagascarTime(new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)))} (Madagascar)`}
                     {repeatCount > 1 && ` Répété ${repeatCount} fois, toutes les ${displayInterval(repeatInterval, intervalUnit)}.`}
                   </span>
                 </div>

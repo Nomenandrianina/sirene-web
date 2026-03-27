@@ -7,6 +7,8 @@ import { Region } from '../regions/entities/region.entity';
 import { District } from '../districts/entities/district.entity';
 import { CreateVillageDto } from './dto/create-village.dto';
 import { UpdateVillageDto } from './dto/update-village.dto';
+import { Commune } from '@/commune/entities/commune.entity';
+import { Fokontany } from '@/fokontany/entities/fokontany.entity';
 
 @Injectable()
 export class VillagesService {
@@ -22,9 +24,18 @@ export class VillagesService {
 
     @InjectRepository(District)
     private readonly districtRepository: Repository<District>,
+
+    @InjectRepository(Commune)
+    private readonly communeRepository: Repository<Commune>,
+
+    @InjectRepository(Fokontany)
+    private readonly fokontanyRepository: Repository<Fokontany>,
   ) {}
 
   async create(createVillageDto: CreateVillageDto): Promise<Village> {
+
+    console.log('CreateVillageDto',createVillageDto.fokontanyId);
+    console.log('CreateVillageDto',createVillageDto.communeId);
     const province = await this.provinceRepository.findOne({
       where: { id: createVillageDto.provinceId },
     });
@@ -45,6 +56,21 @@ export class VillagesService {
     if (!district) {
       throw new NotFoundException(`District #${createVillageDto.districtId} not found`);
     }
+    
+    const commune = await this.communeRepository.findOne({
+      where: { id: createVillageDto.communeId },
+    });
+    if (!commune) {
+      throw new NotFoundException(`Commune #${createVillageDto.communeId} not found`);
+    }
+
+    const fokontany = await this.fokontanyRepository.findOne({
+      where: { id: createVillageDto.fokontanyId },
+    });
+    if (!fokontany) {
+      throw new NotFoundException(`Commune #${createVillageDto.fokontanyId} not found`);
+    }
+
 
     const village = this.villageRepository.create({
       name: createVillageDto.name,
@@ -53,6 +79,8 @@ export class VillagesService {
       province,
       region,
       district: district,
+      commune: commune,
+      fokontany: fokontany
     });
     return await this.villageRepository.save(village);
   }
@@ -112,6 +140,26 @@ export class VillagesService {
         throw new NotFoundException(`District #${updateVillageDto.districtId} not found`);
       }
       village.district = district;
+    }
+
+    if (updateVillageDto.communeId) {
+      const commune = await this.communeRepository.findOne({
+        where: { id: updateVillageDto.communeId },
+      });
+      if (!commune) {
+        throw new NotFoundException(`Commune #${updateVillageDto.communeId} not found`);
+      }
+      village.commune = commune;
+    }
+   
+    if (updateVillageDto.fokontanyId) {
+      const fokontany = await this.fokontanyRepository.findOne({
+        where: { id: updateVillageDto.fokontanyId },
+      });
+      if (!fokontany) {
+        throw new NotFoundException(`Fokontant #${updateVillageDto.fokontanyId} not found`);
+      }
+      village.fokontany = fokontany;
     }
 
     return await this.villageRepository.save(village);

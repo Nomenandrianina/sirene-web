@@ -41,9 +41,14 @@ export class ProvincesController {
 
   
   @Audit('DELETE', 'Province')
-  @Delete(':id')
   @RequirePermission('provinces:delete')
-  remove(@Param('id') id: string) {
-    return this.provincesService.remove(+id);
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.provincesService.remove(+id);
+  
+    return {
+      success: true,
+      message: 'Province supprimée avec succès',
+    };
   }
 }
