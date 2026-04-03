@@ -326,7 +326,7 @@ export default function Dashboard() {
                             {n.message}
                           </td>
                           <td style={{ padding: "11px 16px", color: "#475569" }}>
-                            {n.sirene?.imei ?? n.sireneId ?? "—"}
+                            {n.sirene?.name ?? n.sireneId ?? "—"}
                           </td>
                           <td style={{ padding: "11px 16px", color: "#475569" }}>
                             {n.phoneNumber ?? "—"}

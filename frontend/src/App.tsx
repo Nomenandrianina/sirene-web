@@ -54,8 +54,10 @@ import CommuneList   from "@/pages/commune/CommuneList";
 import CommuneCreate from "./pages/commune/CommuneCreate";
 import CommuneEdit from "./pages/commune/CommuneEdit";
 import FokontanyList from "./pages/fokontany/FokontanyList";
-import FokontanyCreate from "./pages/fokontany/fokontanyCreate";
-import FokontanyEdit from "./pages/fokontany/fokontanyEdit";
+import FokontanyCreate from "./pages/fokontany/FokontanyCreate";
+import FokontanyEdit from "./pages/fokontany/FokontanyEdit";
+import AlerteAudioChooseMode from "./pages/alerteaudio/Alerteaudiochoosemode";
+import AlerteAudioRecord from "./pages/alerteaudio/Alerteaudiorecord";
 
 const queryClient = new QueryClient();
 
@@ -109,7 +111,9 @@ const App = () => (
               <Route path="/sous-categorie-alertes/create"   element={<ProtectedRoute><SousCategorieAlerteCreate /></ProtectedRoute>} />
               <Route path="/sous-categorie-alertes/:id/edit" element={<ProtectedRoute><SousCategorieAlerteEdit /></ProtectedRoute>} />
               <Route path="/alerte-audios"       element={<ProtectedRoute><AlerteAudioList /></ProtectedRoute>} />
-              <Route path="/alerte-audios/create"   element={<ProtectedRoute><AlerteAudioCreate /></ProtectedRoute>} />
+              <Route path="/alerte-audios/create"   element={<ProtectedRoute><AlerteAudioChooseMode /></ProtectedRoute>} />
+              <Route path="/alerte-audios/create/upload"   element={<ProtectedRoute><AlerteAudioCreate /></ProtectedRoute>} />
+              <Route path="/alerte-audios/create/record"   element={<ProtectedRoute><AlerteAudioRecord /></ProtectedRoute>} />
               <Route path="/alerte-audios/:id/edit" element={<ProtectedRoute><AlerteAudioEdit /></ProtectedRoute>} />
               <Route path="/notifications"       element={<ProtectedRoute><NotificationList /></ProtectedRoute>} />
               <Route path="/communes"       element={<ProtectedRoute><CommuneList /></ProtectedRoute>} />

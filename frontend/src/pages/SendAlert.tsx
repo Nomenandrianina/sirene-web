@@ -1030,8 +1030,11 @@ export default function SendAlerte() {
                     ["Catégorie",       cats.find((c: any) => c.id === categorieId)?.name],
                     ["Sous-catégorie",  sousCats.find((s: any) => s.id === sousCategorieId)?.name],
                     ["Zones",           zoneSummary],
-                    ["Planification",    scheduleNow   ? "Maintenant"  : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — ${toMadagascarTime(new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)))} (Madagascar)`],
-                    ["Répétitions",     repeatCount > 1
+                    ["Planification", scheduleNow
+                    ? "Maintenant — SMS envoyé immédiatement"
+                    : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — date incluse dans le message, SMS envoyé immédiatement`
+                  ],
+                                      ["Répétitions",     repeatCount > 1
                       ? `${repeatCount} fois — ${displayInterval(repeatInterval, intervalUnit)} entre chaque`
                       : "1 fois (sans répétition)"],
                     ["Sirènes ciblées", previewLoading ? "…" : `${sireneCount} sirène${sireneCount > 1 ? "s" : ""}`],
@@ -1204,8 +1207,11 @@ export default function SendAlerte() {
                     ["Type",             types.find((t: any) => t.id === alerteTypeId)?.name],
                     ["Sous-catégories",  `${selections.length} sélectionnée${selections.length > 1 ? "s" : ""}`],
                     ["Zones",            zoneSummary],
-                    ["Planification",     scheduleNow ? "Maintenant" : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — ${toMadagascarTime(new Date(Date.now() + delayToMs(scheduleDelay, scheduleUnit)))} (Madagascar)`],
-                    ["Répétitions",      repeatCount > 1
+                    ["Planification", scheduleNow
+                    ? "Maintenant — SMS envoyé immédiatement"
+                    : `Dans ${scheduleDelay} ${scheduleUnit === "min" ? "minute(s)" : "heure(s)"} — date incluse dans le message, SMS envoyé immédiatement`
+                  ],
+                                      ["Répétitions",      repeatCount > 1
                       ? `${repeatCount} fois — ${displayInterval(repeatInterval, intervalUnit)} entre chaque`
                       : "1 fois (sans répétition)"],
                     ["Sirènes ciblées",  previewLoading ? "…" : `${sireneCount} sirène${sireneCount > 1 ? "s" : ""}`],

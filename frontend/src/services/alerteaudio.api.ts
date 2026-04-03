@@ -1,4 +1,4 @@
-import { AlerteAudio } from '@/types/alerteAudio';
+import { AlerteAudio, UsedCombination } from '@/types/alerteAudio';
 import { get, post, patch, del } from './base';
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 const token = () => localStorage.getItem("access_token") ?? "";
@@ -76,4 +76,7 @@ export const alerteAudiosApi = {
       const normalized = audioPath.replace(/\\/g, "/");
       return `${BASE.replace("/api", "")}/${normalized}`;
     },
+
+    getUsedCombinations: () => get<UsedCombination[]>("/alerte-audios/used-combinations"),
+
 };

@@ -33,10 +33,10 @@ export class AlerteAudio {
   @Column({ name: "duration", type: "float", nullable: true })
   duration: number | null;
 
-  @Column({ name: 'sous_categorie_alerte_id' })
+   @Column({ name: 'sous_categorie_alerte_id' })
   sousCategorieAlerteId: number;
 
-  @Column({ name: 'sirene_id' })
+  @Column({ name: 'sirene_id' , nullable: true})
   sireneId: number;
 
   
