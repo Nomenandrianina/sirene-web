@@ -12,3 +12,8 @@ export interface AlerteAudio {
   Sirene?: {id:number;vname:string}
   createdAt?: string;
 }
+
+export interface UsedCombination {
+  sousCategorieId: number;
+  sireneId:        number;
+}

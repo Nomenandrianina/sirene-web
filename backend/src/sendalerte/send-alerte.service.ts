@@ -29,18 +29,22 @@ export class SendAlerteService {
   // ── Construction du message ──────────────────────────────────────────────
   // Format : "<mobileId> <repeatCount>"
   //       ou "<mobileId> <repeatCount> <repeatInterval>" si repeatCount > 1
-  private buildMessage(
-    mobileId: string,
-    repeatCount = 1,
-    repeatInterval?: number,        // ← string maintenant ex: "5min", "2h", "1j", "0"
-    priority: 'P1' | 'P2' = 'P2',  // ← nouveau
-  ): string {
+ // ── Construction du message ──────────────────────────────────────────────
+  private buildMessage(mobileId: string,repeatCount = 1,repeatInterval?: number,priority: 'P1' | 'P2' = 'P2', scheduledDate?: Date ): string {
+    // Format de la date : 2026-04-03T10:49  (sans secondes, sans timezone)
+    const datePart = scheduledDate
+      ? ' ' + scheduledDate.toISOString().slice(0, 16)   // "2026-04-03T10:49"
+      : ' ' + new Date().toISOString().slice(0, 16);     // date courante si "maintenant"
+
+      console.log('datePart',datePart)
+
     if (repeatCount <= 1) {
-      return `${mobileId} ${repeatCount} 0 ${priority}`;
+      return `${mobileId} ${repeatCount} 0 ${priority}${datePart}`;
     }
-    return `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}`;
+    return `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${datePart}`;
   }
- 
+
+
   async sendAlerte(dto: SendAlerteDto): Promise<{ created: number; sent: number; planned: number }> {
     const {
       sousCategorieAlerteId,
@@ -134,16 +138,16 @@ export class SendAlerteService {
     if (!sirenes.length) {
       throw new BadRequestException('Aucune sirène active trouvée dans les zones sélectionnées');
     }
-   
+    
+    const scheduledDate = dto.sendingTimeAfterAlerte
+    ? new Date(dto.sendingTimeAfterAlerte)
+    : new Date();
+
     // 5. Construction du message avec répétition + priorité
     const mobileId = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
-    const message  = this.buildMessage(mobileId, repeatCount, repeatInterval, finalPriority);
+    const message  = this.buildMessage(mobileId, repeatCount, repeatInterval, finalPriority,scheduledDate );
    
     // Exemples de messages générés :
-    // Client normal,  1 répétition  → "ALERTE_767 1 0 P2"
-    // Client normal,  3 répétitions → "ALERTE_767 3 5min P2"
-    // Client urgent,  choisit P1    → "ALERTE_767 3 5min P1"
-    // Client urgent,  choisit P2    → "ALERTE_767 3 5min P2"
    
     const isNow    = !sendingTimeAfterAlerte;
     const planDate = sendingTimeAfterAlerte ? new Date(sendingTimeAfterAlerte) : null;
@@ -153,26 +157,23 @@ export class SendAlerteService {
     // 6. Créer une notification par sirène
     for (const sirene of sirenes) {
       const notif = new Notification();
-      notif.message                = message;
-      notif.sireneId               = sirene.id;
-      notif.sousCategorieAlerteId  = sousCategorieAlerteId;
-      notif.alerteAudioId          = audio?.id ?? null;
-      notif.phoneNumber            = sirene.phoneNumberBrain;
-      notif.operator               = 'Orange';
-      notif.type                   = sousCat.name;
-      notif.userId                 = userId ?? null;
-      notif.status                 = NotificationStatus.PENDING;
-      notif.sendingTimeAfterAlerte = planDate ?? null;
-      notif.sendingTime            = isNow ? new Date() : null;
-   
-      const saved: Notification = await this.notifRepo.save(notif);
-   
-      if (isNow) {
-        await this.dispatchSms(saved);
-        sent++;
-      } else {
-        planned++;
-      }
+      notif.message               = message;
+      notif.sireneId              = sirene.id;
+      notif.sousCategorieAlerteId = sousCategorieAlerteId;
+      notif.alerteAudioId         = audio?.id ?? null;
+      notif.phoneNumber           = sirene.phoneNumberBrain;
+      notif.operator              = 'Orange';
+      notif.type                  = sousCat.name;
+      notif.userId                = userId ?? null;
+      notif.status                = NotificationStatus.PENDING;
+      notif.sendingTimeAfterAlerte = dto.sendingTimeAfterAlerte
+        ? new Date(dto.sendingTimeAfterAlerte)
+        : null;
+      notif.sendingTime           = new Date();
+  
+      const saved = await this.notifRepo.save(notif);
+      await this.dispatchSms(saved);   // ← toujours envoyé immédiatement
+      sent++;
     }
    
     return { created: sirenes.length, sent, planned };

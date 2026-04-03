@@ -81,12 +81,12 @@ export default function Login() {
         </h1>
 
         <p className="hero-desc">
-          Plateforme centralisée de gestion et de déclenchement des alertes
+          Plateforme centralisée de gestion et de déclenchement des alertes et communication
           vers les sirènes réparties sur l'ensemble du territoire malgache.
         </p>
 
         <div className="features">
-          <div className="feature-item">
+          {/* <div className="feature-item">
             <div className="feature-icon">
               <MapPin size={15} color="#5ab4e0" />
             </div>
@@ -103,7 +103,7 @@ export default function Login() {
               <span style={{ fontSize: 13 }}>🌊</span>
             </div>
             Couverture nationale — cyclones, tsunamis, inondations
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export default function Login() {
               <div className="card-icon">
                 <Radio size={24} color="#f5c518" />
               </div>
-              <div className="card-title">Sirène Web</div>
+              <div className="card-title">Allô Mitao </div>
               <div className="card-desc">
                 Connectez-vous pour accéder au tableau de bord
               </div>

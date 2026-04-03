@@ -19,7 +19,7 @@ interface NavItem {
 
 const mainItems: NavItem[] = [
   { title: "Dashboard",          url: "/",                icon: LayoutDashboard },
-  { title: "Envoyer une alerte", url: "/alertes/envoyer", icon: AlertTriangle,  permission: "send-alerte:execute" },
+  { title: "Envoyer une diffusion", url: "/alertes/envoyer", icon: AlertTriangle,  permission: "send-alerte:execute" },
   { title: "Sirènes",            url: "/sirenes",         icon: Radio,          permission: "sirenes:read" },
 ];
 

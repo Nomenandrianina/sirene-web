@@ -25,7 +25,7 @@ interface UtilisateurFormProps {
 }
 
 // Noms de rôles considérés comme "superadmin" — pas besoin de client
-const SUPERADMIN_ROLE_NAMES = ["superadmin", "super-admin", "super_admin", "admin"];
+const SUPERADMIN_ROLE_NAMES = ["superadmin", "super-admin", "super_admin"];
 
 export function UtilisateurForm({
   initialData,
