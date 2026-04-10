@@ -33,6 +33,22 @@ export class SirenesService {
     return qb.getMany();
   }
 
+
+  async findAllWithoutfilter(): Promise<Sirene[]> {
+    return this.sireneRepo.find({
+      relations: [
+        'village',
+        'village.fokontany',
+        'village.fokontany.commune',
+        'village.fokontany.commune.district',
+        'village.fokontany.commune.district.region',
+        'village.fokontany.commune.district.region.province',
+        'customers',
+      ],
+      order: { name: 'ASC' },
+    });
+  }
+
   async findOne(id: number) {
     const s = await this.sireneRepo.findOne({
       where:     { id },
@@ -100,6 +116,23 @@ export class SirenesService {
     });
   }
  
+
+  async findAllForMap(isSuperAdmin: boolean, customerId?: number) {
+    const sirenes = await this.sireneRepo.find({
+      relations: ['customers', 'village', 'village.fokontany', 'village.fokontany.commune', 'village.fokontany.commune.district'],
+    });
+  
+    return sirenes.map((s) => {
+      const isOwned = isSuperAdmin
+        ? true
+        : s.customers?.some(c => c.id === customerId);
+  
+      return {
+        ...s,
+        isOwned, // 🔥 IMPORTANT
+      };
+    });
+  }
 
   // ── Historique alertes ────────────────────────────────────────────────
   // Retourne les logs d'audit de type alerte pour cette sirène

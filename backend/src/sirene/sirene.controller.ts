@@ -15,12 +15,25 @@ class SendAlertDto {
 export class SirenesController {
   constructor(private readonly sirenesService: SirenesService,private readonly smsService: SmsService) {}
 
+  @Get('all')
+  findAllNoFilter() {
+    return this.sirenesService.findAllWithoutfilter();
+  }
+
   @Get()
   findAll(@Request() req) {
     const user         = req.user;
     const isSuperAdmin = user.isSuperAdmin ?? user.role?.name === 'superadmin';
     const customerId   = user.customerId   ?? user.customer?.id;
     return this.sirenesService.findAll(isSuperAdmin, customerId);
+  } 
+  
+  @Get('getallformap')
+  findAllForMap(@Request() req) {
+    const user         = req.user;
+    const isSuperAdmin = user.isSuperAdmin ?? user.role?.name === 'superadmin';
+    const customerId   = user.customerId   ?? user.customer?.id;
+    return this.sirenesService.findAllForMap(isSuperAdmin, customerId);
   } 
 
   

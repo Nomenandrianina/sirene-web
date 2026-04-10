@@ -58,6 +58,10 @@ import FokontanyCreate from "./pages/fokontany/FokontanyCreate";
 import FokontanyEdit from "./pages/fokontany/FokontanyEdit";
 import AlerteAudioChooseMode from "./pages/alerteaudio/Alerteaudiochoosemode";
 import AlerteAudioRecord from "./pages/alerteaudio/Alerteaudiorecord";
+import SireneMap from "./pages/sirene/SireneMap";
+import PackTypeAdminPage from "./pages/packType/PackTypeAdminPage";
+import MesSouscriptionsPage from "./pages/packType/MesSouscriptionsPage";
+import AdminSouscriptionsPage from "./pages/souscription/Adminsouscriptionspage";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +126,10 @@ const App = () => (
               <Route path="/fokontany"       element={<ProtectedRoute><FokontanyList /></ProtectedRoute>} />
               <Route path="/fokontany/create"   element={<ProtectedRoute><FokontanyCreate /></ProtectedRoute>} />
               <Route path="/fokontany/:id/edit" element={<ProtectedRoute><FokontanyEdit /></ProtectedRoute>} />
+              <Route path="/map" element={<ProtectedRoute><SireneMap /></ProtectedRoute>} />
+              <Route path="/pack" element={<ProtectedRoute><PackTypeAdminPage /></ProtectedRoute>} />
+              <Route path="/souscription" element={<ProtectedRoute><MesSouscriptionsPage /></ProtectedRoute>} />
+              <Route path="/souscriptionsadmins" element={<ProtectedRoute><AdminSouscriptionsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
         </TooltipProvider>

@@ -16,11 +16,12 @@ export interface CreateSireneDto {
 export interface UpdateSireneDto extends Partial<CreateSireneDto> {}
 
 export const sirenesApi = {
-getAll:      ()                              => get<Sirene[]>('/sirenes'),
-getAvalaibleMessage:      ()                              => get<any>('/sirenes/messageavailable'),
-getById:     (id: number)                   => get<Sirene>(`/sirenes/${id}`),
-create:      (data: CreateSireneDto)        => post<Sirene>('/sirenes', data),
-update:      (id: number, data: UpdateSireneDto) => patch<Sirene>(`/sirenes/${id}`, data),
-remove:      (id: number)                   => del<void>(`/sirenes/${id}`),
-sendAlert:   (id: number, message: string)  => post<any>(`/sirenes/${id}/alert`, { message }),
+  getAllForMap:      ()                              => get<Sirene[]>('/sirenes/getallformap'),
+  getAll:      ()                              => get<Sirene[]>('/sirenes'),
+  getAvalaibleMessage:      ()                              => get<any>('/sirenes/messageavailable'),
+  getById:     (id: number)                   => get<Sirene>(`/sirenes/${id}`),
+  create:      (data: CreateSireneDto)        => post<Sirene>('/sirenes', data),
+  update:      (id: number, data: UpdateSireneDto) => patch<Sirene>(`/sirenes/${id}`, data),
+  remove:      (id: number)                   => del<void>(`/sirenes/${id}`),
+  sendAlert:   (id: number, message: string)  => post<any>(`/sirenes/${id}/alert`, { message }),
 };
