@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, AlertTriangle, Radio,
   Bell, Users, Building2, MapPin, LogOut, ChevronLeft,
-  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,
+  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,8 +19,11 @@ interface NavItem {
 
 const mainItems: NavItem[] = [
   { title: "Dashboard",          url: "/",                icon: LayoutDashboard },
+  { title: "Cartographie",          url: "/map",                icon: MapPinCheckInside },
   { title: "Envoyer une diffusion", url: "/alertes/envoyer", icon: AlertTriangle,  permission: "send-alerte:execute" },
   { title: "Sirènes",            url: "/sirenes",         icon: Radio,          permission: "sirenes:read" },
+  { title: "Pack",            url: "/pack",         icon: Radio,          permission: "sirenes:read" },
+  { title: "Souscription",            url: "/souscription",         icon: Radio},
 ];
 
 const dataItems: NavItem[] = [

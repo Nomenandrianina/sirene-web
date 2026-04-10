@@ -8,6 +8,7 @@ export interface Sirene {
     longitude:        string | null;
     phoneNumberBrain: string | null;
     phoneNumberRelai: string | null;
+    communication_type: string | null;
     villageId:        number;
     isActive:         number;
     village?:         { id: number; name: string; latitude: string; longitude: string };

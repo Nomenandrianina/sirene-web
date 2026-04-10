@@ -44,6 +44,14 @@ export class Sirene {
   })
   customers: Customer[];
 
+  @Column({
+    name: 'communication_type',
+    type: 'enum',
+    enum: ['SMS', 'DATA'],
+    default: 'SMS'
+  })
+  communicationType: 'SMS' | 'DATA';
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
   
@@ -53,5 +61,4 @@ export class Sirene {
 
   @OneToMany(() => Notification, (notification) => notification.sirene)
   notifications: Notification[];
-
 }
