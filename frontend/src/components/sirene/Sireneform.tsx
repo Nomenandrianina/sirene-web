@@ -254,6 +254,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
     villageId:        initialData?.villageId        ?? 0,
     isActive:         initialData?.isActive         ?? 1,
     customerIds:      initialData?.customerIds      ?? [],
+    communicationType: initialData?.communicationType ?? "SMS", 
   });
 
   const [latInput, setLatInput] = useState(initialData?.latitude  ?? "");
@@ -276,6 +277,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
         villageId:        initialData.villageId        ?? 0,
         isActive:         initialData.isActive         ?? 1,
         customerIds:      initialData.customerIds      ?? [],
+        communicationType: initialData.communicationType ?? "SMS", 
       });
       setLatInput(initialData.latitude  ?? "");
       setLngInput(initialData.longitude ?? "");
@@ -576,6 +578,26 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
                 placeholder="+261340533456"
                 className={phoneErrors.relai ? inputErrCls : inputCls}
               />
+            </Field>
+
+            <Field label="Type de communication">
+              <div className="flex gap-2">
+                {(["SMS", "DATA"] as const).map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => set("communicationType", type)}
+                    className={[
+                      "flex-1 py-2.5 rounded-lg border text-sm font-medium transition",
+                      form.communicationType === type
+                        ? "bg-sky-600 border-sky-600 text-white shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300",
+                    ].join(" ")}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
             </Field>
 
           </div>

@@ -10,31 +10,40 @@ const token = () => localStorage.getItem("access_token") ?? "";
   };
 
   async function postAudio(dto: CreateAudioDTO, file: File): Promise<AlerteAudio> {
-      const fd = new FormData();
-      fd.append("file", file);
-      
-      // Ajout important : Boucler sur les sireneIds
-      if (dto.sireneIds && Array.isArray(dto.sireneIds)) {
-          dto.sireneIds.forEach(id => {
-              fd.append("sireneIds", String(id));
-          });
-      }
+    const fd = new FormData();
+    fd.append("file", file);
+  
+    // Sirènes
+    if (dto.sireneIds && Array.isArray(dto.sireneIds)) {
+      dto.sireneIds.forEach(id => fd.append("sireneIds", String(id)));
+    }
+  
+    fd.append("mobileId",              dto.mobileId || "");
+    fd.append("sousCategorieAlerteId", String(dto.sousCategorieAlerteId));
 
-      fd.append("mobileId", dto.mobileId || "");
-      fd.append("sousCategorieAlerteId", String(dto.sousCategorieAlerteId));
-      
-      if (dto.name)         fd.append("name", dto.name);
-      if (dto.description)  fd.append("description", dto.description);
-      if (dto.duration)     fd.append("duration", String(dto.duration));
-    
-      const res = await fetch(`${BASE}/alerte-audios`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token()}` },
-        body: fd,
-      });
-      
-      if (!res.ok) throw new Error((await res.json())?.message || "Erreur création");
-      return res.json();
+    console.log('dto',dto)
+    console.log('dto.newSousCatName',dto.newSousCatName)
+  
+    if (dto.name)              fd.append("name",              dto.name);
+    if (dto.description)       fd.append("description",       dto.description);
+    if (dto.duration)          fd.append("duration",          String(dto.duration));
+  
+    // ── Champs manquants ──────────────────────────────────────────────────────
+    if (dto.customerId != null) fd.append("customerId",        String(dto.customerId));
+    if (dto.alerteId)           fd.append("alerteId",          String(dto.alerteId));
+    if (dto.alerteTypeId)       fd.append("alerteTypeId",      String(dto.alerteTypeId));
+    if (dto.categorieAlerteId)  fd.append("categorieAlerteId", String(dto.categorieAlerteId));
+    if (dto.newSousCatName)     fd.append("newSousCatName",    dto.newSousCatName);
+    // ─────────────────────────────────────────────────────────────────────────
+  
+    const res = await fetch(`${BASE}/alerte-audios`, {
+      method:  "POST",
+      headers: { Authorization: `Bearer ${token()}` },
+      body:    fd,
+    });
+  
+    if (!res.ok) throw new Error((await res.json())?.message || "Erreur création");
+    return res.json();
   }
 
   async function patchAudio( id: number, dto: Partial<CreateAudioDTO>, file?: File): Promise<AlerteAudio> {
@@ -63,8 +72,9 @@ const token = () => localStorage.getItem("access_token") ?? "";
 
   
 export const alerteAudiosApi = {
-    getAll:   (sousCategorieAlerteId?: number) =>
+    getAll:   (sousCategorieAlerteId?: number ) =>
     get(`/alerte-audios${sousCategorieAlerteId ? `?sousCategorieAlerteId=${sousCategorieAlerteId}` : ""}`),
+    getAllByCustomer: (customerId?: string) => get(`/alerte-audios/findAllbycustumer${customerId ? `?customerId=${customerId}` : ''}`),
     getById:  (id: number) => get(`/alerte-audios/${id}`),
     create:   postAudio,
     update:   patchAudio,

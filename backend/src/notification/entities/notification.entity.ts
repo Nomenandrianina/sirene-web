@@ -2,6 +2,7 @@ import { AlerteAudio } from "@/alerte-audio/entities/alerte-audio.entity";
 import { Sirene } from "@/sirene/entities/sirene.entity";
 import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
 import { User } from "@/users/entities/user.entity";
+import { Customer } from "src/customers/entity/customer.entity";
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from "typeorm";
 
 export enum NotificationStatus {
@@ -66,8 +67,11 @@ export class Notification {
   @JoinColumn({ name: "sirene_id" })
   sirene: Sirene;
 
-  @Column({ name: "sous_categorie_alerte_id" })
-  sousCategorieAlerteId: number;
+  @Column({ name: "souscription_id" ,nullable: true,})
+  souscriptionId: number;
+
+  @Column({ name: "sous_categorie_alerte_id"  ,nullable: true,})
+  sousCategorieAlerteId: number | null;
 
   @ManyToOne(() => SousCategorieAlerte, { nullable: true, onDelete: "NO ACTION" })
   @JoinColumn({ name: "sous_categorie_alerte_id" })
@@ -78,10 +82,17 @@ export class Notification {
 
   @Column({ name: "user_id", type: "int", nullable: true })
   userId: number | null;
+  
+  @Column({ name: "customer_id", type: "int", nullable: true })
+  customerId: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: "NO ACTION" })
   @JoinColumn({ name: "user_id" })
   user: User;
+  
+  @ManyToOne(() => Customer, { nullable: true, onDelete: "NO ACTION" })
+  @JoinColumn({ name: "customer_id" })
+  Customer: Customer;
 
   @Column({ type: "varchar", length: 255, nullable: true })
   observation: string | null;

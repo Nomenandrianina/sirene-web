@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Pencil, Trash2, Loader2, ChevronRight, AlertCircle } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2, ChevronRight, AlertCircle, ChevronLeft } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { communesApi } from "@/services/commune.api";
 import { provincesApi } from "@/services/province.api";
@@ -63,6 +63,10 @@ export default function CommuneList() {
   const [toDelete,   setToDelete]   = useState<Commune | null>(null);
   const [deleteError, setDeleteError] = useState("");
 
+  const ITEMS_PER_PAGE = 15;
+
+  const [page, setPage] = useState(1);
+
   // ── Données ────────────────────────────────────────────────────────────────
   const { data: rawCommunes, isLoading } = useQuery({
     queryKey: ["communes"],
@@ -100,6 +104,16 @@ export default function CommuneList() {
     const matchProv   = filterProv ? Number((c as any).district?.region?.province?.id) === filterProv : true;
     return matchSearch && matchDist && matchReg && matchProv;
   });
+  
+  // ✅ même logique que RegionList
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  
+  const paginated = filtered.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+
 
   // ── Suppression ────────────────────────────────────────────────────────────
   const deleteMut = useMutation({
@@ -116,6 +130,10 @@ export default function CommuneList() {
   const selectCls =
     "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 " +
     "focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition";
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterProv, filterReg, filterDist]);
 
   // ── Rendu ──────────────────────────────────────────────────────────────────
   return (
@@ -226,7 +244,7 @@ export default function CommuneList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map(commune => {
+                  {paginated.map(commune => {
                     const district = (commune as any).district;
                     const region   = district?.region;
                     const province = region?.province;
@@ -299,6 +317,55 @@ export default function CommuneList() {
                 </tbody>
               </table>
             )}
+
+          {!isLoading && filtered.length > ITEMS_PER_PAGE && (
+            <div className="pagination">
+              <span className="pagination-info">
+                {(page - 1) * ITEMS_PER_PAGE + 1}–
+                {Math.min(page * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length}
+              </span>
+
+              <div className="pagination-controls">
+                <button
+                  className="page-btn"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  <ChevronLeft size={15} />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                  .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === "..." ? (
+                      <span key={`d${i}`} className="page-dots">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        className={`page-btn${page === p ? " active" : ""}`}
+                        onClick={() => setPage(p as number)}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+
+                <button
+                  className="page-btn"
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
 
             {/* Footer compteur */}
             {!isLoading && filtered.length > 0 && (

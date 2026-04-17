@@ -10,6 +10,7 @@ import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 import "@/styles/alerte-audio.css";
 import { CanDo } from "@/components/Cando";
+import { useRole } from "@/hooks/useRole";
 
 const PER_PAGE = 10;
 
@@ -187,6 +188,7 @@ export default function AlerteAudioList() {
   // ── Lecteur global ─────────────────────────────────────────────────
   const audioRef               = useRef<HTMLAudioElement | null>(null);
   const [player, setPlayer]    = useState<PlayerState | null>(null);
+  const { isSuperAdmin, customerId } = useRole();
 
   // Nettoyage à démontage
   useEffect(() => {
@@ -282,7 +284,8 @@ export default function AlerteAudioList() {
   // ── Données ────────────────────────────────────────────────────────
   const { data: raw, isLoading } = useQuery({
     queryKey: ["alerte-audios"],
-    queryFn:  () => alerteAudiosApi.getAll(),
+    queryFn:  () =>   isSuperAdmin  ? alerteAudiosApi.getAll()                                
+    : alerteAudiosApi.getAllByCustomer(customerId),
   });
   const items: AlerteAudio[] = Array.isArray(raw) ? raw : (raw as any)?.response ?? [];
 

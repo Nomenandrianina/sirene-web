@@ -216,7 +216,7 @@ export class UsersService {
     async findOneWithRoleAndPermissions(userId: number) {
         return this.usersRepository.findOne({
             where: { id: userId },
-            relations: ['role', 'role.permissions'], 
+            relations: ['role', 'role.permissions','customer'], 
         });
     }
 

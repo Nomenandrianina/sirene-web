@@ -11,12 +11,14 @@ export interface CreateSireneDto {
     villageId:         number;
     isActive?:         number;
     customerIds?:      number[];
+    communicationType?:      string;
   }
 
 export interface UpdateSireneDto extends Partial<CreateSireneDto> {}
 
 export const sirenesApi = {
   getAllForMap:      ()                              => get<Sirene[]>('/sirenes/getallformap'),
+  getAllwithoutfilter:      ()                              => get<Sirene[]>('/sirenes/all'),
   getAll:      ()                              => get<Sirene[]>('/sirenes'),
   getAvalaibleMessage:      ()                              => get<any>('/sirenes/messageavailable'),
   getById:     (id: number)                   => get<Sirene>(`/sirenes/${id}`),

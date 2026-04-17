@@ -59,15 +59,17 @@ export class SirenesService {
   }
 
   async create(dto: CreateSireneDto, userId: number) {
+
     const sirene = this.sireneRepo.create({
-      name:             dto.name,
-      imei:             dto.imei,
-      latitude:         dto.latitude,
-      longitude:        dto.longitude,
-      phoneNumberBrain: dto.phoneNumberBrain,
-      phoneNumberRelai: dto.phoneNumberRelai,
-      villageId:        dto.villageId,
-      isActive:         dto.isActive ?? 1,
+      name:              dto.name,
+      imei:              dto.imei,
+      latitude:          dto.latitude,
+      longitude:         dto.longitude,
+      phoneNumberBrain:  dto.phoneNumberBrain,
+      phoneNumberRelai:  dto.phoneNumberRelai,
+      villageId:         dto.villageId,
+      isActive:          dto.isActive,
+      communicationType: dto.communicationType,  // ← ajout
     });
 
     if (dto.customerIds?.length) {
@@ -91,6 +93,7 @@ export class SirenesService {
       phoneNumberRelai: dto.phoneNumberRelai ?? sirene.phoneNumberRelai,
       villageId:        dto.villageId        ?? sirene.villageId,
       isActive:         dto.isActive         ?? sirene.isActive,
+      communicationType:         dto.communicationType         ?? sirene.communicationType,
     });
 
     if (dto.customerIds !== undefined) {

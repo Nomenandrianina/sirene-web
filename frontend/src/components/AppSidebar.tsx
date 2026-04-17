@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, AlertTriangle, Radio,
   Bell, Users, Building2, MapPin, LogOut, ChevronLeft,
-  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside
+  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,8 +22,9 @@ const mainItems: NavItem[] = [
   { title: "Cartographie",          url: "/map",                icon: MapPinCheckInside },
   { title: "Envoyer une diffusion", url: "/alertes/envoyer", icon: AlertTriangle,  permission: "send-alerte:execute" },
   { title: "Sirènes",            url: "/sirenes",         icon: Radio,          permission: "sirenes:read" },
-  { title: "Pack",            url: "/pack",         icon: Radio,          permission: "sirenes:read" },
-  { title: "Souscription",            url: "/souscription",         icon: Radio},
+  { title: "Pack", url: "/pack", icon: Package , permission: "pack-types:read"},
+  { title: "Souscription", url: "/souscription", icon: FileCheck , permission: "souscriptions:read" },
+  { title: "Planning", url: "/planning", icon: CalendarClock },
 ];
 
 const dataItems: NavItem[] = [

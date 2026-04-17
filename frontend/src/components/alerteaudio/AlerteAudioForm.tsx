@@ -13,7 +13,8 @@ import { alerteAudiosApi }         from "@/services/alerteaudio.api";
 import { sirenesApi }              from "@/services/sirene.api";
 import "@/styles/sirene-form.css";
 import "@/styles/alerte-audio.css";
-
+import { useRole } from "@/hooks/useRole";
+import { customersApi } from "@/services/customers.api"; 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
 export interface AlerteAudioFormData {
@@ -26,6 +27,8 @@ export interface AlerteAudioFormData {
   categorieAlerteId:     number;
   mobileId?:             string;
   duration?:             number;
+  customerId?:           number | null; 
+  newSousCatName?:       string;    
 }
 
 interface Props {
@@ -34,7 +37,8 @@ interface Props {
     existingAudio?:    string;
     originalFilename?: string;
     mobileId?:         string;
-    sireneId?:         number; // compatibilité legacy
+    sireneId?:         number; 
+    customerId?:       number | null;
   };
   onSubmit: (data: AlerteAudioFormData, file?: File) => Promise<void>;
   loading:  boolean;
@@ -189,6 +193,7 @@ function SearchableMultiSelect({
 export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props) {
   const isEdit   = !!initialData?.id;
   const navigate = useNavigate();
+  const { isSuperAdmin, isClient, customerId: myCustomerId } = useRole();
 
   const [form, setForm] = useState<AlerteAudioFormData>({
     name:                  initialData?.name                  ?? "",
@@ -198,6 +203,9 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
     alerteId:              initialData?.alerteId              ?? 0,
     alerteTypeId:          initialData?.alerteTypeId          ?? 0,
     categorieAlerteId:     initialData?.categorieAlerteId     ?? 0,
+    customerId:            initialData?.customerId            ?? null, 
+    newSousCatName:  "",
+
   });
 
   useEffect(() => {
@@ -210,6 +218,7 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
         alerteId:              initialData.alerteId              ?? 0,
         alerteTypeId:          initialData.alerteTypeId          ?? 0,
         categorieAlerteId:     initialData.categorieAlerteId     ?? 0,
+        customerId:            initialData.customerId            ?? null,
       });
     }
   }, [initialData?.id]);
@@ -227,6 +236,10 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
   const previewUrl  = useMemo(() => file ? URL.createObjectURL(file) : null, [file]);
   const existingUrl = initialData?.existingAudio ? alerteAudiosApi.audioUrl(initialData.existingAudio) : null;
   const playerUrl   = previewUrl ?? (isEdit ? existingUrl : null);
+
+
+  
+
 
   useEffect(() => {
     if (!playerUrl) return;
@@ -270,13 +283,28 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
   const { data: rawTypes }        = useQuery({ queryKey: ["alerte-types"],              queryFn: alerteTypesApi.getAll });
   const { data: rawCategories }   = useQuery({ queryKey: ["categorie-alertes"],         queryFn: categorieAlertesApi.getAll });
   const { data: rawSousCats }     = useQuery({ queryKey: ["sous-categorie-alertes"],    queryFn: sousCategorieAlertesApi.getAll });
+
   // ← Nouvel endpoint : retourne [{ sousCategorieId, sireneId }]
   const { data: rawCombinations } = useQuery({
     queryKey: ["alerte-audios-used-combinations"],
     queryFn:  alerteAudiosApi.getUsedCombinations,
   });
 
-  const sirenes      = useMemo(() => toArr(rawSirenes).filter((s: any) => s.isActive), [rawSirenes]);
+  const { data: rawCustomers } = useQuery({
+    queryKey: ["customers"],
+    queryFn:  customersApi.getAll,
+    enabled:  isSuperAdmin,   // ne charge que si superadmin
+  });
+  const allCustomers = useMemo(() => toArr(rawCustomers), [rawCustomers]);
+
+  const sirenes = useMemo(() =>
+    toArr(rawSirenes).filter((s: any) =>
+      s.isActive && (isSuperAdmin || s.customers[0].id === myCustomerId)
+    ),
+    [rawSirenes, isSuperAdmin, myCustomerId]
+  );
+
+
   const alertes      = useMemo(() => toArr(rawAlertes),    [rawAlertes]);
   const allTypes     = useMemo(() => toArr(rawTypes),      [rawTypes]);
   const allCats      = useMemo(() => toArr(rawCategories), [rawCategories]);
@@ -341,15 +369,49 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isEdit && !file) { setFileError("Le fichier audio est obligatoire"); return; }
-    await onSubmit(form, file ?? undefined);
+    await onSubmit(
+      {
+        ...form,
+        customerId: isSuperAdmin ? form.customerId : myCustomerId,
+      },
+      file ?? undefined
+    );
   }
 
-  const isValid = form.sousCategorieAlerteId > 0
-    && form.sireneIds.length > 0
-    && (isEdit || !!file)
-    && !isSousCatBlocked(form.sousCategorieAlerteId);
-
+  const isValid = form.sireneIds.length > 0
+    && (isEdit || !!file) && (
+      isClient
+        ? (form.newSousCatName?.trim().length ?? 0) > 0 && form.categorieAlerteId > 0
+        : form.sousCategorieAlerteId > 0 && !isSousCatBlocked(form.sousCategorieAlerteId)
+  );
+    
   // ── Rendu ────────────────────────────────────────────────────────────────────
+
+
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerOpen,   setCustomerOpen]   = useState(false);
+  const customerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (customerRef.current && !customerRef.current.contains(e.target as Node))
+        setCustomerOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredCustomers = useMemo(() =>
+    allCustomers.filter((c: any) =>
+      c.name?.toLowerCase().includes(customerSearch.toLowerCase())
+    ),
+    [allCustomers, customerSearch]
+  );
+
+  const selectedCustomer = useMemo(() =>
+    allCustomers.find((c: any) => c.id === form.customerId) ?? null,
+    [allCustomers, form.customerId]
+  );
 
   return (
     <div className="sirene-form-page">
@@ -446,6 +508,31 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
           )}
         </div>
 
+        {/* ── Informations ── */}
+        <div className="sirene-form-card">
+          <div className="sirene-section-title">Informations</div>
+          <div className="sirene-fields-grid">
+            <div className="sirene-field">
+              <label>Nom de l'audio</label>
+              <input
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Ex: Sirène niveau 2"
+              />
+            </div>
+            <div className="sirene-field" style={{ gridColumn: "1/-1" }}>
+              <label>Description</label>
+              <textarea
+                rows={2}
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Description de l'audio…"
+                style={{ resize: "vertical" }}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* ── Sirènes ── */}
         <div className="sirene-form-card">
           <SearchableMultiSelect
@@ -479,30 +566,76 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
           )}
         </div>
 
-        {/* ── Informations ── */}
-        <div className="sirene-form-card">
-          <div className="sirene-section-title">Informations</div>
-          <div className="sirene-fields-grid">
-            <div className="sirene-field">
-              <label>Nom de l'audio</label>
+        {isSuperAdmin && (
+          <div className="sirene-form-card">
+          <div className="sirene-section-title">Assigner à un client (optionnel)</div>
+
+          <div ref={customerRef} className="relative">
+            <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">
+              Client
+            </label>
+
+            {/* Champ de recherche */}
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Ex: Sirène niveau 2"
+                value={selectedCustomer ? selectedCustomer.name : customerSearch}
+                onFocus={() => { setCustomerOpen(true); setCustomerSearch(""); }}
+                onChange={e => {
+                  setCustomerSearch(e.target.value);
+                  setCustomerOpen(true);
+                  if (!e.target.value) setForm(f => ({ ...f, customerId: null }));
+                }}
+                placeholder="Rechercher un client… (laisser vide = audio global)"
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none"
               />
+              {form.customerId && (
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  onClick={() => { setForm(f => ({ ...f, customerId: null })); setCustomerSearch(""); }}
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
-            <div className="sirene-field" style={{ gridColumn: "1/-1" }}>
-              <label>Description</label>
-              <textarea
-                rows={2}
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Description de l'audio…"
-                style={{ resize: "vertical" }}
-              />
+
+              {/* Dropdown résultats */}
+              {customerOpen && !form.customerId && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                  <div className="max-h-48 overflow-y-auto">
+                    {filteredCustomers.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400">Aucun client trouvé</div>
+                    ) : (
+                      filteredCustomers.map((c: any) => (
+                        <div
+                          key={c.id}
+                          onClick={() => {
+                            setForm(f => ({ ...f, customerId: c.id }));
+                            setCustomerSearch(c.name);
+                            setCustomerOpen(false);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 text-slate-700"
+                        >
+                          <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold flex items-center justify-center">
+                            {c.name?.[0]?.toUpperCase()}
+                          </span>
+                          {c.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-slate-400 mt-1.5">
+                Sans client assigné, l'audio sera disponible pour toutes les sirènes.
+              </p>
             </div>
           </div>
-        </div>
+        )}
+
+
 
         {/* ── Hiérarchie cascade ── */}
         <div className="sirene-form-card">
@@ -557,33 +690,57 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
               <label>
                 Sous-catégorie <span className="required">*</span>
               </label>
-              <select
-                required
-                value={form.sousCategorieAlerteId || ""}
-                disabled={!form.categorieAlerteId || form.sireneIds.length === 0}
-                onChange={e => setForm(f => ({ ...f, sousCategorieAlerteId: Number(e.target.value) }))}
-              >
-                <option value="">
-                  {!form.categorieAlerteId
-                    ? "Choisir d'abord une catégorie"
-                    : form.sireneIds.length === 0
-                      ? "Choisir d'abord des sirènes"
-                      : "— Choisir —"}
-                </option>
-                {filteredSousCats.map((s: any) => {
-                  const blocked      = isSousCatBlocked(s.id);
-                  const conflictLabel = getSousCatConflictLabel(s.id);
-                  return (
-                    <option key={s.id} value={s.id} disabled={blocked}>
-                      {s.name}{conflictLabel ?? ""}
+
+              {isClient ? (
+                /* Client : saisie libre du nom → backend crée la sous-cat */
+                <>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nom de la sous-catégorie…"
+                    value={form.newSousCatName ?? ""}
+                    disabled={!form.categorieAlerteId}
+                    onChange={e => setForm(f => ({ ...f, newSousCatName: e.target.value }))}
+                    className="sirene-input" // adapter à votre classe input existante
+                  />
+                  {!form.categorieAlerteId && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      ⚠ Choisissez d'abord une catégorie
+                    </p>
+                  )}
+                </>
+              ) : (
+                /* Superadmin : select existant */
+                <>
+                  <select
+                    required
+                    value={form.sousCategorieAlerteId || ""}
+                    disabled={!form.categorieAlerteId || form.sireneIds.length === 0}
+                    onChange={e => setForm(f => ({ ...f, sousCategorieAlerteId: Number(e.target.value) }))}
+                  >
+                    <option value="">
+                      {!form.categorieAlerteId
+                        ? "Choisir d'abord une catégorie"
+                        : form.sireneIds.length === 0
+                          ? "Choisir d'abord des sirènes"
+                          : "— Choisir —"}
                     </option>
-                  );
-                })}
-              </select>
-              {form.sireneIds.length === 0 && form.categorieAlerteId > 0 && (
-                <p className="text-xs text-amber-600 mt-1">
-                  ⚠ Sélectionnez d'abord les sirènes pour voir les sous-catégories disponibles
-                </p>
+                    {filteredSousCats.map((s: any) => {
+                      const blocked       = isSousCatBlocked(s.id);
+                      const conflictLabel = getSousCatConflictLabel(s.id);
+                      return (
+                        <option key={s.id} value={s.id} disabled={blocked}>
+                          {s.name}{conflictLabel ?? ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {form.sireneIds.length === 0 && form.categorieAlerteId > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      ⚠ Sélectionnez d'abord les sirènes pour voir les sous-catégories disponibles
+                    </p>
+                  )}
+                </>
               )}
             </div>
 

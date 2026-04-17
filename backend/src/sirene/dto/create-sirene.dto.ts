@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateSireneDto {
     
@@ -25,6 +25,10 @@ export class CreateSireneDto {
     @IsNotEmpty()
     @IsString()
     phoneNumberRelai: string | null;
+   
+    @IsOptional()
+    @IsEnum(['SMS', 'DATA'])
+    communicationType?: 'SMS' | 'DATA';
     
     @IsNotEmpty()
     @IsNumber()

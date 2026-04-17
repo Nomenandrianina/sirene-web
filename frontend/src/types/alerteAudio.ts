@@ -8,9 +8,15 @@ export interface AlerteAudio {
   fileSize?: number;
   duration?: number;
   sousCategorieAlerteId: number;
+  categorieAlerteId?:number;
+  newSousCatName?: string;
   sousCategorie?: { id: number; name: string };
   Sirene?: {id:number;vname:string}
+  customer?: {id:number;vname:string}
   createdAt?: string;
+  customerId?:number;
+  alerteTypeId:      number;   
+  alerteId:          number;   
 }
 
 export interface UsedCombination {

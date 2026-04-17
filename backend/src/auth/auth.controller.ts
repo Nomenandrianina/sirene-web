@@ -18,7 +18,6 @@ export class AuthController {
   @Post('login')
   async login(@Request() req) {
     const token = await this.authService.login(req.user);
-
     return {
       status: 200,
       message: 'Login successful',

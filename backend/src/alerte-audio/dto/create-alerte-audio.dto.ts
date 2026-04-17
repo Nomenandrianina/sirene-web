@@ -18,11 +18,31 @@ export class CreateAlerteAudioDto {
   @IsOptional() @IsNumber() @Type(() => Number)
   duration?: number;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()  
+  customerId?: number | null;
+
 
   @IsArray()
   @IsInt({ each: true })
   sireneIds: number[];
   
+  @IsOptional()
+  @IsString() 
+  newSousCatName?:   string;
+
+  @IsOptional() @Type(() => Number) @IsNumber()
+  alerteId?:          number;
+  
+  @IsOptional() @Type(() => Number) @IsNumber()
+  alerteTypeId?:       number;
+  
+  @IsOptional() 
+  @Type(() => Number) 
+  @IsNumber() 
+  categorieAlerteId?:  number;
+
   // audio, originalFilename, fileSize sont renseignés automatiquement
   // depuis le fichier uploadé (Multer) — ne pas envoyer depuis le client
 }
