@@ -30,7 +30,7 @@ export default function SireneList() {
     queryKey: ["sirenes"],
     queryFn:  () => sirenesApi.getAll(),
   });
-
+  
   const deleteMutation = useMutation({
     mutationFn: (id: number) => sirenesApi.remove(id),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["sirenes"] }),
@@ -189,6 +189,7 @@ export default function SireneList() {
                     <th>N° Relai</th>
                     <th>Clients</th>
                     <th>Statut</th>
+                    <th>Type communication</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -227,12 +228,15 @@ export default function SireneList() {
                         </span>
                       </td>
                       <td>
+                        <span className="phone-badge relai">{s.communicationType ?? "—"}</span>
+                      </td>
+                      <td>
                         <div className="action-btns">
-                          <button
+                          {/* <button
                             className="btn-icon-action alert"
                             title="Envoyer alerte"
                             onClick={() => setAlertSirene(s)}
-                          ><Bell size={14} /></button>
+                          ><Bell size={14} /></button> */}
                           <CanDo permission="sirenes:update">
                             <button
                               className="btn-icon-action edit"

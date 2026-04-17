@@ -62,6 +62,7 @@ import SireneMap from "./pages/sirene/SireneMap";
 import PackTypeAdminPage from "./pages/packType/PackTypeAdminPage";
 import MesSouscriptionsPage from "./pages/packType/MesSouscriptionsPage";
 import AdminSouscriptionsPage from "./pages/souscription/Adminsouscriptionspage";
+import PlanningDiffusionPage from "./pages/planning/Planningdiffusionpage";
 
 const queryClient = new QueryClient();
 
@@ -130,11 +131,12 @@ const App = () => (
               <Route path="/pack" element={<ProtectedRoute><PackTypeAdminPage /></ProtectedRoute>} />
               <Route path="/souscription" element={<ProtectedRoute><MesSouscriptionsPage /></ProtectedRoute>} />
               <Route path="/souscriptionsadmins" element={<ProtectedRoute><AdminSouscriptionsPage /></ProtectedRoute>} />
+              <Route path="/planning" element={<ProtectedRoute><PlanningDiffusionPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
         </TooltipProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </BrowserRouter>  
   </QueryClientProvider>
 );
 

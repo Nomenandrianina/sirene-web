@@ -38,6 +38,11 @@ export class AlerteAudioController {
   findAll(@Query('sousCategorieAlerteId') sousCategorieAlerteId?: string) {
     return this.service.findAll(sousCategorieAlerteId ? +sousCategorieAlerteId : undefined);
   }
+ 
+  @Get('findAllbycustumer')
+  findAllByCustomers( @Query('customerId') customerId?: string,  ) {
+    return this.service.findAllbyCustomer(customerId ? +customerId : undefined);
+  }
 
   // GET /alerte-audios/used-sous-categories  — préservé
   @Get('used-sous-categories')

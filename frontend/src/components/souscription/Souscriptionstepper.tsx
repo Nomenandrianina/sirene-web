@@ -163,12 +163,13 @@ export default function SouscriptionStepper({ userId, customerId, onSuccess }: S
   useEffect(() => {
     if (step !== 1 || sirenes.length) return;
     setLoadingSirenes(true);
-    sirenesApi.getAll().then(setSirenes).finally(() => setLoadingSirenes(false));
+    sirenesApi.getAllwithoutfilter().then(setSirenes).finally(() => setLoadingSirenes(false));
   }, [step]);
 
   const toggleSirene = useCallback((id: number) => {
     setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }, []);
+
 
   const filteredSirenes = useMemo(() => {
     if (!zoneFilter.trim()) return sirenes;

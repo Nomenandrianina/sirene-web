@@ -43,6 +43,20 @@ export class AlerteAudioService {
     });
   }
 
+  findAllbyCustomer(customerId?: number) {
+    const where: any = {};
+    
+    // Si customerId fourni → audios de ce client uniquement
+    // Sinon → tous les audios (superadmin)
+    if (customerId) where.customerId = customerId;
+  
+    return this.repo.find({
+      where,
+      relations: ['sousCategorie', 'sirene'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   // ── READ ONE ──────────────────────────────────────────────────────────────
 
   async findOne(id: number) {
@@ -92,18 +106,19 @@ export class AlerteAudioService {
 
   async create(dto: CreateAlerteAudioDto, file: Express.Multer.File): Promise<AlerteAudio[]> {
 
-    console.log('dto',dto)
-    // 1. Parser sireneIds (multipart envoie du string ou tableau de strings)
+    console.log('dto', dto);
+  
+    // 1. Parser sireneIds
     const rawIds = Array.isArray((dto as any).sireneIds)
       ? (dto as any).sireneIds
       : String((dto as any).sireneIds ?? '').split(',').filter(Boolean);
     const sireneIds = rawIds.map(Number).filter((n: number) => !isNaN(n) && n > 0);
-
+  
     if (sireneIds.length === 0) {
       this.deleteFile(file.path);
       throw new BadRequestException('Au moins une sirène doit être sélectionnée');
     }
-
+  
     // 2. Vérifier que toutes les sirènes existent
     const sirenes = await this.sireneRepo.find({ where: { id: In(sireneIds) } });
     if (sirenes.length !== sireneIds.length) {
@@ -112,7 +127,38 @@ export class AlerteAudioService {
       const missing  = sireneIds.filter((id: number) => !foundIds.includes(id));
       throw new NotFoundException(`Sirène(s) introuvable(s) : ${missing.join(', ')}`);
     }
+  
+    // ── 2b. Mode client : créer la sous-catégorie à la volée ──────────────────
+    // Inséré ici : après la validation des sirènes, avant la vérif des conflits
+    // car on a besoin de dto.sousCategorieAlerteId résolu pour l'étape 3
+    if (dto.newSousCatName?.trim()) {
+      if (!dto.categorieAlerteId) {
+        this.deleteFile(file.path);
+        throw new BadRequestException('categorieAlerteId requis pour créer une sous-catégorie');
+      }
+      if (!dto.alerteTypeId) {
+        this.deleteFile(file.path);
+        throw new BadRequestException('alerteTypeId requis pour créer une sous-catégorie');
+      }
+      if (!dto.alerteId) {
+        this.deleteFile(file.path);
+        throw new BadRequestException('alerteId requis pour créer une sous-catégorie');
+      }
+  
+      const newSousCat = this.sousCatRepo.create({
+        name:              dto.newSousCatName.trim(),
+        categorieAlerteId: Number(dto.categorieAlerteId),
+        alerteTypeId:      Number(dto.alerteTypeId),   // ← champ obligatoire
+        alerteId:          Number(dto.alerteId),        // ← champ obligatoire
+      });
 
+      
+      const saved = await this.sousCatRepo.save(newSousCat);
+      // Écraser l'id dans le dto pour que les étapes 3, 4, 5 l'utilisent normalement
+      (dto as any).sousCategorieAlerteId = saved.id;
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+  
     // 3. Vérifier qu'aucune combinaison (sousCat + sirène) n'existe déjà
     const conflicts = await this.repo.find({
       where: {
@@ -128,6 +174,7 @@ export class AlerteAudioService {
       );
     }
 
+    
     // 4. Charger la sous-catégorie pour générer le mobileId (même logique qu'avant)
     const sousCat = await this.sousCatRepo.findOne({
       where: { id: Number(dto.sousCategorieAlerteId) },
@@ -172,7 +219,7 @@ export class AlerteAudioService {
       audio.originalFilename          = file.originalname;
       audio.fileSize                  = file.size;
       audio.duration                  = duree;
-
+      audio.customerId = dto.customerId ?? null;
 
       created.push(await this.repo.save(audio));
     }

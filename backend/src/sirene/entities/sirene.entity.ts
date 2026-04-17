@@ -29,8 +29,12 @@ export class Sirene {
   @Column({ name: 'village_id' })
   villageId: number;
 
-  @Column({ name: 'is_active', type: 'tinyint', default: 1 })
+  @Column({ name: 'is_active',  type: 'tinyint', default: 1 })
   isActive: number;
+
+  // Dans l'entité Sirene
+  @Column({ name: 'fcm_token', type: 'varchar', nullable: true })
+  fcmToken: string | null;
 
   @ManyToOne(() => Village, { onDelete: 'NO ACTION' })
   @JoinColumn({ name: 'village_id' })

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, DeleteDateColumn, CreateDateColumn, UpdateDateColumn,Index } from "typeorm";
 import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
 import { Sirene } from "@/sirene/entities/sirene.entity";
+import { Customer } from "src/customers/entity/customer.entity";
 
 @Entity("alerte_audio")
 export class AlerteAudio {
@@ -39,6 +40,13 @@ export class AlerteAudio {
   @Column({ name: 'sirene_id' , nullable: true})
   sireneId: number;
 
+
+  @Column({ name: 'customer_id', nullable: true })
+  customerId: number | null;
+
+  @ManyToOne(() => Customer, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
   
   @ManyToOne(() => SousCategorieAlerte, s => s.audios, { onDelete: "CASCADE" })
   @JoinColumn({ name: "sous_categorie_alerte_id" })

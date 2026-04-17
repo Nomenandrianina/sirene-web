@@ -10,6 +10,9 @@ import {
   UpdateSouscriptionDto,
   SouscriptionQueryDto,
 } from '@/souscription/dto/create-souscription.dto';
+import { Notification } from '@/notification/entities/notification.entity';
+import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
+import { DiffusionPlanifieeService } from 'src/diffusion-planifiee/diffusion-planifiee.service';
 
 @Injectable()
 export class SouscriptionService {
@@ -18,6 +21,9 @@ export class SouscriptionService {
     private readonly repo: Repository<Souscription>,
     @InjectRepository(PackType)
     private readonly packRepo: Repository<PackType>,
+
+    private readonly planifieeService: DiffusionPlanifieeService,
+
   ) {}
 
   // ── CREATE ──────────────────────────────────────────────────────────────────
@@ -26,17 +32,12 @@ export class SouscriptionService {
     const pack = await this.packRepo.findOne({
       where: { id: dto.packTypeId, isActive: true },
     });
-    if (!pack) {
-      throw new NotFoundException(`PackType #${dto.packTypeId} introuvable ou inactif`);
-    }
-    if (!dto.sireneIds?.length) {
-      throw new BadRequestException('Au moins une sirène doit être sélectionnée');
-    }
-
+    if (!pack) throw new NotFoundException('Pack introuvable');
+    if (!dto.sireneIds?.length) throw new BadRequestException('Au moins une sirène requise');
+ 
     const startDate = dto.startDate ? new Date(dto.startDate) : new Date();
     const endDate   = this.calculateEndDate(startDate, pack);
-
-    // Construire l'objet avec les sirènes (références par id)
+ 
     const souscription = this.repo.create({
       userId:      dto.userId,
       customerId:  dto.customerId,
@@ -45,11 +46,21 @@ export class SouscriptionService {
       startDate,
       endDate,
       status: SouscriptionStatus.ACTIVE,
-      // ManyToMany : TypeORM attend des objets avec { id }
       sirenes: dto.sireneIds.map((id) => ({ id })),
     });
-
-    return this.repo.save(souscription);
+ 
+    const saved = await this.repo.save(souscription);
+ 
+    // Générer le planning immédiatement après création
+    const withRelations = await this.repo.findOne({
+      where: { id: saved.id },
+      relations: ['packType', 'sirenes'],
+    });
+    if (withRelations) {
+      await this.planifieeService.generateForSouscription(withRelations);
+    }
+ 
+    return saved;
   }
 
   // ── READ ─────────────────────────────────────────────────────────────────────

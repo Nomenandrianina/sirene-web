@@ -1,18 +1,13 @@
-// ─────────────────────────────────────────────
-//  base.ts — Client HTTP partagé
-//  Gère : token Bearer, 401 auto-logout, erreurs
-// ─────────────────────────────────────────────
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;
 
-console.log(API_BASE_URL)
 export interface ApiError {
   message: string;
   statusCode: number;
 }
 
 function getAccessToken(): string | null {
-  return localStorage.getItem('access_token'); // cohérent avec AuthContext
+  return localStorage.getItem('access_token'); // cohérent avec AuthContext²
 }
 
 function clearSession() {
@@ -68,5 +63,5 @@ export async function request<T>(
 export const get  = <T>(url: string)                        => request<T>(url);
 export const post = <T>(url: string, body: unknown)         => request<T>(url, { method: 'POST',  body: JSON.stringify(body) });
 export const put  = <T>(url: string, body: unknown)         => request<T>(url, { method: 'PUT',   body: JSON.stringify(body) });
-export const patch= <T>(url: string, body: unknown)         => request<T>(url, { method: 'PATCH', body: JSON.stringify(body) });
+export const patch = <T>(url: string, body?: unknown) =>  request<T>(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined,});
 export const del  = <T>(url: string)                        => request<T>(url, { method: 'DELETE' });

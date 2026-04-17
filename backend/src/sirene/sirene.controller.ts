@@ -5,7 +5,7 @@ import {
 import { SirenesService }   from './sirene.service';
 import { CreateSireneDto }  from './dto/create-sirene.dto';
 import { UpdateSireneDto }  from './dto/update-sirene.dto';
-import { SmsService } from '@/services/sms.service';
+import { SmsService } from '@/sms/sms.service';
 
 class SendAlertDto {
   message: string;

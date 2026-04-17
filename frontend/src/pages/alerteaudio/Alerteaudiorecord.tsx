@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate }       from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppLayout }   from "@/components/AppLayout";
@@ -10,12 +10,11 @@ import { categorieAlertesApi }     from "@/services/categoriealertes.api";
 import { sousCategorieAlertesApi } from "@/services/souscategorieAlerte.api";
 import { alerteAudiosApi }         from "@/services/alerteaudio.api";
 import { sirenesApi }              from "@/services/sirene.api";
-import {
-  isSousCatBlocked,
-  getSousCatConflictLabel
-} from "@/utils/alerteAudioRules";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+import {isSousCatBlocked,getSousCatConflictLabel } from "@/utils/alerteAudioRules";
+import { useRole } from "@/hooks/useRole";
+import { customersApi } from "@/services/customers.api";
+import { Search, X }    from "lucide-react";
+import { useRef }       from "react";
 
 
 function toArr(raw: any): any[] {
@@ -53,15 +52,7 @@ function SectionCard({ title, children }: { title: React.ReactNode; children: Re
 // ── Sirène checkbox card ──────────────────────────────────────────────────────
 // Composant isolé pour éviter le double-toggle label+onChange
 
-function SireneCard({
-  sirene,
-  checked,
-  onToggle,
-}: {
-  sirene: any;
-  checked: boolean;
-  onToggle: (id: number) => void;
-}) {
+function SireneCard({ sirene,checked, onToggle,}: {sirene: any; checked: boolean;onToggle: (id: number) => void; }) {
   return (
     <button
       type="button"
@@ -90,6 +81,7 @@ function SireneCard({
 export default function AlerteAudioRecord() {
   const navigate = useNavigate();
   const qc       = useQueryClient();
+  const { isSuperAdmin, isClient, customerId: myCustomerId } = useRole();
 
   // ── Fichier enregistré ────────────────────────────────────────────────────
   const [recordedFile,     setRecordedFile]     = useState<File | null>(null);
@@ -127,12 +119,52 @@ export default function AlerteAudioRecord() {
   const allTypes = toArr(rawTypes);
   const allCats  = toArr(rawCats);
   const allSCats = toArr(rawSousCats);
-  const sirenes  = toArr(rawSirenes).filter((s: any) => s.isActive);
-  // const usedIds: number[] = toArr(rawUsedIds);
+  const sirenes = useMemo(() =>
+    toArr(rawSirenes).filter((s: any) =>
+      s.isActive && (isSuperAdmin || s.customers[0].id === myCustomerId)
+    ),
+    [rawSirenes, isSuperAdmin, myCustomerId]
+  );
 
   const types    = useMemo(() => alerteId     ? allTypes.filter((t: any) => Number(t.alerteId)          === alerteId)    : [], [allTypes, alerteId]);
   const cats     = useMemo(() => alerteTypeId ? allCats.filter((c: any)  => Number(c.alerteTypeId)      === alerteTypeId) : [], [allCats, alerteTypeId]);
   const sousCats = useMemo(() => categorieId  ? allSCats.filter((s: any) => Number(s.categorieAlerteId) === categorieId) : [], [allSCats, categorieId]);
+
+  const [newSousCatName, setNewSousCatName] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerOpen,   setCustomerOpen]   = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const customerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (customerRef.current && !customerRef.current.contains(e.target as Node))
+        setCustomerOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const { data: rawCustomers } = useQuery({
+    queryKey: ["customers"],
+    queryFn:  customersApi.getAll,
+    enabled:  isSuperAdmin,
+  });
+  
+  const allCustomers = useMemo(() => toArr(rawCustomers), [rawCustomers]);
+  
+  const filteredCustomers = useMemo(() =>
+    allCustomers.filter((c: any) =>
+      c.name?.toLowerCase().includes(customerSearch.toLowerCase())
+    ),
+    [allCustomers, customerSearch]
+  );
+  
+  const selectedCustomer = useMemo(() =>
+    allCustomers.find((c: any) => c.id === selectedCustomerId) ?? null,
+    [allCustomers, selectedCustomerId]
+  );
+
 
   // ── Toggle sirène ─────────────────────────────────────────────────────────
   function toggleSirene(id: number) {
@@ -148,9 +180,14 @@ export default function AlerteAudioRecord() {
       return alerteAudiosApi.create({
         name:                  name || `Enregistrement ${new Date().toLocaleString("fr-FR")}`,
         description,
-        sousCategorieAlerteId: sousCatId,
+        sousCategorieAlerteId: isClient ? 0 : sousCatId, // sera écrasé par backend si newSousCatName
+        newSousCatName:        isClient ? newSousCatName : undefined,
+        categorieAlerteId:     categorieId, 
+        alerteTypeId:      alerteTypeId,   
+        alerteId:          alerteId,   
         sireneIds,
-        mobileId:  "",
+        mobileId:              "",
+        customerId: isSuperAdmin ? selectedCustomerId : myCustomerId,
       }, recordedFile);
     },
     onSuccess: () => {
@@ -162,13 +199,20 @@ export default function AlerteAudioRecord() {
       setError(err?.response?.data?.message || err.message || "Erreur lors de la création"),
   });
 
-  const isValid =  recordedFile && sousCatId > 0 && sireneIds.length > 0 && !isSousCatBlocked(sousCatId, sireneIds, usedCombinations);
+  const isValid = recordedFile && sireneIds.length > 0 && (
+    isClient
+      ? newSousCatName.trim().length > 0 && categorieId > 0
+      : sousCatId > 0 && !isSousCatBlocked(sousCatId, sireneIds, usedCombinations)
+  );
 
   function handleRecorded(file: File, duration: number) {
     setRecordedFile(file);
     setRecordedDuration(duration);
     if (!name) setName(`Enregistrement ${new Date().toLocaleString("fr-FR")}`);
   }
+
+
+  
 
   // ── Rendu ──────────────────────────────────────────────────────────────────
   return (
@@ -238,6 +282,100 @@ export default function AlerteAudioRecord() {
                 </Field>
               </SectionCard>
 
+              {/* ── Assigner à un client (superadmin seulement) ── */}
+                {isSuperAdmin && (
+                  <SectionCard title="Assigner à un client (optionnel)">
+                    <div ref={customerRef} className="relative">
+                      <div className="relative">
+                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          value={selectedCustomer ? selectedCustomer.name : customerSearch}
+                          onFocus={() => { setCustomerOpen(true); setCustomerSearch(""); }}
+                          onChange={e => {
+                            setCustomerSearch(e.target.value);
+                            setCustomerOpen(true);
+                            if (!e.target.value) setSelectedCustomerId(null);
+                          }}
+                          placeholder="Rechercher un client… (laisser vide = audio global)"
+                          className={inputCls + " pl-9 pr-8"}
+                        />
+                        {selectedCustomerId && (
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            onClick={() => { setSelectedCustomerId(null); setCustomerSearch(""); }}
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+
+                      {customerOpen && !selectedCustomerId && (
+                        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                          <div className="max-h-48 overflow-y-auto">
+                            {filteredCustomers.length === 0 ? (
+                              <div className="p-4 text-center text-xs text-slate-400">Aucun client trouvé</div>
+                            ) : (
+                              filteredCustomers.map((c: any) => (
+                                <div
+                                  key={c.id}
+                                  onClick={() => {
+                                    setSelectedCustomerId(c.id);
+                                    setCustomerSearch(c.name);
+                                    setCustomerOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 text-slate-700"
+                                >
+                                  <span className="w-6 h-6 rounded-full bg-sky-50 text-sky-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                    {c.name?.[0]?.toUpperCase()}
+                                  </span>
+                                  {c.name}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-slate-400 mt-1.5">
+                        Sans client assigné, l'audio sera disponible pour toutes les sirènes.
+                      </p>
+                    </div>
+                  </SectionCard>
+                )}
+
+
+                {/* Sirènes — boutons natifs, plus de label+checkbox */}
+              <SectionCard title="Sirènes de destination *">
+                {sirenes.length === 0 ? (
+                  <p className="text-sm text-slate-400">Aucune sirène active disponible</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {sirenes.map((s: any) => (
+                      <SireneCard
+                        key={s.id}
+                        sirene={s}
+                        checked={sireneIds.includes(s.id)}
+                        onToggle={toggleSirene}
+                      />
+                    ))}
+                  </div>
+                )}
+                {sireneIds.length > 0 && (
+                  <p className="text-xs text-slate-400">
+                    {sireneIds.length} sirène{sireneIds.length > 1 ? "s" : ""} sélectionnée{sireneIds.length > 1 ? "s" : ""}
+                  </p>
+                )}
+              </SectionCard>
+
+              {/* Erreur */}
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              
+
               {/* Hiérarchie cascade */}
               <SectionCard title="Hiérarchie (cascade)">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -290,68 +428,68 @@ export default function AlerteAudioRecord() {
                   </Field>
 
                   <Field label="Sous-catégorie" required>
-                    <select
-                      value={sousCatId || ""}
-                      required
-                      disabled={!categorieId || sireneIds.length === 0}
-                      onChange={e => setSousCatId(Number(e.target.value))}
-                      className={inputCls}
-                    >
-                      <option value="">{!categorieId ? "Choisir d'abord une catégorie" : "— Choisir —"}</option>
-                      {sousCats.map((s: any) => {
-                        const blocked = isSousCatBlocked(
-                          s.id,
-                          sireneIds,
-                          usedCombinations
-                        );
-
-                        const conflictLabel = getSousCatConflictLabel(
-                          s.id,
-                          sireneIds,
-                          usedCombinations
-                        );
-
-                        return (
-                          <option key={s.id} value={s.id} disabled={blocked}>
-                            {s.name}{conflictLabel ?? ""}
+                    {isClient ? (
+                      /* Client : saisie libre → backend crée la sous-cat à la volée */
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Nom de la sous-catégorie…"
+                          value={newSousCatName}
+                          disabled={!categorieId}
+                          onChange={e => setNewSousCatName(e.target.value)}
+                          className={inputCls}
+                        />
+                        {!categorieId && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            ⚠ Choisissez d'abord une catégorie
+                          </p>
+                        )}
+                        {categorieId > 0 && sireneIds.length === 0 && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            ⚠ Sélectionnez d'abord les sirènes
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      /* Superadmin : select parmi les sous-cats existantes */
+                      <>
+                        <select
+                          value={sousCatId || ""}
+                          required
+                          disabled={!categorieId || sireneIds.length === 0}
+                          onChange={e => setSousCatId(Number(e.target.value))}
+                          className={inputCls}
+                        >
+                          <option value="">
+                            {!categorieId
+                              ? "Choisir d'abord une catégorie"
+                              : sireneIds.length === 0
+                                ? "Choisir d'abord des sirènes"
+                                : "— Choisir —"}
                           </option>
-                        );
-                      })}
-                    </select>
+                          {sousCats.map((s: any) => {
+                            const blocked      = isSousCatBlocked(s.id, sireneIds, usedCombinations);
+                            const conflictLabel = getSousCatConflictLabel(s.id, sireneIds, usedCombinations);
+                            return (
+                              <option key={s.id} value={s.id} disabled={blocked}>
+                                {s.name}{conflictLabel ?? ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {sireneIds.length === 0 && categorieId > 0 && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            ⚠ Sélectionnez d'abord les sirènes pour voir les sous-catégories disponibles
+                          </p>
+                        )}
+                      </>
+                    )}
                   </Field>
 
                 </div>
               </SectionCard>
 
-              {/* Sirènes — boutons natifs, plus de label+checkbox */}
-              <SectionCard title="Sirènes de destination *">
-                {sirenes.length === 0 ? (
-                  <p className="text-sm text-slate-400">Aucune sirène active disponible</p>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {sirenes.map((s: any) => (
-                      <SireneCard
-                        key={s.id}
-                        sirene={s}
-                        checked={sireneIds.includes(s.id)}
-                        onToggle={toggleSirene}
-                      />
-                    ))}
-                  </div>
-                )}
-                {sireneIds.length > 0 && (
-                  <p className="text-xs text-slate-400">
-                    {sireneIds.length} sirène{sireneIds.length > 1 ? "s" : ""} sélectionnée{sireneIds.length > 1 ? "s" : ""}
-                  </p>
-                )}
-              </SectionCard>
-
-              {/* Erreur */}
-              {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
+              
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-3 pb-8">

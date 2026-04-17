@@ -48,13 +48,13 @@ export class AuthService {
       sub:         fullUser.id,
       email:       fullUser.email,
       role:        { id: fullUser.role?.id, name: fullUser.role?.name },
-      permissions, // ["users:read", "users:create", ...]
+      permissions, 
       customerId:  fullUser.customer?.id ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload, {
       secret:    process.env.JWT_SECRET,
-      expiresIn: "60m",
+      expiresIn: "120m",
     });
 
     const refreshToken = this.jwtService.sign(payload, {

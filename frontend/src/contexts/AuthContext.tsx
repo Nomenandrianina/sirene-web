@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Garder votre endpoint existant — s'assurer qu'il retourne role.permissions[]
       const res = await api.get("/users/profile");
+      console.log('response user:',res.data.response);
       setUser(res.data.response);
     } catch {
       localStorage.removeItem(TOKEN_KEY);

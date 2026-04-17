@@ -20,19 +20,19 @@ import {
     @Column({ type: 'longtext', nullable: true })
     gfs: object;
   
-    @Column({ type: 'json', nullable: true })
+    @Column({ type: 'longtext', nullable: true })
     icon: object;
   
-    @Column({ type: 'json', nullable: true })
+    @Column({ type: 'longtext', nullable: true })
     gfs_wave: object;
   
-    @Column({ type: 'json', nullable: true })
+    @Column({ type: 'longtext', nullable: true })
     arome: object;
   
-    @Column({ type: 'json' })
+    @Column({ type: 'longtext' })
     original_weather: object;
   
-    @Column({ type: 'json' })
+    @Column({ type: 'longtext' })
     final_weather: FinalWeatherEntry[];
   
     @CreateDateColumn()

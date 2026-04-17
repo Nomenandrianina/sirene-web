@@ -7,7 +7,7 @@ import { Village }             from "@/villages/entities/village.entity";
 import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
 import { AlerteAudio } from "@/alerte-audio/entities/alerte-audio.entity";
 import { Notification, NotificationStatus } from "@/notification/entities/notification.entity";
-import { SmsService }          from "@/services/sms.service";
+import { SmsService }          from "@/sms/sms.service";
 import { SendAlerteDto }       from "./dto/send-alerte.dto";
 import { User } from "@/users/entities/user.entity";
 

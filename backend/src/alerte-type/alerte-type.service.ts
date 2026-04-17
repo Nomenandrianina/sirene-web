@@ -25,11 +25,6 @@ export class AlerteTypeService {
       qb.andWhere("t.alerteId = :alerteId", { alerteId });
     }
  
-    // Filtre client : INNER JOIN sur la table pivot
-    if (!isSuperAdmin && customerId) {
-      qb.innerJoin("t.customers", "c", "c.id = :cid", { cid: customerId });
-    }
- 
     return qb.orderBy("t.id", "ASC").getMany();
   }
  

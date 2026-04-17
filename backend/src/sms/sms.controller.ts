@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
-import { SmsService } from '../services/sms.service';
+import { SmsService } from '@/sms/sms.service';
 
 class SendSmsDto {
   phoneNumber: string;

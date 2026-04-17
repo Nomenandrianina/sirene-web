@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { SmsService }    from '../services/sms.service';
+import { SmsService }    from './sms.service';
 import { SmsController } from './sms.controller';
 
 @Module({
