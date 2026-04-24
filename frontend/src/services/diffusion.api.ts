@@ -5,7 +5,7 @@ import type {
 } from '../types/diffusion';
 
 export const souscriptionApi = {
-  getAll: (params?: { userId?: number; status?: string; sireneId?: number }) =>
+  getAll: (params?: { userId?: number; status?: string; sireneId?: number ,customerId?:number }) =>
     get<Souscription[]>('/souscriptions', { params }),
 
   getByUser: (userId: number) =>

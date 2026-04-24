@@ -11,6 +11,14 @@ import { SmsService }          from "@/sms/sms.service";
 import { SendAlerteDto }       from "./dto/send-alerte.dto";
 import { User } from "@/users/entities/user.entity";
 
+
+function toMadagascarISOString(date: Date): string {
+  // UTC+3 — Indian/Antananarivo
+  const offset = 3 * 60; // minutes
+  const local  = new Date(date.getTime() + offset * 60 * 1000);
+  return local.toISOString().slice(0, 16); // "2026-04-21T15:05"
+}
+
 @Injectable()
 export class SendAlerteService {
   private readonly logger = new Logger(SendAlerteService.name);
@@ -30,18 +38,14 @@ export class SendAlerteService {
   // Format : "<mobileId> <repeatCount>"
   //       ou "<mobileId> <repeatCount> <repeatInterval>" si repeatCount > 1
  // ── Construction du message ──────────────────────────────────────────────
-  private buildMessage(mobileId: string,repeatCount = 1,repeatInterval?: number,priority: 'P1' | 'P2' = 'P2', scheduledDate?: Date ): string {
-    // Format de la date : 2026-04-03T10:49  (sans secondes, sans timezone)
+  private buildMessage( mobileId: string,repeatCount = 1, repeatInterval?: number, priority: 'P1' | 'P2' = 'P2',scheduledDate?: Date,): string {
     const datePart = scheduledDate
-      ? ' ' + scheduledDate.toISOString().slice(0, 16)   // "2026-04-03T10:49"
-      : ' ' + new Date().toISOString().slice(0, 16);     // date courante si "maintenant"
+      ? ' ' + toMadagascarISOString(scheduledDate)
+      : ' ' + toMadagascarISOString(new Date());
 
-      console.log('datePart',datePart)
-
-    if (repeatCount <= 1) {
-      return `${mobileId} ${repeatCount} 0 ${priority}${datePart}`;
-    }
-    return `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${datePart}`;
+    return repeatCount <= 1
+      ? `${mobileId} ${repeatCount} 0 ${priority}${datePart}`
+      : `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${datePart}`;
   }
 
 
@@ -53,7 +57,7 @@ export class SendAlerteService {
       sendingTimeAfterAlerte,
       repeatCount = 1,
       repeatInterval,
-      alertPriority,   // ← nouveau champ dans le DTO (optionnel, envoyé par le frontend)
+      alertPriority,  
       userId,
     } = dto;
 
@@ -76,8 +80,6 @@ export class SendAlerteService {
    
       const customerPriority = user?.customer?.priority;
       const isSuperAdmin = user?.role?.name?.toLowerCase().includes('superadmin');
-      console.log('isusper',isSuperAdmin)
-
    
       if (isSuperAdmin || customerPriority === 'urgent') {
         // Le client est urgent — il peut choisir P1 ou P2 selon l'alerte
@@ -146,7 +148,7 @@ export class SendAlerteService {
     // 5. Construction du message avec répétition + priorité
     const mobileId = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
     const message  = this.buildMessage(mobileId, repeatCount, repeatInterval, finalPriority,scheduledDate );
-   
+   console.log('message :',message);
     // Exemples de messages générés :
    
     const isNow    = !sendingTimeAfterAlerte;
@@ -162,7 +164,7 @@ export class SendAlerteService {
       notif.sousCategorieAlerteId = sousCategorieAlerteId;
       notif.alerteAudioId         = audio?.id ?? null;
       notif.phoneNumber           = sirene.phoneNumberBrain;
-      notif.operator              = 'Orange';
+      notif.operator              = sirene.communicationType === 'DATA' ? 'FCM' : 'Orange'; // ← adapté
       notif.type                  = sousCat.name;
       notif.userId                = userId ?? null;
       notif.status                = NotificationStatus.PENDING;
@@ -170,44 +172,103 @@ export class SendAlerteService {
         ? new Date(dto.sendingTimeAfterAlerte)
         : null;
       notif.sendingTime           = new Date();
-  
+    
       const saved = await this.notifRepo.save(notif);
-      await this.dispatchSms(saved);   // ← toujours envoyé immédiatement
+      await this.dispatchNotification(saved, sirene); // ← on passe sirene en plus
       sent++;
     }
    
     return { created: sirenes.length, sent, planned };
   }
- 
-  async dispatchSms(notif: Notification): Promise<void> {
-    if (!notif.phoneNumber) {
-      this.logger.warn(`Notification #${notif.id} ignorée — numéro de téléphone manquant`);
-      await this.notifRepo.update(notif.id, {
-        status:      NotificationStatus.FAILED,
-        observation: "Numéro de téléphone manquant",
-      });
-      return;
-    }
+
+  async dispatchNotification(notif: Notification, sirene: Sirene): Promise<void> {
     try {
-      const response = await this.smsService.sendSms(notif.phoneNumber, notif.message);
- 
-      const resourceURL: string     = response?.outboundSMSMessageRequest?.resourceURL ?? "";
-      const messageId: string | undefined = resourceURL ? resourceURL.split("/").pop() : undefined;
- 
-      await this.notifRepo.update(notif.id, {
-        status:         NotificationStatus.SENT,
-        messageId:      messageId ?? undefined,
-        sendingTime:    new Date(),
-        operatorStatus: "sent",
-      });
+      if (sirene.communicationType === 'DATA') {
+        // ── Envoi via FCM ──────────────────────────────────────────
+        if (!sirene.fcmToken) {
+          this.logger.warn(`Notification #${notif.id} ignorée — token FCM manquant`);
+          await this.notifRepo.update(notif.id, {
+            status:      NotificationStatus.FAILED,
+            observation: 'Token FCM manquant',
+          });
+          return;
+        }
+  
+        const messageId = await this.smsService.sendViaData(sirene, notif.message);
+
+        await this.notifRepo.update(notif.id, {
+          status:         NotificationStatus.SENT,
+          messageId:      messageId,
+          sendingTime:    new Date(),
+          operatorStatus: 'sent_via_data',
+        });
+  
+      } else {
+        // ── Envoi via SMS (comportement existant) ──────────────────
+        if (!notif.phoneNumber) {
+          this.logger.warn(`Notification #${notif.id} ignorée — numéro de téléphone manquant`);
+          await this.notifRepo.update(notif.id, {
+            status:      NotificationStatus.FAILED,
+            observation: 'Numéro de téléphone manquant',
+          });
+          return;
+        }
+  
+        const response = await this.smsService.sendSms(notif.phoneNumber, notif.message);
+  
+        const resourceURL  = response?.outboundSMSMessageRequest?.resourceURL ?? '';
+        const messageId    = resourceURL ? resourceURL.split('/').pop() : undefined;
+  
+        await this.notifRepo.update(notif.id, {
+          status:         NotificationStatus.SENT,
+          messageId:      messageId ?? undefined,
+          sendingTime:    new Date(),
+          operatorStatus: 'sent',
+        });
+      }
     } catch (err: any) {
-      this.logger.error(`SMS failed for notification #${notif.id} → ${notif.phoneNumber}: ${err.message}`);
+      this.logger.error(
+        `Dispatch failed for notification #${notif.id} → sirene #${sirene.id} [${sirene.communicationType}]: ${err.message}`
+      );
       await this.notifRepo.update(notif.id, {
         status:      NotificationStatus.FAILED,
         observation: (err.message as string)?.slice(0, 255),
       });
     }
   }
+
+
+  
+  
+  // async dispatchSms(notif: Notification): Promise<void> {
+  //   if (!notif.phoneNumber) {
+  //     this.logger.warn(`Notification #${notif.id} ignorée — numéro de téléphone manquant`);
+  //     await this.notifRepo.update(notif.id, {
+  //       status:      NotificationStatus.FAILED,
+  //       observation: "Numéro de téléphone manquant",
+  //     });
+  //     return;
+  //   }
+  //   try {
+  //     const response = await this.smsService.sendSms(notif.phoneNumber, notif.message);
+ 
+  //     const resourceURL: string     = response?.outboundSMSMessageRequest?.resourceURL ?? "";
+  //     const messageId: string | undefined = resourceURL ? resourceURL.split("/").pop() : undefined;
+ 
+  //     await this.notifRepo.update(notif.id, {
+  //       status:         NotificationStatus.SENT,
+  //       messageId:      messageId ?? undefined,
+  //       sendingTime:    new Date(),
+  //       operatorStatus: "sent",
+  //     });
+  //   } catch (err: any) {
+  //     this.logger.error(`SMS failed for notification #${notif.id} → ${notif.phoneNumber}: ${err.message}`);
+  //     await this.notifRepo.update(notif.id, {
+  //       status:      NotificationStatus.FAILED,
+  //       observation: (err.message as string)?.slice(0, 255),
+  //     });
+  //   }
+  // }
  
   @Cron(CronExpression.EVERY_MINUTE)
   async processPlannedNotifications(): Promise<void> {
@@ -226,7 +287,7 @@ export class SendAlerteService {
     this.logger.log(`Cron: ${pending.length} notification(s) planifiée(s) à envoyer`);
  
     for (const notif of pending) {
-      await this.dispatchSms(notif);
+      // await this.dispatchNotification(notif);
     }
   }
  

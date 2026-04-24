@@ -71,6 +71,8 @@ import { AppCommandModule } from './commands/command.module';
 import { PlanningDiffusion } from './planning-diffusion/entities/planning-diffusion.entity';
 import { DiffusionPlanifieeModule } from './diffusion-planifiee/diffusion-planifiee.module';
 import { DiffusionPlanifiee } from './diffusion-planifiee/entities/diffusion-planifiee.entity';
+import { DiffusionConfigModule } from './diffusion-config/diffusion-config.module';
+import { DiffusionConfig } from './diffusion-config/entities/diffusion-config.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -85,12 +87,12 @@ import { DiffusionPlanifiee } from './diffusion-planifiee/entities/diffusion-pla
         username: config.get<string>('DB_USERNAME'), 
         password: config.get<string>('DB_PASSWORD'), 
         database: config.get<string>('DB_DATABASE'),
-        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany,PackType,DiffusionLog,Souscription,PlanningDiffusion,DiffusionPlanifiee],
+        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany,PackType,DiffusionLog,Souscription,PlanningDiffusion,DiffusionPlanifiee,DiffusionConfig],
         synchronize: true,
       }),
     })
     ,RolesModule, PermissionsModule, UsersModule,CustomersModule,AuthModule, ProvincesModule, RegionsModule, DistrictsModule, VillagesModule, FlowsModule, WeathersModule, ColorCodeModule, AlertLevelModule, SettingsModule, TimeSettingModule,ExportModule,
-    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule, PacktypeModule, SouscriptionModule, DiffusionLogModule, PlanningDiffusionModule, DiffusionSchedulerModule,AppCommandModule, DiffusionPlanifieeModule
+    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule, PacktypeModule, SouscriptionModule, DiffusionLogModule, PlanningDiffusionModule, DiffusionSchedulerModule,AppCommandModule, DiffusionPlanifieeModule, DiffusionConfigModule
     
   ],
   controllers: [AppController],

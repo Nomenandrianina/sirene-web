@@ -137,6 +137,16 @@ export class SirenesService {
     });
   }
 
+
+  async updateFcmToken(imei: string, fcmToken: string): Promise<void> {
+    const sirene = await this.sireneRepo.findOne({ where: { imei } });
+    if (!sirene) throw new NotFoundException(`Sirène avec IMEI ${imei} introuvable`);
+  
+    sirene.fcmToken = fcmToken;
+    await this.sireneRepo.save(sirene);
+    
+  }
+
   // ── Historique alertes ────────────────────────────────────────────────
   // Retourne les logs d'audit de type alerte pour cette sirène
 }

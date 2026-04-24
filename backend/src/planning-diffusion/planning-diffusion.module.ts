@@ -16,14 +16,18 @@ import { SmsModule } from '@/sms/sms.module';
 import { SouscriptionModule } from '@/souscription/souscription.module';
 import { PlanningDiffusion } from './entities/planning-diffusion.entity';
 import { DiffusionPlanifieeModule } from 'src/diffusion-planifiee/diffusion-planifiee.module';
+import { Sirene } from 'src/sirene/entities/sirene.entity';
+import { DiffusionConfigModule } from 'src/diffusion-config/diffusion-config.module';
+import { DiffusionConfig } from 'src/diffusion-config/entities/diffusion-config.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Notification, AlerteAudio, Souscription, PackType,PlanningDiffusion]),
+    TypeOrmModule.forFeature([Notification, AlerteAudio, Souscription, PackType,PlanningDiffusion,Sirene,DiffusionConfig]),
     ScheduleModule.forRoot(),
     SmsModule,
     SouscriptionModule,
-    DiffusionPlanifieeModule
+    DiffusionPlanifieeModule,
+    DiffusionConfigModule
   ],
   controllers: [PlanningDiffusionController],
   providers: [

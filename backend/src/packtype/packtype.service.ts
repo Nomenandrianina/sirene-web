@@ -70,48 +70,48 @@ export class PacktypeService {
    * À appeler depuis un seeder ou OnModuleInit
    */
   async seedPacks(): Promise<void> {
-    const packs: CreatePackTypeDto[] = [
-      {
-        name: 'premium',
-        description: '3 diffusions par jour, tous les jours (semaine + mensuel)',
-        frequenceParJour: 3,
-        joursParSemaine: 7,
-        joursAutorises: null,
-        dureeMaxMinutes: 20,
-        prix: 150000,
-        periode: 'monthly' as any,
-        isActive: true,
-      },
-      {
-        name: 'medium',
-        description: '1 diffusion par jour, tous les jours (semaine + mensuel)',
-        frequenceParJour: 1,
-        joursParSemaine: 7,
-        joursAutorises : null,
-        dureeMaxMinutes: 20,
-        prix: 75000,
-        periode: 'monthly' as any,
-        isActive: true,
-      },
-      {
-        name: 'basique',
-        description: '3 diffusions par semaine (lundi, mercredi, vendredi)',
-        frequenceParJour: 1,
-        joursParSemaine: 3,
-        joursAutorises: [1, 3, 5], // lundi, mercredi, vendredi
-        dureeMaxMinutes: 15,
-        prix: 30000,
-        periode: 'monthly' as any,
-        isActive: true,
-      },
-    ];
+    // const packs: CreatePackTypeDto[] = [
+    //   {
+    //     name: 'premium',
+    //     description: '3 diffusions par jour, tous les jours (semaine + mensuel)',
+    //     frequenceParJour: 3,
+    //     joursParSemaine: 7,
+    //     joursAutorises: null,
+    //     dureeMaxMinutes: 20,
+    //     prix: 150000,
+    //     periode: 'monthly' as any,
+    //     isActive: true,
+    //   },
+    //   {
+    //     name: 'medium',
+    //     description: '1 diffusion par jour, tous les jours (semaine + mensuel)',
+    //     frequenceParJour: 1,
+    //     joursParSemaine: 7,
+    //     joursAutorises : null,
+    //     dureeMaxMinutes: 20,
+    //     prix: 75000,
+    //     periode: 'monthly' as any,
+    //     isActive: true,
+    //   },
+    //   {
+    //     name: 'basique',
+    //     description: '3 diffusions par semaine (lundi, mercredi, vendredi)',
+    //     frequenceParJour: 1,
+    //     joursParSemaine: 3,
+    //     joursAutorises: [1, 3, 5], // lundi, mercredi, vendredi
+    //     dureeMaxMinutes: 15,
+    //     prix: 30000,
+    //     periode: 'monthly' as any,
+    //     isActive: true,
+    //   },
+    // ];
 
-    for (const p of packs) {
-      const exists = await this.repo.findOne({ where: { name: p.name } });
-      if (!exists) {
-        await this.repo.save(this.repo.create(p));
-        console.log(`[Seed] Pack "${p.name}" créé`);
-      }
-    }
+    // for (const p of packs) {
+    //   const exists = await this.repo.findOne({ where: { name: p.name } });
+    //   if (!exists) {
+    //     await this.repo.save(this.repo.create(p));
+    //     console.log(`[Seed] Pack "${p.name}" créé`);
+    //   }
+    // }
   }
 }

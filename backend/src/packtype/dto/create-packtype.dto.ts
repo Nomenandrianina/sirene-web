@@ -45,6 +45,13 @@ export class CreatePackTypeDto {
     @IsOptional()
     @IsBoolean()
     isActive?: boolean;
+
+    @IsInt() @Min(0) @Max(23)
+    heure: number;
+  
+    @IsInt() @Min(0) @Max(59)
+    minute: number;
+    
 }
   
 export class UpdatePackTypeDto extends PartialType(CreatePackTypeDto) {}

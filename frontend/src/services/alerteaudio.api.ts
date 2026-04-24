@@ -72,8 +72,7 @@ const token = () => localStorage.getItem("access_token") ?? "";
 
   
 export const alerteAudiosApi = {
-    getAll:   (sousCategorieAlerteId?: number ) =>
-    get(`/alerte-audios${sousCategorieAlerteId ? `?sousCategorieAlerteId=${sousCategorieAlerteId}` : ""}`),
+    getAll:   (sousCategorieAlerteId?: number ) => get(`/alerte-audios${sousCategorieAlerteId ? `?sousCategorieAlerteId=${sousCategorieAlerteId}` : ""}`),
     getAllByCustomer: (customerId?: string) => get(`/alerte-audios/findAllbycustumer${customerId ? `?customerId=${customerId}` : ''}`),
     getById:  (id: number) => get(`/alerte-audios/${id}`),
     create:   postAudio,

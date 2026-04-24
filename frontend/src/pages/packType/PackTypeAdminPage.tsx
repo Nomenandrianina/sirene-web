@@ -14,6 +14,7 @@ const DEFAULT_FORM: FormState = {
   dureeMaxMinutes: 15,
   prix: 0,
   periode: 'monthly',
+  creneaux: [{ heure: 7, minute: 0 }],
 };
 
 export default function PackTypeAdminPage() {
@@ -55,6 +56,7 @@ export default function PackTypeAdminPage() {
       dureeMaxMinutes: pack.dureeMaxMinutes,
       prix: pack.prix,
       periode: pack.periode,
+      creneaux: pack.creneaux ?? [{ heure: 7, minute: 0 }],
     });
     setError(null);
     setShowForm(true);
@@ -139,7 +141,15 @@ export default function PackTypeAdminPage() {
                 {packs.map((pack) => (
                   <tr key={pack.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800 capitalize">{pack.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{pack.frequenceParJour}x / jour</td>
+                    {/* <td className="px-4 py-3 text-gray-600">{pack.frequenceParJour}x / jour</td> */}
+                    <td className="px-4 py-3 text-gray-600">
+                        {pack.creneaux?.length
+                          ? pack.creneaux.map(c =>
+                              `${String(c.heure).padStart(2,'0')}h${String(c.minute).padStart(2,'0')}`
+                            ).join(', ')
+                          : `${pack.frequenceParJour}x`
+                        }
+                      </td>
                     <td className="px-4 py-3 text-gray-600">{pack.joursParSemaine}j</td>
                     <td className="px-4 py-3 text-gray-600">{pack.dureeMaxMinutes} min</td>
                     <td className="px-4 py-3 text-gray-600">{pack.prix.toLocaleString('fr-FR')} Ar</td>
@@ -193,7 +203,7 @@ export default function PackTypeAdminPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
+                  {/* <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                       Diffusions / jour
                     </label>
@@ -206,7 +216,95 @@ export default function PackTypeAdminPage() {
                       <option value={2}>2x (7h, 12h)</option>
                       <option value={3}>3x (7h, 12h, 16h)</option>
                     </select>
-                  </div>
+                  </div> */}
+
+                  {/* Créneaux — remplace le select "Diffusions / jour" */ }
+                    <div className="col-span-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-medium text-gray-600">
+                          Créneaux d'envoi ({form.creneaux?.length ?? 0}x / jour)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => set('creneaux', [...(form.creneaux ?? []), { heure: 7, minute: 0 }])}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          + Ajouter
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {(form.creneaux ?? []).map((c, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            {/* Heure */}
+                            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-blue-600 text-xs"
+                                onClick={() => {
+                                  const next = [...(form.creneaux ?? [])];
+                                  next[i] = { ...next[i], heure: (next[i].heure + 1) % 24 };
+                                  set('creneaux', next);
+                                }}
+                              >▲</button>
+                              <span className="w-6 text-center text-sm font-semibold tabular-nums">
+                                {String(c.heure).padStart(2, '0')}
+                              </span>
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-blue-600 text-xs"
+                                onClick={() => {
+                                  const next = [...(form.creneaux ?? [])];
+                                  next[i] = { ...next[i], heure: (next[i].heure - 1 + 24) % 24 };
+                                  set('creneaux', next);
+                                }}
+                              >▼</button>
+                            </div>
+
+                            <span className="text-gray-400 font-semibold">:</span>
+
+                            {/* Minute */}
+                            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-blue-600 text-xs"
+                                onClick={() => {
+                                  const next = [...(form.creneaux ?? [])];
+                                  next[i] = { ...next[i], minute: (next[i].minute + 5) % 60 };
+                                  set('creneaux', next);
+                                }}
+                              >▲</button>
+                              <span className="w-6 text-center text-sm font-semibold tabular-nums">
+                                {String(c.minute).padStart(2, '0')}
+                              </span>
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-blue-600 text-xs"
+                                onClick={() => {
+                                  const next = [...(form.creneaux ?? [])];
+                                  next[i] = { ...next[i], minute: (next[i].minute - 5 + 60) % 60 };
+                                  set('creneaux', next);
+                                }}
+                              >▼</button>
+                            </div>
+
+                            <span className="text-xs text-gray-400 flex-1">
+                              → {String(c.heure).padStart(2,'0')}h{String(c.minute).padStart(2,'0')}
+                            </span>
+
+                            {/* Supprimer */}
+                            {(form.creneaux?.length ?? 0) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => set('creneaux', (form.creneaux ?? []).filter((_, j) => j !== i))}
+                                className="text-xs text-red-400 hover:text-red-600"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">

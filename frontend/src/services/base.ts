@@ -17,6 +17,20 @@ function clearSession() {
   window.location.href = '/login';
 }
 
+function buildQuery(params?: Record<string, any>): string {
+  if (!params) return '';
+
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      query.append(key, String(value));
+    }
+  });
+
+  return query.toString() ? `?${query.toString()}` : '';
+}
+
 export async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -60,7 +74,13 @@ export async function request<T>(
 }
 
 // Helpers raccourcis
-export const get  = <T>(url: string)                        => request<T>(url);
+export const get = <T>(
+  url: string,
+  options?: { params?: Record<string, any> }
+) => {
+  const query = buildQuery(options?.params);
+  return request<T>(`${url}${query}`);
+};
 export const post = <T>(url: string, body: unknown)         => request<T>(url, { method: 'POST',  body: JSON.stringify(body) });
 export const put  = <T>(url: string, body: unknown)         => request<T>(url, { method: 'PUT',   body: JSON.stringify(body) });
 export const patch = <T>(url: string, body?: unknown) =>  request<T>(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined,});

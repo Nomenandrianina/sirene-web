@@ -26,20 +26,6 @@ export class PlanningDiffusionController {
   ) {}
 
   // ── Vue planning ───────────────────────────────────────────────────────────
-
-  /**
-   * GET /planning-diffusion
-   *
-   * Retourne les diffusions organisées par date + heure.
-   * Si from/to non fournis → semaine courante.
-   *
-   * Query :
-   *   from           "2026-04-14"
-   *   to             "2026-04-20"
-   *   customerId     number   (filtre client)
-   *   souscriptionId number   (filtre souscription)
-   *   sireneId       number   (filtre sirène)
-   */
   @Get()
   getPlanning(
     @Query('from')           from?:           string,
@@ -133,7 +119,7 @@ export class PlanningDiffusionController {
       return { error: `Format de date invalide : "${date}". Utilisez YYYY-MM-DD, "today" ou "tomorrow"` };
     }
 
-    const result = await this.schedulerService.processDiffusionsForDate(dateStr);
+    const result = await this.schedulerService.processDiffusionsForDate(dateStr,null);
     return result;
   }
 

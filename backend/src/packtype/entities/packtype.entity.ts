@@ -1,16 +1,15 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
+import { Entity,PrimaryGeneratedColumn,Column,CreateDateColumn,UpdateDateColumn,OneToMany,
 } from 'typeorm';
 import { Souscription } from '@/souscription/entities/souscription.entity';
 
 export enum Periode {
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
+}
+
+export interface Creneau {
+  heure:  number; // 0–23
+  minute: number; // 0–59
 }
 
 @Entity('pack_type')
@@ -51,6 +50,9 @@ export class PackType {
    */
   @Column({ type: 'int', name: 'duree_max_minutes', default: 15 })
   dureeMaxMinutes: number;
+
+  @Column({ type: 'simple-json', name: 'creneaux', nullable: true })
+  creneaux: Creneau[] | null;
 
   /**
    * Prix du pack

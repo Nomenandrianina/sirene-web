@@ -62,7 +62,6 @@ export class Sirene {
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 
-
   @OneToMany(() => Notification, (notification) => notification.sirene)
   notifications: Notification[];
 }

@@ -21,6 +21,7 @@ import { seedAlertes }      from './alert.seed';
 import { seedCommuneFokontanyPermissions }      from './communefokontany.seed';
 import { seedZone }      from './zone.seed';
 import { seedDiffusionModule } from './packtype.seed';
+import { seedDiffusionConfigs } from './diffusion-config.seed';
 
 const AppDataSource = new DataSource({
   type:     'mysql',
@@ -51,6 +52,7 @@ async function runSeeders() {
     await seedCommuneFokontanyPermissions(AppDataSource);
     // await seedZone(AppDataSource);
     await seedDiffusionModule(AppDataSource);
+    await seedDiffusionConfigs(AppDataSource);
 
     console.log('\n🌱 All seeders completed!');
   } catch (error) {

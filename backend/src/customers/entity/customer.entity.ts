@@ -1,4 +1,5 @@
 import { BaseEntity } from "src/common/entity/base.entity";
+import { Souscription } from "src/souscription/entities/souscription.entity";
 import { User } from "src/users/entities/user.entity";
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
@@ -35,4 +36,7 @@ export class Customer extends BaseEntity {
 
     @OneToMany(() => User, (user) => user.customer)
     users: User[];
+
+    @OneToMany(() => Souscription, (s) => s.customer)
+    souscriptions: Souscription[];
 }

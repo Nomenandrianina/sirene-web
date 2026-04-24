@@ -3,8 +3,12 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
+import { initFirebase } from './config/firebase';
+
 
 async function bootstrap() {
+  initFirebase();
+  
   // NestExpressApplication pour pouvoir utiliser useStaticAssets
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
