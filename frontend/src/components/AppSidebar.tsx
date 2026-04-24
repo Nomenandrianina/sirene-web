@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, AlertTriangle, Radio,
   Bell, Users, Building2, MapPin, LogOut, ChevronLeft,
-  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock
+  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,7 @@ const mainItems: NavItem[] = [
   { title: "Pack", url: "/pack", icon: Package , permission: "pack-types:read"},
   { title: "Souscription", url: "/souscription", icon: FileCheck , permission: "souscriptions:read" },
   { title: "Planning", url: "/planning", icon: CalendarClock },
+  { title: "Mes offres", url: "/Offreclient", icon: Tag },
 ];
 
 const dataItems: NavItem[] = [
@@ -50,6 +51,7 @@ const adminItems: NavItem[] = [
   { title: "Clients",      url: "/clients",      icon: Building2,   permission: "customers:read"    },
   { title: "Rôles",        url: "/roles",        icon: ShieldCheck, permission: "roles:read"        },
   { title: "Permissions",  url: "/permissions",  icon: Lock,        permission: "permissions:read"  },
+  { title: "parametrage de diffusion",  url: "/parametrage-diffusion",  icon: Settings,        permission: "permissions:read"  },
 ];
 
 interface AppSidebarProps {

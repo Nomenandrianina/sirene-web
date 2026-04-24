@@ -188,7 +188,7 @@ export default function SireneList() {
                     <th>N° Brain</th>
                     <th>N° Relai</th>
                     <th>Clients</th>
-                    <th>Statut</th>
+                    {/* <th>Statut</th> */}
                     <th>Type communication</th>
                     <th>Actions</th>
                   </tr>
@@ -222,11 +222,11 @@ export default function SireneList() {
                           }
                         </div>
                       </td>
-                      <td>
+                      {/* <td>
                         <span className={`status-badge ${s.isActive ? "active" : "inactive"}`}>
                           {s.isActive ? <><Wifi size={12} /> Active</> : <><WifiOff size={12} /> Inactive</>}
                         </span>
-                      </td>
+                      </td> */}
                       <td>
                         <span className="phone-badge relai">{s.communicationType ?? "—"}</span>
                       </td>

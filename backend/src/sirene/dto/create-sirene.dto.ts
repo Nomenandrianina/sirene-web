@@ -37,6 +37,9 @@ export class CreateSireneDto {
     @IsNumber()
     isActive: number;
 
+    @IsString()
+    fcmToken!: string;
+
     @IsOptional()
     @IsArray()
     @IsNumber({}, { each: true })

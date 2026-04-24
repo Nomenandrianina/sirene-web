@@ -1,6 +1,7 @@
 import {Entity,PrimaryGeneratedColumn,Column,CreateDateColumn,UpdateDateColumn,ManyToOne,JoinColumn,OneToMany,ManyToMany,JoinTable} from 'typeorm';
 import { PackType } from '@/packtype/entities/packtype.entity';
 import { DiffusionLog } from '@/diffusion-log/entities/diffusion-log.entity';
+import { Customer } from 'src/customers/entity/customer.entity';
 
 export enum SouscriptionStatus {
   ACTIVE    = 'active',
@@ -65,6 +66,11 @@ export class Souscription {
 
   @OneToMany(() => DiffusionLog, (d) => d.souscription)
   diffusionLogs: DiffusionLog[];
+
+  @ManyToOne(() => Customer, (c) => c.souscriptions, { eager: false })
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
+
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

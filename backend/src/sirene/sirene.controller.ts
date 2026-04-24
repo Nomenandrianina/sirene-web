@@ -1,15 +1,18 @@
 import {
   Controller, Get, Post, Patch, Delete, Param,
-  Body, ParseIntPipe, Request,
+  Body, ParseIntPipe, Request,HttpCode ,HttpStatus, NotFoundException, InternalServerErrorException, UseGuards
 } from '@nestjs/common';
 import { SirenesService }   from './sirene.service';
 import { CreateSireneDto }  from './dto/create-sirene.dto';
 import { UpdateSireneDto }  from './dto/update-sirene.dto';
 import { SmsService } from '@/sms/sms.service';
+import { Public } from 'src/common/decarators/public.decorator';
+import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 
 class SendAlertDto {
   message: string;
 }
+
 
 @Controller('sirenes')
 export class SirenesController {
@@ -65,8 +68,21 @@ export class SirenesController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.sirenesService.remove(id, req.user.id);
-  }
+  } 
 
+  @Public()
+  @UseGuards(ApiKeyGuard) 
+  @Post('fcm-token/:imei')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateFcmToken(@Param('imei') imei: string, @Body() dto: UpdateSireneDto, ): Promise<void> {
+  try {
+    console.log("imei :",imei)
+    await this.sirenesService.updateFcmToken(imei, dto.fcmToken as string);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Erreur lors de la mise à jour du token FCM');
+    }
+  }
 
   /** POST /sirenes/:id/alert — déclencher une alerte SMS */
   // @Post(':id/alert')

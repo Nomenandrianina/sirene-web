@@ -12,22 +12,22 @@ export async function seedPackTypes(dataSource: DataSource) {
 
   await dataSource.query(`
     INSERT INTO pack_type
-      (name, description, frequence_par_jour, jours_par_semaine, jours_autorises, duree_max_minutes, prix, periode, is_active)
+      (name, description, frequence_par_jour, jours_par_semaine, jours_autorises, creneaux, duree_max_minutes, prix, periode, is_active)
     VALUES
       (
-        'premium',
-        '3 diffusions par jour tous les jours — créneaux 7h, 12h et 16h',
-        3, 7, NULL, 20, 150000, 'monthly', 1
+        'premium', '3 diffusions par jour tous les jours', 3, 7, NULL,
+        '[{"heure":7,"minute":0},{"heure":12,"minute":0},{"heure":16,"minute":15}]',
+        20, 150000, 'monthly', 1
       ),
       (
-        'medium',
-        '1 diffusion par jour tous les jours — créneau 7h uniquement',
-        1, 7, NULL, 20, 75000, 'monthly', 1
+        'medium', '1 diffusion par jour tous les jours', 1, 7, NULL,
+        '[{"heure":7,"minute":0}]',
+        20, 75000, 'monthly', 1
       ),
       (
-        'basique',
-        '3 diffusions par semaine — lundi, mercredi, vendredi à 7h',
-        1, 3, '1,3,5', 15, 30000, 'monthly', 1
+        'basique', '3 diffusions par semaine', 1, 3, '1,3,5',
+        '[{"heure":7,"minute":0}]',
+        15, 30000, 'monthly', 1
       )
   `);
 

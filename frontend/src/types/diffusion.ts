@@ -1,8 +1,16 @@
 // ── Types partagés frontend ──────────────────────────────────────────────
 
+import { Customer } from "./customer";
+
 export type Periode = 'weekly' | 'monthly';
 export type SouscriptionStatus = 'active' | 'expired' | 'suspended' | 'pending';
 export type DiffusionStatus = 'sent' | 'failed';
+
+export interface Creneau {
+  heure: number;
+  minute: number;
+}
+
 
 export interface PackType {
   id: number;
@@ -12,6 +20,7 @@ export interface PackType {
   joursParSemaine: number;
   joursAutorises: number[] | null;
   dureeMaxMinutes: number;
+  creneaux: Creneau[] | null;  
   prix: number;
   periode: Periode;
   isActive: boolean;
@@ -33,6 +42,7 @@ export interface Souscription {
   estExpire?: boolean;
   dateFinFormatee?: string;
   createdAt: string;
+  customer?: Customer;
 }
 
 export interface DiffusionLog {

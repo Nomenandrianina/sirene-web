@@ -73,7 +73,7 @@ export class SouscriptionService {
 
     return this.repo.find({
       where,
-      relations: ['packType', 'sirenes', 'diffusionLogs'],
+      relations: ['packType', 'sirenes',   'sirenes.village' ,'diffusionLogs'],
       order: { createdAt: 'DESC' },
     });
   }

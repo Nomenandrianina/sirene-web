@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import {DiffusionPlanifiee, DiffusionPlanifieeStatus,} from './entities/diffusion-planifiee.entity';
 import { Souscription } from '@/souscription/entities/souscription.entity';
 import { PackType } from '@/packtype/entities/packtype.entity';
-
+import { DiffusionConfig } from 'src/diffusion-config/entities/diffusion-config.entity';
 // ── Helpers date ──────────────────────────────────────────────────────────────
 
 /** "2026-04-15" */
@@ -26,10 +26,18 @@ function isoDay(d: Date): number {
 
 /** Créneaux autorisés selon frequenceParJour */
 const CRENEAUX_BASE = [7, 12, 16];
-function creneauxDuPack(pack: PackType): number[] {
-  return CRENEAUX_BASE.slice(0, pack.frequenceParJour);
-}
+interface CreneauResolu { heure: number; minute: number; }
 
+function creneauxDuPack(pack: PackType): CreneauResolu[] {
+  // Si le pack a des créneaux configurés → on les utilise
+  if (pack.creneaux?.length) {
+    return pack.creneaux; // [{ heure: 7, minute: 0 }, { heure: 16, minute: 15 }]
+  }
+  // Fallback legacy pour les anciens packs sans créneaux configurés
+  return [7, 12, 16]
+    .slice(0, pack.frequenceParJour)
+    .map(h => ({ heure: h, minute: 0 }));
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
@@ -39,6 +47,9 @@ export class DiffusionPlanifieeService {
   constructor(
     @InjectRepository(DiffusionPlanifiee)
     private readonly repo: Repository<DiffusionPlanifiee>,
+
+    @InjectRepository(DiffusionConfig)          // ← ajouter
+    private readonly diffusionConfigRepo: Repository<DiffusionConfig>,
   ) {}
 
   // ── GÉNÉRATION ──────────────────────────────────────────────────────────────
@@ -52,57 +63,55 @@ export class DiffusionPlanifieeService {
   async generateForSouscription(souscription: Souscription): Promise<number> {
     const pack    = souscription.packType;
     const sirenes = souscription.sirenes ?? [];
-
+  
     if (!sirenes.length) {
       this.logger.warn(`Souscription #${souscription.id} — aucune sirène, planning non généré`);
       return 0;
     }
-
-    const creneaux   = creneauxDuPack(pack);
-    const startDate  = new Date(souscription.startDate);
-    const endDate    = new Date(souscription.endDate);
+  
+    const creneaux  = creneauxDuPack(pack);   // ← maintenant { heure, minute }[]
+    const startDate = new Date(souscription.startDate);
+    const endDate   = new Date(souscription.endDate);
     const rows: Partial<DiffusionPlanifiee>[] = [];
-
-    // Itérer sur chaque jour de la période
+  
     let cursor = new Date(startDate);
     while (cursor <= endDate) {
       const jourISO = isoDay(cursor);
       const dateStr = toDateStr(cursor);
-
-      // Vérifier si ce jour est autorisé par le pack
+  
       const jourAutorise =
         !pack.joursAutorises?.length ||
         pack.joursAutorises.includes(jourISO);
-
+  
       if (jourAutorise) {
         for (const sirene of sirenes) {
-          for (const heure of creneaux) {
+          for (const creneau of creneaux) {
             rows.push({
               souscriptionId: souscription.id,
               customerId:     souscription.customerId,
               sireneId:       sirene.id,
               scheduledDate:  dateStr,
-              scheduledHeure: heure,
+              scheduledHeure:  creneau.heure,    // ← heure dynamique
+              scheduledMinute: creneau.minute,   // ← minute dynamique
               status:         DiffusionPlanifieeStatus.PLANNED,
             });
           }
         }
       }
-
+  
       cursor = addDays(cursor, 1);
     }
-
+  
     if (!rows.length) {
       this.logger.warn(`Souscription #${souscription.id} — aucune ligne générée`);
       return 0;
     }
-
-    // Insertion par batch de 500 pour ne pas surcharger MySQL
+  
     const BATCH = 500;
     for (let i = 0; i < rows.length; i += BATCH) {
       await this.repo.insert(rows.slice(i, i + BATCH));
     }
-
+  
     this.logger.log(
       `Souscription #${souscription.id} — ${rows.length} diffusions planifiées générées`,
     );
@@ -116,39 +125,57 @@ export class DiffusionPlanifieeService {
    * Utilisé par la vue planning hebdomadaire.
    */
   async getPlanning(query: {
-    from: string;
-    to: string;
-    customerId?: number;
+    from:            string;
+    to:              string;
+    customerId?:     number;
     souscriptionId?: number;
-    sireneId?: number;
+    sireneId?:       number;
   }): Promise<PlanningSlot[]> {
+   
     const qb = this.repo
       .createQueryBuilder('dp')
+   
+      // ── Sirène ──────────────────────────────────────────────────────────────
       .leftJoin('sirene', 's', 's.id = dp.sirene_id')
-      .addSelect(['s.id', 's.name', 's.phone_number_brain'])
+      .addSelect(['s.id', 's.name'])
+   
+      // ── Notification ────────────────────────────────────────────────────────
+      .leftJoin('notification_sirene_alerte', 'n', 'n.id = dp.notification_id')
+      .addSelect(['n.id', 'n.status', 'n.message'])
+   
+      // ── Souscription → alerte_audio ─────────────────────────────────────────
+      // dp.souscription_id → souscription.alerte_audio_id → alerte_audio
       .leftJoin(
-        'notification_sirene_alerte', 'n',
-        'n.id = dp.notification_id',
+        'alerte_audio',
+        'aa',
+        'aa.sirene_id = dp.sirene_id AND aa.customer_id = dp.customer_id'
       )
-      .addSelect(['n.id', 'n.status', 'n.message', 'n.message_id'])
+   
+      // ── alerte_audio → sous_categorie_alerte ────────────────────────────────
+      .leftJoin('sous_categorie_alerte', 'sca', 'sca.id = aa.sous_categorie_alerte_id')
+      .addSelect(['sca.id', 'sca.name'])
+   
+      // ── Customer ─────────────────────────────────────────────────────────────
+      .leftJoin('customers', 'cu', 'cu.id = dp.customer_id')
+      .addSelect(['cu.id', 'cu.name'])
+   
       .where('dp.scheduled_date BETWEEN :from AND :to', {
         from: query.from,
         to:   query.to,
       })
       .orderBy('dp.scheduled_date', 'ASC')
       .addOrderBy('dp.scheduled_heure', 'ASC');
-
-    if (query.customerId)    qb.andWhere('dp.customer_id = :cid',  { cid: query.customerId });
-    if (query.souscriptionId) qb.andWhere('dp.souscription_id = :sid', { sid: query.souscriptionId });
-    if (query.sireneId)      qb.andWhere('dp.sirene_id = :sid2', { sid2: query.sireneId });
-
-    const rows = await qb.getRawAndEntities();
-
-    // Organiser par date + heure
+   
+    if (query.customerId)     qb.andWhere('dp.customer_id = :cid',       { cid:  query.customerId });
+    if (query.souscriptionId) qb.andWhere('dp.souscription_id = :sid',   { sid:  query.souscriptionId });
+    if (query.sireneId)       qb.andWhere('dp.sirene_id = :sid2',         { sid2: query.sireneId });
+   
+    const { entities, raw } = await qb.getRawAndEntities();
+   
     const map = new Map<string, PlanningSlot>();
     const now = new Date();
-
-    for (const dp of rows.entities) {
+   
+    for (const dp of entities) {
       const key = `${dp.scheduledDate}-${dp.scheduledHeure}`;
       if (!map.has(key)) {
         map.set(key, {
@@ -157,34 +184,113 @@ export class DiffusionPlanifieeService {
           items: [],
         });
       }
-
-      // Heure de déclenchement prévue pour l'annulabilité
-      const scheduledDateTime = new Date(`${dp.scheduledDate}T${String(dp.scheduledHeure).padStart(2,'0')}:00:00`);
+   
+      const scheduledDateTime = new Date(
+        `${dp.scheduledDate}T${String(dp.scheduledHeure).padStart(2, '0')}:00:00`,
+      );
       const canCancel =
         dp.status === DiffusionPlanifieeStatus.PLANNED &&
         scheduledDateTime > now;
-
-      // Récupérer les champs raw de la jointure
-      const raw = rows.raw.find((r: any) => r.dp_id === dp.id) ?? {};
-
+   
+      const r = raw.find((x: any) => x.dp_id === dp.id) ?? {};
+   
       map.get(key)!.items.push({
-        id:             dp.id,
-        souscriptionId: dp.souscriptionId,
-        sireneId:       dp.sireneId,
-        sireneName:     raw['s_name'] ?? null,
-        scheduledDate:  dp.scheduledDate,
-        scheduledHeure: dp.scheduledHeure,
-        status:         dp.status,
-        observation:    dp.observation,
-        notificationId: dp.notificationId,
-        notifStatus:    raw['n_status'] ?? null,
-        notifMessage:   raw['n_message'] ?? null,
+        id:               dp.id,
+        souscriptionId:   dp.souscriptionId,
+        sireneId:         dp.sireneId,
+        sireneName:       r['s_name']   ?? null,
+        scheduledDate:    dp.scheduledDate,
+        scheduledHeure:   dp.scheduledHeure,
+        status:           dp.status,
+        observation:      dp.observation,
+        notificationId:   dp.notificationId,
+        notifStatus:      r['n_status'] ?? null,
+        notifMessage:     r['n_message'] ?? null,
         canCancel,
+        // ── Nouveaux ───────────────────────────────────────────────────────────
+        customerName:     r['cu_name']  ?? null,
+        customerId:       r['cu_id']    ?? null,
+        sousCategorieId:  r['sca_id']   ?? null,
+        sousCategorieNom: r['sca_name'] ?? null,
+        alerteAudioId:    r['aa_id']    ?? null,
+        alerteAudioName:  r['aa_name']  ?? null,
       });
     }
-
+   
     return Array.from(map.values());
   }
+ 
+  
+  // async getPlanning(query: {
+  //   from: string;
+  //   to: string;
+  //   customerId?: number;
+  //   souscriptionId?: number;
+  //   sireneId?: number;
+  // }): Promise<PlanningSlot[]> {
+  //   const qb = this.repo
+  //     .createQueryBuilder('dp')
+  //     .leftJoin('sirene', 's', 's.id = dp.sirene_id')
+  //     .addSelect(['s.id', 's.name', 's.phone_number_brain'])
+  //     .leftJoin(
+  //       'notification_sirene_alerte', 'n',
+  //       'n.id = dp.notification_id',
+  //     )
+  //     .addSelect(['n.id', 'n.status', 'n.message', 'n.message_id'])
+  //     .where('dp.scheduled_date BETWEEN :from AND :to', {
+  //       from: query.from,
+  //       to:   query.to,
+  //     })
+  //     .orderBy('dp.scheduled_date', 'ASC')
+  //     .addOrderBy('dp.scheduled_heure', 'ASC');
+
+  //   if (query.customerId)    qb.andWhere('dp.customer_id = :cid',  { cid: query.customerId });
+  //   if (query.souscriptionId) qb.andWhere('dp.souscription_id = :sid', { sid: query.souscriptionId });
+  //   if (query.sireneId)      qb.andWhere('dp.sirene_id = :sid2', { sid2: query.sireneId });
+
+  //   const rows = await qb.getRawAndEntities();
+
+  //   // Organiser par date + heure
+  //   const map = new Map<string, PlanningSlot>();
+  //   const now = new Date();
+
+  //   for (const dp of rows.entities) {
+  //     const key = `${dp.scheduledDate}-${dp.scheduledHeure}`;
+  //     if (!map.has(key)) {
+  //       map.set(key, {
+  //         date:  dp.scheduledDate,
+  //         heure: dp.scheduledHeure as 7 | 12 | 16,
+  //         items: [],
+  //       });
+  //     }
+
+  //     // Heure de déclenchement prévue pour l'annulabilité
+  //     const scheduledDateTime = new Date(`${dp.scheduledDate}T${String(dp.scheduledHeure).padStart(2,'0')}:00:00`);
+  //     const canCancel =
+  //       dp.status === DiffusionPlanifieeStatus.PLANNED &&
+  //       scheduledDateTime > now;
+
+  //     // Récupérer les champs raw de la jointure
+  //     const raw = rows.raw.find((r: any) => r.dp_id === dp.id) ?? {};
+
+  //     map.get(key)!.items.push({
+  //       id:             dp.id,
+  //       souscriptionId: dp.souscriptionId,
+  //       sireneId:       dp.sireneId,
+  //       sireneName:     raw['s_name'] ?? null,
+  //       scheduledDate:  dp.scheduledDate,
+  //       scheduledHeure: dp.scheduledHeure,
+  //       status:         dp.status,
+  //       observation:    dp.observation,
+  //       notificationId: dp.notificationId,
+  //       notifStatus:    raw['n_status'] ?? null,
+  //       notifMessage:   raw['n_message'] ?? null,
+  //       canCancel,
+  //     });
+  //   }
+
+  //   return Array.from(map.values());
+  // }
 
   /**
    * Résumé stats pour une semaine
@@ -218,15 +324,54 @@ export class DiffusionPlanifieeService {
    * (le cron envoie la veille pour le lendemain)
    * Inclut la relation sirene pour récupérer phoneNumberBrain
    */
-  async findPlannedForDate(dateStr: string): Promise<DiffusionPlanifiee[]> {
-    return this.repo
+  async findPlannedForDate(
+    dateStr:  string,
+    regionId: number | null = null,
+  ): Promise<DiffusionPlanifiee[]> {
+  
+    const qb = this.repo
       .createQueryBuilder('dp')
-      .where('dp.scheduled_date = :date', { date: dateStr })
-      .andWhere('dp.status = :status', { status: DiffusionPlanifieeStatus.PLANNED })
-      .orderBy('dp.sirene_id', 'ASC')
-      .addOrderBy('dp.scheduled_heure', 'ASC')
-      .getMany();
+      // Remonter la hiérarchie géographique jusqu'à la région
+      .innerJoin('dp.sirene',        's')
+      .innerJoin('s.village',        'v')
+      .innerJoin('v.fokontany',      'fk')
+      .innerJoin('fk.commune',       'co')
+      .innerJoin('co.district',      'di')
+      .where('dp.scheduled_date = :date',   { date: dateStr })
+      .andWhere('dp.status = :status',      { status: DiffusionPlanifieeStatus.PLANNED })
+      .orderBy('dp.sirene_id',         'ASC')
+      .addOrderBy('dp.scheduled_heure', 'ASC');
+  
+    if (regionId !== null) {
+      // Config régionale → uniquement les sirènes de cette région
+      qb.andWhere('di.regionId = :regionId', { regionId });
+    } else {
+      // Config globale → exclure les sirènes déjà couvertes par une config régionale active
+      const configuredRegions = await this.diffusionConfigRepo.find({
+        where:  { isActive: true, regionId: Not(IsNull()) },
+        select: ['regionId'],
+      });
+  
+      const ids = configuredRegions.map(c => c.regionId).filter(Boolean);
+      if (ids.length) {
+        qb.andWhere('di.region_id NOT IN (:...ids)', { ids });
+      }
+    }
+  
+    return qb.getMany();
   }
+
+  // async findPlannedForDate(dateStr: string): Promise<DiffusionPlanifiee[]> {
+  //   return this.repo
+  //     .createQueryBuilder('dp')
+  //     .where('dp.scheduled_date = :date', { date: dateStr })
+  //     .andWhere('dp.status = :status', { status: DiffusionPlanifieeStatus.PLANNED })
+  //     .orderBy('dp.sirene_id', 'ASC')
+  //     .addOrderBy('dp.scheduled_heure', 'ASC')
+  //     .getMany();
+  // }
+
+  
 
   // ── ANNULATION ──────────────────────────────────────────────────────────────
 
@@ -288,6 +433,8 @@ export class DiffusionPlanifieeService {
     if (!dp) throw new NotFoundException(`DiffusionPlanifiee #${id} introuvable`);
     return dp;
   }
+
+  
 }
 
 // ── Types retournés au frontend ───────────────────────────────────────────────
@@ -305,6 +452,13 @@ export interface PlanningItem {
   notifStatus:    string | null;
   notifMessage:   string | null;
   canCancel:      boolean;
+  customerName:        string | null;   // customer.name
+  customerId:          number | null;   // pour filtre côté frontend
+  sousCategorieId:     number | null;   // sous_categorie_alerte.id
+  sousCategorieNom:    string | null;   // sous_categorie_alerte.name
+  alerteAudioId:       number | null;   // alerte_audio.id
+  alerteAudioName:     string | null;   // alerte_audio.name
+
 }
 
 export interface PlanningSlot {

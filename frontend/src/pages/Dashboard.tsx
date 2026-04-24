@@ -10,6 +10,7 @@ import { notificationsApi } from "@/services/notification.api";
 import { provincesApi }     from "@/services/province.api";
 import { regionsApi }       from "@/services/region.api";
 import { AppLayout }        from "@/components/AppLayout";
+import { useGreeting }        from "@/hooks/useGreeting";
 import "../styles/page.css";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -108,6 +109,9 @@ export default function Dashboard() {
   const regions   = useMemo(() => toArr(rawRegions),   [rawRegions]);
   const stats     = rawStats as any;
 
+  const { greeting, firstName, sub ,period } = useGreeting();
+
+
   // ── Calculs sirènes ───────────────────────────────────────────────
   const totalSirenes  = sirenes.length;
   const activeSirenes = sirenes.filter((s: any) => s.isActive).length;
@@ -199,11 +203,16 @@ export default function Dashboard() {
 
         {/* ── Header ── */}
         <div className="page-header">
-          <div className="page-header-left">
-            <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">Vue d'ensemble du système d'alertes</p>
-          </div>
+        <div className="page-header-left">
+          <h1 className="page-title">
+            {greeting}{firstName ? `, ${firstName}` : ""} 
+            <span style={{ marginLeft: 6 }}>
+              {period === "matin" ? "☀️" : period === "journée" ? "🌤️" : period === "soir" ? "🌙" : "🌃"}
+            </span>
+          </h1>
+          <p className="page-subtitle">{sub}</p>
         </div>
+      </div>
 
         {/* ── Stat cards ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14, marginBottom: 24 }}>
@@ -402,7 +411,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </AppLayout>

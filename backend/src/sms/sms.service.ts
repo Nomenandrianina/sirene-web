@@ -6,6 +6,7 @@ import { Sirene } from 'src/sirene/entities/sirene.entity';
 @Injectable()
 export class SmsService {
   private readonly clientId:     string;
+  
   private readonly clientSecret: string;
   private readonly senderName:   string;
   private readonly senderPhone = 'tel:+261326080002';
@@ -113,21 +114,28 @@ export class SmsService {
     return data;
   }
 
-
+  /**
+   * Envoi message via Data ou firebase message clouding vers la sirène 
+   * @param sirene 
+   * @param message 
+   */
   async sendViaData(sirene: Sirene, message: string) {
     if (!sirene.fcmToken) throw new Error('Pas de token FCM pour cette sirène');
-
-    await admin.messaging().send({
+  
+    const messageId = await admin.messaging().send({
       token: sirene.fcmToken,
       data: {
-        message,          // même payload que le SMS
-        sireneId: String(sirene.id),
-        timestamp: Date.now().toString(),
+        sender: 'FCM_SERVER',
+        command: message, // ex: "ALT_001 3 5min P1"
       },
       android: {
-        priority: 'high', // réveille l'app même en background
+        priority: 'high',
       },
     });
+  
+    console.log('messageId :', messageId);
+  
+    return messageId;
   }
 
 

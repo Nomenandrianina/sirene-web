@@ -1,7 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
-const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000' });
 import { get, post, patch } from './base';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -9,18 +6,27 @@ import { get, post, patch } from './base';
 export type DPStatus = 'planned' | 'sent' | 'cancelled' | 'skipped';
 
 export interface PlanningItem {
-  id:             number;
-  souscriptionId: number;
-  sireneId:       number;
-  sireneName:     string | null;
-  scheduledDate:  string;
-  scheduledHeure: 7 | 12 | 16;
-  status:         DPStatus;
-  observation:    string | null;
-  notificationId: number | null;
-  notifStatus:    string | null;
-  notifMessage:   string | null;
-  canCancel:      boolean;
+  id:               number;
+  souscriptionId:   number;
+  sireneId:         number;
+  sireneName:       string | null;
+  scheduledDate:    string;
+  scheduledHeure:   7 | 12 | 16;
+  status:           DPStatus;
+  observation:      string | null;
+  notificationId:   number | null;
+  notifStatus:      string | null;
+  notifMessage:     string | null;
+  canCancel:        boolean;
+  // ── Enrichis par le backend ───────────────────────────────────────────────
+  customerName:     string | null;
+  customerId:       number | null;
+  sousCategorieId:  number | null;
+  sousCategorieNom: string | null;   // affiché en titre de card
+  alerteAudioId:    number | null;
+  alerteAudioName:  string | null;
+  // ── Optionnel : liste notifications (enrichissement futur) ────────────────
+  notifications?: { id: number; status: string; message?: string }[];
 }
 
 export interface PlanningSlot {
@@ -43,66 +49,68 @@ export function getMondayOf(d: Date): Date {
   mon.setHours(0, 0, 0, 0);
   return mon;
 }
-export function toISO(d: Date)           { return d.toISOString().split('T')[0]; }
+export function toISO(d: Date): string     { return d.toISOString().split('T')[0]; }
 export function addDays(d: Date, n: number): Date {
   const r = new Date(d); r.setDate(r.getDate() + n); return r;
 }
-export const JOURS_FR  = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-export const CRENEAUX: (7|12|16)[] = [7, 12, 16];
+export const JOURS_FR  = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+export const CRENEAUX: (7 | 12 | 16)[] = [7, 12, 16];
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
-export function usePlanning(opts: { customerId?: number; souscriptionId?: number }) {
-  const [weekStart, setWeekStart]   = useState<Date>(() => getMondayOf(new Date()));
-  const [slots, setSlots]           = useState<PlanningSlot[]>([]);
-  const [stats, setStats]           = useState<WeekStats | null>(null);
-  const [loading, setLoading]       = useState(false);
+export function usePlanning(opts: {
+  customerId?:       number;
+  souscriptionId?:   number;
+  filterCustomerId?: number;
+  filterSireneId?:   number;
+}) {
+  const [weekStart,  setWeekStart]  = useState<Date>(() => getMondayOf(new Date()));
+  const [slots,      setSlots]      = useState<PlanningSlot[]>([]);
+  const [stats,      setStats]      = useState<WeekStats | null>(null);
+  const [loading,    setLoading]    = useState(false);
   const [triggering, setTriggering] = useState(false);
   const [cancelling, setCancelling] = useState<number | null>(null);
-  const [error, setError]           = useState<string | null>(null);
+  const [error,      setError]      = useState<string | null>(null);
 
-  const weekEnd        = addDays(weekStart, 6);
-  const isCurrentWeek  = toISO(getMondayOf(new Date())) === toISO(weekStart);
+  const weekEnd       = addDays(weekStart, 6);
+  const isCurrentWeek = toISO(getMondayOf(new Date())) === toISO(weekStart);
 
   const fetch = useCallback(async () => {
-    setLoading(true); 
+    setLoading(true);
     setError(null);
-  
     try {
       const params: Record<string, string | number> = {
         from: toISO(weekStart),
         to:   toISO(weekEnd),
       };
-  
-      if (opts.customerId) params.customerId = opts.customerId;
-      if (opts.souscriptionId) params.souscriptionId = opts.souscriptionId;
-  
-      // construire query string
+      if (opts.customerId)       params.customerId       = opts.customerId;
+      if (opts.souscriptionId)   params.souscriptionId   = opts.souscriptionId;
+      if (opts.filterCustomerId) params.customerId       = opts.filterCustomerId;
+      if (opts.filterSireneId)   params.sireneId         = opts.filterSireneId;
+
       const query = new URLSearchParams(params as any).toString();
-  
+
       const [planRes, statsRes] = await Promise.all([
         get<PlanningSlot[]>(`/planning-diffusion?${query}`),
         get<WeekStats>(`/planning-diffusion/stats?${query}`),
       ]);
-  
+
+      console.log('planRes :',planRes);
       setSlots(Array.isArray(planRes) ? planRes : []);
       setStats(statsRes ?? null);
-  
     } catch (e: any) {
       setError(e?.message ?? 'Erreur de chargement');
     } finally {
       setLoading(false);
     }
-  }, [weekStart, opts.customerId, opts.souscriptionId]);
-
+  }, [weekStart, opts.customerId, opts.souscriptionId, opts.filterCustomerId, opts.filterSireneId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const prevWeek       = () => setWeekStart((d) => addDays(d, -7));
-  const nextWeek       = () => setWeekStart((d) => addDays(d,  7));
+  const prevWeek        = () => setWeekStart(d => addDays(d, -7));
+  const nextWeek        = () => setWeekStart(d => addDays(d,  7));
   const goToCurrentWeek = () => setWeekStart(getMondayOf(new Date()));
 
-  /** Annuler une ligne de planning */
   const cancelItem = async (id: number, userId: number) => {
     setCancelling(id);
     try {
@@ -115,14 +123,9 @@ export function usePlanning(opts: { customerId?: number; souscriptionId?: number
     }
   };
 
-  /**
-   * Déclencher manuellement l'envoi d'une date (TEST)
-   * date : "today" | "tomorrow" | "YYYY-MM-DD"
-   */
   const triggerDate = async (date: string) => {
-    setTriggering(true); 
+    setTriggering(true);
     setError(null);
-  
     try {
       const res = await post<any>(`/planning-diffusion/trigger/${date}`, {});
       await fetch();
@@ -135,9 +138,8 @@ export function usePlanning(opts: { customerId?: number; souscriptionId?: number
     }
   };
 
-  /** Slot pour une cellule de la grille */
   const getSlot = (dateStr: string, heure: number): PlanningSlot | undefined =>
-    slots.find((s) => s.date === dateStr && s.heure === heure);
+    slots.find(s => s.date === dateStr && s.heure === heure);
 
   return {
     weekStart, weekEnd, isCurrentWeek,

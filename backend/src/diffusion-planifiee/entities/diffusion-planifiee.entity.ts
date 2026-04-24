@@ -1,3 +1,4 @@
+import { Sirene } from 'src/sirene/entities/sirene.entity';
 import {
     Entity, PrimaryGeneratedColumn, Column,
     CreateDateColumn, ManyToOne, JoinColumn,
@@ -23,7 +24,7 @@ import {
   
     @Column({ name: 'sirene_id' })
     sireneId: number;
-  
+    
     /** Date de diffusion prévue — format DATE "2026-04-15" */
     @Column({ name: 'scheduled_date', type: 'date' })
     scheduledDate: string;
@@ -32,12 +33,19 @@ import {
     @Column({ name: 'scheduled_heure', type: 'int' })
     scheduledHeure: number;
   
+    @Column({ type: 'int', name: 'scheduled_minute', default: 0 })
+    scheduledMinute: number;
+
     @Column({
       type: 'enum',
       enum: DiffusionPlanifieeStatus,
       default: DiffusionPlanifieeStatus.PLANNED,
     })
     status: DiffusionPlanifieeStatus;
+
+    @ManyToOne(() => Sirene, { nullable: false })
+    @JoinColumn({ name: 'sirene_id' })
+    sirene: Sirene;
   
     /**
      * Renseigné après l'envoi SMS — FK vers notification_sirene_alerte

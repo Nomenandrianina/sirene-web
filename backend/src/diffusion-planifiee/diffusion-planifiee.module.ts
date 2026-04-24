@@ -4,10 +4,11 @@ import { DiffusionPlanifieeController } from './diffusion-planifiee.controller';
 import { DiffusionPlanifiee } from './entities/diffusion-planifiee.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Souscription } from 'src/souscription/entities/souscription.entity';
+import { DiffusionConfig } from 'src/diffusion-config/entities/diffusion-config.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DiffusionPlanifiee]),
+    TypeOrmModule.forFeature([DiffusionPlanifiee,DiffusionConfig]),
     
   ],
   controllers: [DiffusionPlanifieeController],

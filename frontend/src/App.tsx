@@ -63,6 +63,8 @@ import PackTypeAdminPage from "./pages/packType/PackTypeAdminPage";
 import MesSouscriptionsPage from "./pages/packType/MesSouscriptionsPage";
 import AdminSouscriptionsPage from "./pages/souscription/Adminsouscriptionspage";
 import PlanningDiffusionPage from "./pages/planning/Planningdiffusionpage";
+import DiffusionConfigPage from "./pages/Parametrage/DiffusionConfig";
+import MesOffres from "./pages/packType/MesOffres";
 
 const queryClient = new QueryClient();
 
@@ -132,6 +134,8 @@ const App = () => (
               <Route path="/souscription" element={<ProtectedRoute><MesSouscriptionsPage /></ProtectedRoute>} />
               <Route path="/souscriptionsadmins" element={<ProtectedRoute><AdminSouscriptionsPage /></ProtectedRoute>} />
               <Route path="/planning" element={<ProtectedRoute><PlanningDiffusionPage /></ProtectedRoute>} />
+              <Route path="/parametrage-diffusion" element={<ProtectedRoute><DiffusionConfigPage /></ProtectedRoute>} />
+              <Route path="/Offreclient" element={<ProtectedRoute><MesOffres /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
         </TooltipProvider>
