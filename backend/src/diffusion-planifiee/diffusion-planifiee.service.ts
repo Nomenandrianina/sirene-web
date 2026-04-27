@@ -331,46 +331,25 @@ export class DiffusionPlanifieeService {
   
     const qb = this.repo
       .createQueryBuilder('dp')
-      // Remonter la hiérarchie géographique jusqu'à la région
-      .innerJoin('dp.sirene',        's')
-      .innerJoin('s.village',        'v')
-      .innerJoin('v.fokontany',      'fk')
-      .innerJoin('fk.commune',       'co')
-      .innerJoin('co.district',      'di')
-      .where('dp.scheduled_date = :date',   { date: dateStr })
-      .andWhere('dp.status = :status',      { status: DiffusionPlanifieeStatus.PLANNED })
-      .orderBy('dp.sirene_id',         'ASC')
+      .where('dp.scheduled_date = :date', { date: dateStr })
+      .andWhere('dp.status = :status', { status: DiffusionPlanifieeStatus.PLANNED })
+      .orderBy('dp.sirene_id',          'ASC')
       .addOrderBy('dp.scheduled_heure', 'ASC');
   
+    // Filtre régional uniquement si regionId est fourni
     if (regionId !== null) {
-      // Config régionale → uniquement les sirènes de cette région
-      qb.andWhere('di.regionId = :regionId', { regionId });
-    } else {
-      // Config globale → exclure les sirènes déjà couvertes par une config régionale active
-      const configuredRegions = await this.diffusionConfigRepo.find({
-        where:  { isActive: true, regionId: Not(IsNull()) },
-        select: ['regionId'],
-      });
-  
-      const ids = configuredRegions.map(c => c.regionId).filter(Boolean);
-      if (ids.length) {
-        qb.andWhere('di.region_id NOT IN (:...ids)', { ids });
-      }
+      qb
+        .innerJoin('dp.sirene',   's')
+        .innerJoin('s.village',   'v')
+        .innerJoin('v.fokontany', 'fk')
+        .innerJoin('fk.commune',  'co')
+        .innerJoin('co.district', 'di')
+        .andWhere('di.regionId = :regionId', { regionId });
     }
+    // Si regionId === null → config globale, on prend TOUT sans filtrer par région
   
     return qb.getMany();
   }
-
-  // async findPlannedForDate(dateStr: string): Promise<DiffusionPlanifiee[]> {
-  //   return this.repo
-  //     .createQueryBuilder('dp')
-  //     .where('dp.scheduled_date = :date', { date: dateStr })
-  //     .andWhere('dp.status = :status', { status: DiffusionPlanifieeStatus.PLANNED })
-  //     .orderBy('dp.sirene_id', 'ASC')
-  //     .addOrderBy('dp.scheduled_heure', 'ASC')
-  //     .getMany();
-  // }
-
   
 
   // ── ANNULATION ──────────────────────────────────────────────────────────────

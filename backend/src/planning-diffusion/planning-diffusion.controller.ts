@@ -108,6 +108,7 @@ export class PlanningDiffusionController {
   @HttpCode(HttpStatus.OK)
   async triggerDate(@Param('date') date: string) {
     let dateStr: string;
+    
 
     if (date === 'today') {
       dateStr = toDateStr(new Date());
@@ -118,6 +119,7 @@ export class PlanningDiffusionController {
     } else {
       return { error: `Format de date invalide : "${date}". Utilisez YYYY-MM-DD, "today" ou "tomorrow"` };
     }
+    console.log('[trigger] dateStr =', dateStr, '| new Date() =', new Date().toISOString());
 
     const result = await this.schedulerService.processDiffusionsForDate(dateStr,null);
     return result;

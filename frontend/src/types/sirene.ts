@@ -11,6 +11,8 @@ export interface Sirene {
     communicationType: string | null;
     villageId:        number;
     isActive:         number;
-    village?:         { id: number; name: string; latitude: string; longitude: string };
+    village?:         Village;
     customers?:       { id: number; name: string }[];
 }
+
+    

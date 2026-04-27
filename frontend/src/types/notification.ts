@@ -36,6 +36,7 @@ export interface Notification {
     createdAt: string;
     sireneId: number;
     alerteAudioId: number;
+    souscription_id: number;
     sousCategorieAlerteId: number;
     userId?: number;
     sirene?:        { id: number; imei: string; phoneNumberBrain: string };

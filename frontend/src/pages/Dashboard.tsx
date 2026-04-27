@@ -1,9 +1,6 @@
 import { useMemo } from "react";
 import { Radio, AlertTriangle, CheckCircle, TrendingUp, Clock, XCircle, MapPin, Activity } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { sirenesApi }       from "@/services/sirene.api";
 import { notificationsApi } from "@/services/notification.api";
@@ -110,7 +107,6 @@ export default function Dashboard() {
   const stats     = rawStats as any;
 
   const { greeting, firstName, sub ,period } = useGreeting();
-
 
   // ── Calculs sirènes ───────────────────────────────────────────────
   const totalSirenes  = sirenes.length;
@@ -319,7 +315,7 @@ export default function Dashboard() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: "0.5px solid #f1f5f9" }}>
-                      {["Message", "Sirène", "Téléphone", "Statut", "Il y a"].map(h => (
+                      {["Sirène", "Sous-catégorie", "Zone", "Statut", "Il y a"].map(h => (
                         <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontWeight: 500, color: "#94a3b8", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                       ))}
                     </tr>
@@ -331,14 +327,14 @@ export default function Dashboard() {
                         <tr key={n.id} style={{ borderBottom: "0.5px solid #f8fafc" }}
                           onMouseEnter={e => (e.currentTarget.style.background = "#fafbff")}
                           onMouseLeave={e => (e.currentTarget.style.background = "")}>
-                          <td style={{ padding: "11px 16px", fontFamily: "monospace", fontSize: 12, color: "#1e293b", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {n.message}
+                          <td style={{ padding: "11px 16px", color: "#1e293b", fontWeight: 500, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {n.sirene?.name ?? `Sirène #${n.sireneId}`}
                           </td>
-                          <td style={{ padding: "11px 16px", color: "#475569" }}>
-                            {n.sirene?.name ?? n.sireneId ?? "—"}
+                          <td style={{ padding: "11px 16px", color: "#475569", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {n.sousCategorie?.name ?? "—"}
                           </td>
-                          <td style={{ padding: "11px 16px", color: "#475569" }}>
-                            {n.phoneNumber ?? "—"}
+                          <td style={{ padding: "11px 16px", color: "#475569", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {n.sirene?.village?.name ?? "—"}
                           </td>
                           <td style={{ padding: "11px 16px" }}>
                             <span style={{ background: sc.bg, color: sc.color, padding: "3px 8px", borderRadius: 20, fontSize: 11, fontWeight: 500 }}>

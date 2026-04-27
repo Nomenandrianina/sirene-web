@@ -24,7 +24,7 @@ const mainItems: NavItem[] = [
   { title: "Sirènes",            url: "/sirenes",         icon: Radio,          permission: "sirenes:read" },
   { title: "Pack", url: "/pack", icon: Package , permission: "pack-types:read"},
   { title: "Souscription", url: "/souscription", icon: FileCheck , permission: "souscriptions:read" },
-  { title: "Planning", url: "/planning", icon: CalendarClock },
+  { title: "Planning", url: "/planning", icon: CalendarClock , permission: "planning:read" },
   { title: "Mes offres", url: "/Offreclient", icon: Tag },
 ];
 

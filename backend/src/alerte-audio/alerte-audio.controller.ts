@@ -108,7 +108,10 @@ export class AlerteAudioController {
     const baseUrl = process.env.APP_URL ?? '';
     const all = await this.service.findAll();
     const data = (Array.isArray(all) ? all : [])
-      .filter((a: any) => a.sirene?.imei === sireneImei)
+      .filter((a: any) => 
+        a.sirene?.imei === sireneImei  // audio lié à cette sirène
+        || a.sireneId === null          // OU audio par défaut (sans sirène)
+      )
       .map((a: any) => ({
         id_web:      a.mobileId,
         name:        a.name ?? '',

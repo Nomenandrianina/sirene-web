@@ -49,7 +49,9 @@ export function getMondayOf(d: Date): Date {
   mon.setHours(0, 0, 0, 0);
   return mon;
 }
-export function toISO(d: Date): string     { return d.toISOString().split('T')[0]; }
+export function toISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 export function addDays(d: Date, n: number): Date {
   const r = new Date(d); r.setDate(r.getDate() + n); return r;
 }
