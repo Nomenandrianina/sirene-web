@@ -111,6 +111,8 @@ export class DiffusionSchedulerService {
       'Indian/Antananarivo',
     );
 
+    
+
     this.schedulerRegistry.addCronJob(name, job);
     this.logger.log(`[Cron] "${name}" enregistré → expr: "${cronExpr}" regionId: ${regionId ?? 'global'}`);
   }
@@ -142,6 +144,9 @@ export class DiffusionSchedulerService {
     // on passe regionId pour qu'il filtre aussi par région si besoin
     const planifiees = await this.planifieeService.findPlannedForDate(dateStr, regionId);
 
+    console.log('[debug] planifiees reçus dans processDiffusionsForDate:', planifiees.length);
+    console.log('[debug] premier item:', JSON.stringify(planifiees[0]));
+
     if (!planifiees.length) {
       this.logger.log(`[${dateStr}][region:${regionId ?? 'global'}] Aucune diffusion planifiée`);
       return { date: dateStr, total: 0, sent: 0, skipped: 0, failed: 0 };
@@ -150,6 +155,7 @@ export class DiffusionSchedulerService {
     this.logger.log(`[${dateStr}] ${planifiees.length} diffusion(s) à traiter`);
 
     const groups = new Map<string, DiffusionPlanifiee[]>();
+
     for (const dp of planifiees) {
       const key = `${dp.sireneId}-${dp.scheduledHeure}-${dp.scheduledMinute ?? 0}`;
       if (!groups.has(key)) groups.set(key, []);
@@ -158,12 +164,14 @@ export class DiffusionSchedulerService {
 
     let sent = 0, skipped = 0, failed = 0;
     for (const [key, items] of groups.entries()) {
-      const [sireneIdStr, heureStr, minuteStr] = key.split('-');
-      const result = await this.processGroup(dateStr, Number(sireneIdStr), Number(heureStr),Number(minuteStr), items,);
-      sent    += result.sent;
-      skipped += result.skipped;
-      failed  += result.failed;
-    }
+    const [sireneIdStr, heureStr, minuteStr] = key.split('-');
+    console.log('[debug] processGroup', { key, sireneId: Number(sireneIdStr), heure: Number(heureStr), items: items.length });
+    const result = await this.processGroup(dateStr, Number(sireneIdStr), Number(heureStr), Number(minuteStr), items);
+    console.log('[debug] processGroup result', result);
+    sent    += result.sent;
+    skipped += result.skipped;
+    failed  += result.failed;
+  }
 
     this.logger.log(`[${dateStr}] Terminé — envoyés:${sent} ignorés:${skipped} échecs:${failed}`);
     return { date: dateStr, total: planifiees.length, sent, skipped, failed };

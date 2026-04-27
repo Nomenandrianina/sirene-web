@@ -26,6 +26,21 @@ export interface PackType {
   isActive: boolean;
 }
 
+export interface SouscriptionSirene {
+  id: number;
+  name: string | null;
+  imei: string | null;
+  isActive: number;
+  phoneNumberBrain: string | null;
+  // village chargé en eager côté backend (relations: ['sirenes', 'sirenes.village'])
+  village?: {
+    id: number;
+    name: string;
+    latitude: string;
+    longitude: string;
+  };
+}
+
 export interface Souscription {
   id: number;
   userId: number;
@@ -38,6 +53,8 @@ export interface Souscription {
   status: SouscriptionStatus;
   packType: PackType;
   // Stats calculées côté backend
+  sirenes: SouscriptionSirene[];
+
   joursRestants?: number;
   estExpire?: boolean;
   dateFinFormatee?: string;

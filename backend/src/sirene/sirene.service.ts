@@ -13,9 +13,7 @@ export class SirenesService {
     private readonly sireneRepo: Repository<Sirene>,
 
     @InjectRepository(Customer)
-    private readonly customerRepo: Repository<Customer>,
-
-  ) {}
+    private readonly customerRepo: Repository<Customer>) {}
 
   // ── CRUD ──────────────────────────────────────────────────────────────
 

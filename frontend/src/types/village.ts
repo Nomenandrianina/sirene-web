@@ -8,6 +8,4 @@ export interface Village {
     districtId: number;
     communeId: number;
     fokontanyId: number;
-
-  }
-  
+}

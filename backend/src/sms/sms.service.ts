@@ -121,7 +121,8 @@ export class SmsService {
    */
   async sendViaData(sirene: Sirene, message: string) {
     if (!sirene.fcmToken) throw new Error('Pas de token FCM pour cette sirène');
-  
+    
+    console.log('message :',message);
     const messageId = await admin.messaging().send({
       token: sirene.fcmToken,
       data: {

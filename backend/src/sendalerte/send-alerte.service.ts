@@ -67,7 +67,17 @@ export class SendAlerteService {
     if (!sousCat) throw new NotFoundException(`SousCategorieAlerte #${sousCategorieAlerteId} introuvable`);
    
     // 2. Récupérer l'audio lié à cette sous-catégorie
-    const audio = await this.audioRepo.findOne({ where: { sousCategorieAlerteId } });
+    const audios = await this.audioRepo.find({ where: { sousCategorieAlerteId } });
+
+    const audiosBySireneId = new Map(
+      audios
+        .filter(a => a.sireneId != null)
+        .map(a => [a.sireneId, a])
+    );
+    
+    // Audio fallback (sans sireneId spécifique, pour rétrocompatibilité)
+    const defaultAudio = audios.find(a => a.sireneId == null) ?? null;
+
    
     // ── Récupérer la priorité du customer lié à l'user connecté ──────────────
     let finalPriority: 'P1' | 'P2' = 'P2'; // par défaut : normale
@@ -145,11 +155,6 @@ export class SendAlerteService {
     ? new Date(dto.sendingTimeAfterAlerte)
     : new Date();
 
-    // 5. Construction du message avec répétition + priorité
-    const mobileId = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
-    const message  = this.buildMessage(mobileId, repeatCount, repeatInterval, finalPriority,scheduledDate );
-   console.log('message :',message);
-    // Exemples de messages générés :
    
     const isNow    = !sendingTimeAfterAlerte;
     const planDate = sendingTimeAfterAlerte ? new Date(sendingTimeAfterAlerte) : null;
@@ -158,13 +163,22 @@ export class SendAlerteService {
    
     // 6. Créer une notification par sirène
     for (const sirene of sirenes) {
+      // ✅ Récupération de l'audio spécifique à cette sirène
+      const audio = audiosBySireneId.get(sirene.id) ?? defaultAudio;
+
+      const mobileId = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
+      console.log(`[Sirene #${sirene.id}] mobileId:`, mobileId, '| audio:', audio?.id ?? 'fallback');
+
+      const message = this.buildMessage(mobileId, repeatCount, repeatInterval, finalPriority, scheduledDate);
+      console.log(`[Sirene #${sirene.id}] message:`, message);
+
       const notif = new Notification();
       notif.message               = message;
       notif.sireneId              = sirene.id;
       notif.sousCategorieAlerteId = sousCategorieAlerteId;
-      notif.alerteAudioId         = audio?.id ?? null;
+      notif.alerteAudioId         = audio?.id ?? null;   // ← maintenant correct par sirène
       notif.phoneNumber           = sirene.phoneNumberBrain;
-      notif.operator              = sirene.communicationType === 'DATA' ? 'FCM' : 'Orange'; // ← adapté
+      notif.operator              = sirene.communicationType === 'DATA' ? 'FCM' : 'Orange';
       notif.type                  = sousCat.name;
       notif.userId                = userId ?? null;
       notif.status                = NotificationStatus.PENDING;
@@ -172,9 +186,9 @@ export class SendAlerteService {
         ? new Date(dto.sendingTimeAfterAlerte)
         : null;
       notif.sendingTime           = new Date();
-    
+
       const saved = await this.notifRepo.save(notif);
-      await this.dispatchNotification(saved, sirene); // ← on passe sirene en plus
+      await this.dispatchNotification(saved, sirene);
       sent++;
     }
    
@@ -193,7 +207,8 @@ export class SendAlerteService {
           });
           return;
         }
-  
+        
+        console.log('notif.message :',notif.message);
         const messageId = await this.smsService.sendViaData(sirene, notif.message);
 
         await this.notifRepo.update(notif.id, {

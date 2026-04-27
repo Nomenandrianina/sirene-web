@@ -28,7 +28,7 @@ export class NotificationService {
 
     const qb = this.repo
       .createQueryBuilder("n")
-      .leftJoinAndSelect("n.sirene", "sirene")
+      .leftJoinAndSelect("n.sirene", "sirene","sirene.village")
       .leftJoinAndSelect("n.alerteAudio", "alerteAudio")
       .leftJoinAndSelect("n.sousCategorie", "sousCategorie")
       .leftJoinAndSelect("n.user", "user")
