@@ -17,12 +17,12 @@ export default function SireneCreate() {
   });
 
   return (
-    <AppLayout>
-    <SireneForm
-      onSubmit={async (data) => mutation.mutate(data)}
-      loading={mutation.isPending}
-      error={mutation.isError ? "Une erreur est survenue." : undefined}
-    />
+    <AppLayout noPadding>
+      <SireneForm
+        onSubmit={async (data) => mutation.mutate(data)}
+        loading={mutation.isPending}
+        error={mutation.isError ? "Une erreur est survenue." : undefined}
+      />
     </AppLayout>
   );
 }

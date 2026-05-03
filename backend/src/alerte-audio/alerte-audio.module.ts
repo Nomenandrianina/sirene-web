@@ -7,12 +7,16 @@ import { AlerteAudioController } from "./alerte-audio.controller";
 import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
 import { Sirene } from "@/sirene/entities/sirene.entity";
 import { SirenesModule } from "@/sirene/sirene.module";
+import { User } from "src/users/entities/user.entity";
+import { NotificationswebModule } from "src/notificationsweb/notificationsweb.module";
+import { Customer } from "src/customers/entity/customer.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AlerteAudio,SousCategorieAlerte,Sirene]),
+    TypeOrmModule.forFeature([AlerteAudio,SousCategorieAlerte,Sirene,User,Customer]),
     MulterModule.register({ dest: "./uploads/audios" }),
-    SirenesModule
+    SirenesModule,
+    NotificationswebModule
   ],
   controllers: [AlerteAudioController],
   providers: [AlerteAudioService],

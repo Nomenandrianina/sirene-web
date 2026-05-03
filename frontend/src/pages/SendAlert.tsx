@@ -466,13 +466,6 @@ function PlanificationStep({
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
             </svg>
-            <span>Exemple :</span>
-            <code>ALERTE_767 {repeatCount}{repeatCount > 1 ? ` ${repeatInterval}${intervalUnit}` : " 0"}</code>
-            {repeatCount > 1 && (
-              <span className="sa-msg-interval-human">
-                = {displayInterval(repeatInterval, intervalUnit as IntervalUnit)} entre chaque diffusion
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -556,17 +549,17 @@ function ModeSelectionScreen({ onSelect }: { onSelect: (mode: "simple" | "multi"
             <div className="sa-hero-stat-icon sa-hero-stat-icon--green"><Radio size={16} /></div>
             <div><div className="sa-hero-stat-val">{activeSirenes || "—"}</div><div className="sa-hero-stat-lbl">Sirènes actives</div></div>
           </div>
-          <div className="sa-hero-stat-card">
+          {/* <div className="sa-hero-stat-card">
             <div className="sa-hero-stat-icon sa-hero-stat-icon--blue"><Bell size={16} /></div>
             <div><div className="sa-hero-stat-val">{alertesThisMonth || "0"}</div><div className="sa-hero-stat-lbl">SMS ce mois</div></div>
-          </div>
-          <div className="sa-hero-stat-card">
+          </div> */}
+          {/* <div className="sa-hero-stat-card">
             <div className="sa-hero-stat-icon sa-hero-stat-icon--amber"><Send size={16} /></div>
             <div>
               <div className="sa-hero-stat-val">{availableMessages !== null ? availableMessages.toLocaleString("fr-FR") : "—"}</div>
               <div className="sa-hero-stat-lbl">SMS disponibles</div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 

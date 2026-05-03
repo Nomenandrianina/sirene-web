@@ -69,19 +69,30 @@ export class DiffusionPlanifieeService {
       return 0;
     }
   
-    const creneaux  = creneauxDuPack(pack);   // ← maintenant { heure, minute }[]
+    // ✅ Normaliser joursAutorises en tableau de strings
+    let joursAutorises: string[] = [];
+    if (pack.joursAutorises) {
+      if (Array.isArray(pack.joursAutorises)) {
+        joursAutorises = pack.joursAutorises.map(String);
+      } else if (typeof pack.joursAutorises === 'string') {
+        joursAutorises = (pack.joursAutorises as string).split(',').map(s => s.trim());
+      }
+    }
+  
+    const creneaux  = creneauxDuPack(pack);
     const startDate = new Date(souscription.startDate);
     const endDate   = new Date(souscription.endDate);
     const rows: Partial<DiffusionPlanifiee>[] = [];
   
     let cursor = new Date(startDate);
     while (cursor <= endDate) {
-      const jourISO = isoDay(cursor);
+      const jourISO = isoDay(cursor); // doit retourner '1','3','5' etc.
       const dateStr = toDateStr(cursor);
   
+      // ✅ Condition corrigée avec le tableau normalisé
       const jourAutorise =
-        !pack.joursAutorises?.length ||
-        pack.joursAutorises.includes(jourISO);
+        !joursAutorises.length ||
+        joursAutorises.includes(String(jourISO));
   
       if (jourAutorise) {
         for (const sirene of sirenes) {

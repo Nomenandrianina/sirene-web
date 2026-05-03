@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Patch, Delete,
   Param, Body, Query, ParseIntPipe,
-  UseInterceptors, UploadedFile, BadRequestException, Res, Req,
+  UseInterceptors, UploadedFile, BadRequestException, Res, Req, Request,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
@@ -108,10 +108,7 @@ export class AlerteAudioController {
     const baseUrl = process.env.APP_URL ?? '';
     const all = await this.service.findAll();
     const data = (Array.isArray(all) ? all : [])
-      .filter((a: any) => 
-        a.sirene?.imei === sireneImei  // audio lié à cette sirène
-        || a.sireneId === null          // OU audio par défaut (sans sirène)
-      )
+      .filter((a: any) => a.sirene?.imei === sireneImei)
       .map((a: any) => ({
         id_web:      a.mobileId,
         name:        a.name ?? '',
@@ -130,14 +127,15 @@ export class AlerteAudioController {
   }
 
   // POST /alerte-audios — retourne AlerteAudio[] (un par sirène)
+ // alerte-audio.controller.ts
   @Post()
   @UseInterceptors(FileInterceptor('file', { storage: audioStorage, fileFilter: audioFilter }))
-  create(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() dto: CreateAlerteAudioDto,
-  ) {
-    if (!file) throw new BadRequestException('Le fichier audio est obligatoire');
-    return this.service.create(dto, file);
+  create( @UploadedFile() file: Express.Multer.File, @Body() dto: CreateAlerteAudioDto, @Request() req: any) {
+     if (!file) throw new BadRequestException('Le fichier audio est obligatoire');
+     return this.service.create(dto, file, {
+      id:   req.user.sub,        // ← sub
+      role: req.user.role,
+    });
   }
 
   // PATCH /alerte-audios/:id — inchangé
@@ -156,4 +154,18 @@ export class AlerteAudioController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
+
+
+  @Patch(':id/approve')
+     approve(@Param('id') id: string) {
+    return this.service.approve(+id);
+  }
+
+  // PATCH /alerte-audios/:id/reject
+  @Patch(':id/reject')
+  async reject(@Param('id') id: string, @Body('comment') comment: string) {
+    if (!comment?.trim()) throw new BadRequestException('Un commentaire est obligatoire pour le refus');
+    return this.service.reject(+id, comment);
+  }
+
 }

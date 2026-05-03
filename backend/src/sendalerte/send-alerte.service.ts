@@ -5,7 +5,7 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { Sirene } from "@/sirene/entities/sirene.entity";
 import { Village }             from "@/villages/entities/village.entity";
 import { SousCategorieAlerte } from "@/sous-categorie-alerte/entities/sous-categorie-alerte.entity";
-import { AlerteAudio } from "@/alerte-audio/entities/alerte-audio.entity";
+import { AlerteAudio, AudioValidationStatus } from "@/alerte-audio/entities/alerte-audio.entity";
 import { Notification, NotificationStatus } from "@/notification/entities/notification.entity";
 import { SmsService }          from "@/sms/sms.service";
 import { SendAlerteDto }       from "./dto/send-alerte.dto";
@@ -67,16 +67,21 @@ export class SendAlerteService {
     if (!sousCat) throw new NotFoundException(`SousCategorieAlerte #${sousCategorieAlerteId} introuvable`);
    
     // 2. Récupérer l'audio lié à cette sous-catégorie
-    const audios = await this.audioRepo.find({ where: { sousCategorieAlerteId } });
-
-    const audiosBySireneId = new Map(
-      audios
-        .filter(a => a.sireneId != null)
-        .map(a => [a.sireneId, a])
-    );
+    const audios = await this.audioRepo
+      .createQueryBuilder('aa')
+      .leftJoinAndSelect('aa.sirenes', 's')
+      .where('aa.sousCategorieAlerteId = :sousCategorieAlerteId', { sousCategorieAlerteId })
+      .andWhere('aa.status = :status', { status: AudioValidationStatus.APPROVED })
+      .andWhere('aa.deletedAt IS NULL')
+      .getMany();
     
-    // Audio fallback (sans sireneId spécifique, pour rétrocompatibilité)
-    const defaultAudio = audios.find(a => a.sireneId == null) ?? null;
+    // Map sireneId → audio (un audio peut couvrir plusieurs sirènes)
+    const audiosBySireneId = new Map<number, AlerteAudio>();
+    for (const audio of audios) {
+      for (const sirene of audio.sirenes ?? []) {
+        audiosBySireneId.set(sirene.id, audio);
+      }
+    }
 
    
     // ── Récupérer la priorité du customer lié à l'user connecté ──────────────
@@ -164,9 +169,15 @@ export class SendAlerteService {
     // 6. Créer une notification par sirène
     for (const sirene of sirenes) {
       // ✅ Récupération de l'audio spécifique à cette sirène
-      const audio = audiosBySireneId.get(sirene.id) ?? defaultAudio;
+      const audio = audiosBySireneId.get(sirene.id);
 
-      const mobileId = audio?.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
+      // ← Si aucun audio approuvé pour cette sirène, on skip
+      if (!audio) {
+        console.warn(`[Sirene #${sirene.id}] Aucun audio approuvé trouvé — sirène ignorée`);
+        continue;
+      }
+    
+      const mobileId = audio.mobileId ?? `ALERTE_${sousCategorieAlerteId}`;
       console.log(`[Sirene #${sirene.id}] mobileId:`, mobileId, '| audio:', audio?.id ?? 'fallback');
 
       const message = this.buildMessage(mobileId, repeatCount, repeatInterval, finalPriority, scheduledDate);

@@ -299,11 +299,14 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
 
   const sirenes = useMemo(() =>
     toArr(rawSirenes).filter((s: any) =>
-      s.isActive && (isSuperAdmin || s.customers[0].id === myCustomerId)
+      s.isActive &&
+      (
+        isSuperAdmin ||
+        s.customers?.some((c: any) => c.id === myCustomerId)
+      )
     ),
     [rawSirenes, isSuperAdmin, myCustomerId]
   );
-
 
   const alertes      = useMemo(() => toArr(rawAlertes),    [rawAlertes]);
   const allTypes     = useMemo(() => toArr(rawTypes),      [rawTypes]);
@@ -532,7 +535,7 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
             </div>
           </div>
         </div>
-
+        
         {/* ── Sirènes ── */}
         <div className="sirene-form-card">
           <SearchableMultiSelect

@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationStatus } from '@/notification/entities/notification.entity';
-import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
+import { AlerteAudio, AudioValidationStatus } from '@/alerte-audio/entities/alerte-audio.entity';
 import { Souscription, SouscriptionStatus } from '@/souscription/entities/souscription.entity';
 import { PackType, Periode } from '@/packtype/entities/packtype.entity';
 import { SouscriptionService } from '@/souscription/souscription.service';
@@ -102,7 +102,7 @@ export class DiffusionSchedulerService {
     const job = new CronJob(
       cronExpr,
       async () => {
-        const demain = toDateStr(addDays(new Date(), 1));
+        const demain = toDateStr(new Date());
         this.logger.log(`[${name}] Déclenchement — diffusions du ${demain}`);
         await this.processDiffusionsForDate(demain, regionId);
       },
@@ -110,9 +110,6 @@ export class DiffusionSchedulerService {
       true,
       'Indian/Antananarivo',
     );
-
-    
-
     this.schedulerRegistry.addCronJob(name, job);
     this.logger.log(`[Cron] "${name}" enregistré → expr: "${cronExpr}" regionId: ${regionId ?? 'global'}`);
   }
@@ -204,11 +201,16 @@ export class DiffusionSchedulerService {
     }
   
     for (const dp of items) {
-      const audios = await this.audioRepo.find({
-        where: { sireneId, customerId: dp.customerId },
-        relations: ['sirene'],
-        order: { createdAt: 'ASC' },
-      });
+      const audios = await this.audioRepo
+      .createQueryBuilder('aa')
+      .leftJoinAndSelect('aa.sirenes', 's')
+      .where('aa.customerId = :customerId', { customerId: dp.customerId })
+      .andWhere('s.id = :sireneId', { sireneId })
+      .andWhere('aa.status = :status', { status: AudioValidationStatus.APPROVED })
+      .andWhere('aa.deletedAt IS NULL')
+      .orderBy('aa.createdAt', 'ASC')
+      .getMany();
+
   
       if (!audios.length) {
         this.logger.warn(

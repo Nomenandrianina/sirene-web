@@ -4,12 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sirenesApi } from "@/services/sirene.api";
 import {  Sirene } from "@/types/sirene";
 import { AppLayout } from "@/components/AppLayout";
-import {
-  Search, Plus, Edit2, Trash2, Bell, MapPin,
-  Wifi, WifiOff, ChevronLeft, ChevronRight, X, Send, Loader2,
-} from "lucide-react";
+import { Search, Plus, Edit2, Trash2, Bell, MapPin, Wifi, WifiOff, ChevronLeft, ChevronRight, X, Send, Loader2,} from "lucide-react";
 import "@/styles/sirene.css";
 import { CanDo } from "@/components/Cando";
+import { useRole } from "@/hooks/useRole";
 
 const PER_PAGE = 10;
 
@@ -25,6 +23,8 @@ export default function SireneList() {
   const alertRef  = useRef<HTMLDivElement>(null);
   const mapRef    = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<any>(null);
+  const { isSuperAdmin, customerId } = useRole();
+
 
   const { data: sirenes = [], isLoading } = useQuery({
     queryKey: ["sirenes"],
@@ -187,8 +187,8 @@ export default function SireneList() {
                     <th>Village</th>
                     <th>N° Brain</th>
                     <th>N° Relai</th>
-                    <th>Clients</th>
-                    {/* <th>Statut</th> */}
+                    {isSuperAdmin && (<th>Clients</th>)}
+                    <th>Statut</th>
                     <th>Type communication</th>
                     <th>Actions</th>
                   </tr>
@@ -212,21 +212,23 @@ export default function SireneList() {
                       </td>
                       <td><span className="phone-badge brain">{s.phoneNumberBrain ?? "—"}</span></td>
                       <td><span className="phone-badge relai">{s.phoneNumberRelai ?? "—"}</span></td>
+                      {isSuperAdmin && (
+                        <td>
+                          <div className="customers-cell">
+                            {s.customers?.length
+                              ? s.customers.map(c => (
+                                  <span key={c.id} className="customer-chip">{c.name}</span>
+                                ))
+                              : <span className="text-muted">—</span>
+                            }
+                          </div>
+                        </td>
+                      )}
                       <td>
-                        <div className="customers-cell">
-                          {s.customers?.length
-                            ? s.customers.map(c => (
-                                <span key={c.id} className="customer-chip">{c.name}</span>
-                              ))
-                            : <span className="text-muted">—</span>
-                          }
-                        </div>
-                      </td>
-                      {/* <td>
                         <span className={`status-badge ${s.isActive ? "active" : "inactive"}`}>
                           {s.isActive ? <><Wifi size={12} /> Active</> : <><WifiOff size={12} /> Inactive</>}
                         </span>
-                      </td> */}
+                      </td>
                       <td>
                         <span className="phone-badge relai">{s.communicationType ?? "—"}</span>
                       </td>

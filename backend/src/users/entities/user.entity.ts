@@ -34,11 +34,11 @@ export class User extends BaseEntity {
   @JoinColumn()
   role: Role;
 
-
-  // ✅ FK client_id dans la table users
   @ManyToOne(() => Customer, (customer) => customer.users, {
     nullable: true,
   })
+
+  
   @JoinColumn({ name: 'customer_id' })
   customer?: Customer;
 }

@@ -75,6 +75,7 @@ export const alerteAudiosApi = {
     getAll:   (sousCategorieAlerteId?: number ) => get(`/alerte-audios${sousCategorieAlerteId ? `?sousCategorieAlerteId=${sousCategorieAlerteId}` : ""}`),
     getAllByCustomer: (customerId?: string) => get(`/alerte-audios/findAllbycustumer${customerId ? `?customerId=${customerId}` : ''}`),
     getById:  (id: number) => get(`/alerte-audios/${id}`),
+    getOne: (id: number): Promise<AlerteAudio> => get(`/alerte-audios/${id}`),
     create:   postAudio,
     update:   patchAudio,
     remove:   (id: number) => del(`/alerte-audios/${id}`),
@@ -89,5 +90,10 @@ export const alerteAudiosApi = {
     getUsedCombinations: () => get<UsedCombination[]>("/alerte-audios/used-combinations"),
     
     getBySirene:  (sireneId: number) => get(`/alerte-audios/sirene/${sireneId}`),
+
+    approve: (id: number) =>    patch(`/alerte-audios/${id}/approve`),
+
+    reject: (id: number, comment: string) => patch(`/alerte-audios/${id}/reject`, { comment })
+
      
 };
