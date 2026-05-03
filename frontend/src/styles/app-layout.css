@@ -388,6 +388,10 @@
   background: var(--content-bg);
 }
 
+.app-content.no-padding {
+  padding: 0;
+}
+
 /* ════════ RESPONSIVE ════════ */
 @media (max-width: 768px) {
   .app-sidebar {

@@ -65,6 +65,7 @@ import AdminSouscriptionsPage from "./pages/souscription/Adminsouscriptionspage"
 import PlanningDiffusionPage from "./pages/planning/Planningdiffusionpage";
 import DiffusionConfigPage from "./pages/Parametrage/DiffusionConfig";
 import MesOffres from "./pages/packType/MesOffres";
+import AlerteAudioReview from "./pages/alerteaudio/AlerteAudioReview";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +137,7 @@ const App = () => (
               <Route path="/planning" element={<ProtectedRoute><PlanningDiffusionPage /></ProtectedRoute>} />
               <Route path="/parametrage-diffusion" element={<ProtectedRoute><DiffusionConfigPage /></ProtectedRoute>} />
               <Route path="/Offreclient" element={<ProtectedRoute><MesOffres /></ProtectedRoute>} />
+              <Route path="/alerte-audios/:id/review" element={<ProtectedRoute><AlerteAudioReview /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
         </TooltipProvider>

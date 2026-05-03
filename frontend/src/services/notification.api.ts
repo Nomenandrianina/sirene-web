@@ -15,7 +15,7 @@ import { get, del, patch } from "./base";
     const q = params.toString();
     return q ? `?${q}` : "";
   }
-   
+    
   export const notificationsApi = {
     getAll:       (filters: NotificationFilters = {}) => get(`/notifications${buildQuery(filters)}`),
     getById:      (id: number)                        => get(`/notifications/${id}`),

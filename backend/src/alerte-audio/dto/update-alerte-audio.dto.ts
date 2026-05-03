@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber } from "class-validator";
+import { IsOptional, IsString, IsNumber, IsArray , IsInt } from "class-validator";
 import { Type } from "class-transformer";
 
 export class UpdateAlerteAudioDto {
@@ -16,4 +16,7 @@ export class UpdateAlerteAudioDto {
 
   @IsOptional() @IsNumber() @Type(() => Number)
   duration?: number;
+
+  @IsOptional() @IsArray() @IsInt({ each: true })
+  sireneIds?: number[];  
 }

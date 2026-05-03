@@ -10,8 +10,6 @@ export default function AlerteAudioCreate() {
   const qc = useQueryClient();
   const { isSuperAdmin, customerId } = useRole(); // ← ajout
 
-  console.log('customerId :',customerId)
-
   const mutation = useMutation({
     mutationFn: ({ data, file }: { data: AlerteAudioFormData; file: File }) =>
       alerteAudiosApi.create({

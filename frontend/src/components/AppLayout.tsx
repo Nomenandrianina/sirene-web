@@ -4,6 +4,7 @@ import { Bell, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import "@/styles/app-layout.css";
+import { NotificationBell } from "@/components/notificationsweb/NotificationBell";
 
 const routeLabels: Record<string, string> = {
   "/":                "Dashboard",
@@ -19,7 +20,7 @@ const routeLabels: Record<string, string> = {
   "/profile":         "Mon profil",
 };
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children, noPadding }: { children: React.ReactNode; noPadding?: boolean }) {
   const { user, logout } = useAuth();
   const location  = useLocation();
   const navigate  = useNavigate();
@@ -77,11 +78,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="status-chip-dot" />
               Système actif
             </div>
-
+{/* 
             <button className="header-icon-btn" aria-label="Notifications">
               <Bell size={15} />
               <span className="notif-badge" />
-            </button>
+            </button> */}
+
+            <NotificationBell />
+
 
             {/* ── User dropdown ── */}
             <div className="header-user-wrap" ref={dropRef}>
@@ -133,7 +137,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="app-content">
+        <main className={`app-content${noPadding ? " no-padding" : ""}`}>
           {children}
         </main>
       </div>

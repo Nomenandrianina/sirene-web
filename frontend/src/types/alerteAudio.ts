@@ -1,3 +1,5 @@
+export type AudioValidationStatus = 'pending' | 'approved' | 'rejected';
+
 export interface AlerteAudio {
   id: number;
   name?: string;
@@ -11,12 +13,16 @@ export interface AlerteAudio {
   categorieAlerteId?:number;
   newSousCatName?: string;
   sousCategorie?: { id: number; name: string };
-  Sirene?: {id:number;vname:string}
-  customer?: {id:number;vname:string}
+  sirenes?: { id: number; name: string }[];
+  customer?: {id:number;name:string}
   createdAt?: string;
   customerId?:number;
+  createdByUserId?:number;
   alerteTypeId:      number;   
   alerteId:          number;   
+  status:            AudioValidationStatus;
+  rejectionComment:  string | null;
+  createdByUser?: {first_name:string, last_name:string, email:string},
 }
 
 export interface UsedCombination {

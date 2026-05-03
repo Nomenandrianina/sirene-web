@@ -488,7 +488,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-50">
+  <div className="min-h-full bg-slate-50 pb-10">
 
       {/* ── Header ── */}
       <div className="bg-white border-b border-slate-200 px-4 py-4">
@@ -819,7 +819,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pb-8">
+        <div className="flex items-center justify-end gap-3 py-4">
           <button
             type="button"
             onClick={() => navigate("/sirenes")}
