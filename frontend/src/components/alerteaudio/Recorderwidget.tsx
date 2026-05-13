@@ -12,7 +12,7 @@ interface RecorderWidgetProps {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const MAX_DURATION_SEC = 120; // 2 minutes
+const MAX_DURATION_SEC = 150; // 2 minutes
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -281,7 +281,7 @@ export function RecorderWidget({ onRecorded, onReset }: RecorderWidgetProps) {
           </button>
           <p className="text-sm text-slate-500">Cliquez pour démarrer l'enregistrement</p>
           <p className="text-xs text-slate-400 flex items-center gap-1">
-            <AlertCircle size={11} /> Durée maximale : 2 minutes
+            <AlertCircle size={11} /> Durée maximale : 2 minutes 30 secondes
           </p>
         </div>
       )}

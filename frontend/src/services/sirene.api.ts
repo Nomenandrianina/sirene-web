@@ -12,6 +12,7 @@ export interface CreateSireneDto {
     isActive?:         number;
     customerIds?:      number[];
     communicationType?:      string;
+    fcmToken?: string | null;
   }
 
 export interface UpdateSireneDto extends Partial<CreateSireneDto> {}

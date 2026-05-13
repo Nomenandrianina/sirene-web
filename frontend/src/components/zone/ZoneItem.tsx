@@ -477,7 +477,7 @@ export function ZonesStep({
             {sirenePrev.slice(0, 8).map((s: any) => (
               <span key={s.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-slate-700 text-slate-200 font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                {s.imei}{s.village?.name ? ` — ${s.village.name}` : ""}
+                {s.name}{s.village?.name ? ` — ${s.village.name}` : ""}
               </span>
             ))}
             {sirenePrev.length > 8 && (

@@ -5,6 +5,7 @@ import { Alerte } from "./entities/alerte.entity";
 import { Customer } from "../customers/entity/customer.entity";
 import { CreateAlerteDto } from "./dto/create-alerte.dto";
 import { UpdateAlerteDto } from "./dto/update-alerte.dto";
+import { ROLES } from '@/common/constants/roles.constants';
 
 @Injectable()
 export class AlerteService {
@@ -17,17 +18,21 @@ export class AlerteService {
 
   // isSuperAdmin=true → tous les alertes
   // isSuperAdmin=false → seulement ceux liés au customer de l'utilisateur
-  findAll(isSuperAdmin = true, customerId?: number) {
+  findAll(roleName: string) {
     const qb = this.repo
-      .createQueryBuilder("alerte")
-      .leftJoinAndSelect("alerte.customers", "customer")
-      .leftJoinAndSelect("alerte.types", "type")
-      .where("alerte.deleted_at IS NULL");
-
-    if (!isSuperAdmin && customerId) {
-      qb.andWhere("customer.id = :customerId", { customerId });
+      .createQueryBuilder("categorie")
+      .leftJoinAndSelect("categorie.types", "type")
+      .where("categorie.deleted_at IS NULL");
+  
+    if (roleName === ROLES.BNGRC_ALERTE) {
+      // BNGRC voit uniquement "Catastrophe naturelle"
+      qb.andWhere("UPPER(categorie.name) LIKE :name", { name: "%CATASTROPHE%" });
+    } else if (roleName === ROLES.CUSTOMER_ADMIN || roleName === ROLES.CUSTOMER_OPERATOR ) {
+      // Clients voient uniquement "Sensibilisation"
+      qb.andWhere("UPPER(categorie.name) LIKE :name", { name: "%SENSIBILI%" });
     }
-
+    // SUPERADMIN : aucun filtre, voit tout
+  
     return qb.getMany();
   }
 

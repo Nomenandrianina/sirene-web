@@ -31,6 +31,7 @@ export default function SireneList() {
     queryFn:  () => sirenesApi.getAll(),
   });
   
+  console.log('sirenes :',sirenes)
   const deleteMutation = useMutation({
     mutationFn: (id: number) => sirenesApi.remove(id),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["sirenes"] }),
@@ -182,15 +183,17 @@ export default function SireneList() {
               <table className="sirene-table">
                 <thead>
                   <tr>
-                    <th>Désignation</th>
-                    <th>IMEI</th>
+                    <th>Réference</th>
+                    {isSuperAdmin && (<th>IMEI</th>)}
+                    <th>District</th>
                     <th>Village</th>
-                    <th>N° Brain</th>
-                    <th>N° Relai</th>
+                    {/* <th>N° Brain</th>
+                    <th>N° Relai</th> */}
                     {isSuperAdmin && (<th>Clients</th>)}
                     <th>Statut</th>
-                    <th>Type communication</th>
-                    <th>Actions</th>
+                    <th>Coordonnées</th>
+                    {isSuperAdmin && (<th>Type communication</th>)}
+                    {isSuperAdmin && ( <th>Actions</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -207,11 +210,17 @@ export default function SireneList() {
                       <td>
                         <div className="village-cell">
                           <MapPin size={13} className="pin-icon" />
+                          {s.village?.district?.name ?? "—"}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="village-cell">
+                          <MapPin size={13} className="pin-icon" />
                           {s.village?.name ?? "—"}
                         </div>
                       </td>
-                      <td><span className="phone-badge brain">{s.phoneNumberBrain ?? "—"}</span></td>
-                      <td><span className="phone-badge relai">{s.phoneNumberRelai ?? "—"}</span></td>
+                      {/* <td><span className="phone-badge brain">{s.phoneNumberBrain ?? "—"}</span></td>
+                      <td><span className="phone-badge relai">{s.phoneNumberRelai ?? "—"}</span></td> */}
                       {isSuperAdmin && (
                         <td>
                           <div className="customers-cell">
@@ -230,15 +239,14 @@ export default function SireneList() {
                         </span>
                       </td>
                       <td>
+                        <span className= "status-badge active">{s.longitude} </span>
+                        <span className= "status-badge active">{s.latitude}</span>
+                      </td>
+                      <td>
                         <span className="phone-badge relai">{s.communicationType ?? "—"}</span>
                       </td>
                       <td>
                         <div className="action-btns">
-                          {/* <button
-                            className="btn-icon-action alert"
-                            title="Envoyer alerte"
-                            onClick={() => setAlertSirene(s)}
-                          ><Bell size={14} /></button> */}
                           <CanDo permission="sirenes:update">
                             <button
                               className="btn-icon-action edit"
@@ -281,14 +289,14 @@ export default function SireneList() {
       )}
 
       {/* ── Vue Carte ── */}
-      {activeTab === "map" && (
+      {/* {activeTab === "map" && (
         <div className="sirene-map-wrap">
           <div ref={mapRef} style={{ height: "600px", width: "100%", borderRadius: "12px" }} />
         </div>
-      )}
+      )} */}
 
       {/* ── Modal alerte ── */}
-      {alertSirene && (
+      {/* {alertSirene && (
         <div className="modal-overlay">
           <div className="modal-card" ref={alertRef}>
             <div className="modal-header">
@@ -337,7 +345,7 @@ export default function SireneList() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
     </div>
     </AppLayout>

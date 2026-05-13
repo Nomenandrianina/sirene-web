@@ -5,21 +5,28 @@ import { Sirene }          from './entities/sirene.entity';
 import { Customer }        from '../customers/entity/customer.entity';
 import { CreateSireneDto } from './dto/create-sirene.dto';
 import { UpdateSireneDto } from './dto/update-sirene.dto';
+import { AudioAlerteBngrc } from 'src/audio-alerte-bngrc/entities/audio-alerte-bngrc.entity';
 
 @Injectable()
 export class SirenesService {
   constructor(
-    @InjectRepository(Sirene)
-    private readonly sireneRepo: Repository<Sirene>,
+  @InjectRepository(Sirene)
+  private readonly sireneRepo: Repository<Sirene>,
 
-    @InjectRepository(Customer)
-    private readonly customerRepo: Repository<Customer>) {}
+  @InjectRepository(Customer)
+  private readonly customerRepo: Repository<Customer>,
+  
+  @InjectRepository(AudioAlerteBngrc)
+  private readonly audioAlerteBngrcRepo: Repository<AudioAlerteBngrc>,
+
+  ) {}
 
   // ── CRUD ──────────────────────────────────────────────────────────────
 
   async findAll(isSuperAdmin: boolean, customerId?: number) {
     const qb = this.sireneRepo.createQueryBuilder('s')
       .leftJoinAndSelect('s.village',   'village')
+      .leftJoinAndSelect('village.district', 'district')    
       .leftJoinAndSelect('s.customers', 'customers')
       .where('s.deleted_at IS NULL');
 
@@ -30,7 +37,6 @@ export class SirenesService {
 
     return qb.getMany();
   }
-
 
   async findAllWithoutfilter(): Promise<Sirene[]> {
     return this.sireneRepo.find({
@@ -67,14 +73,31 @@ export class SirenesService {
       phoneNumberRelai:  dto.phoneNumberRelai,
       villageId:         dto.villageId,
       isActive:          dto.isActive,
-      communicationType: dto.communicationType,  // ← ajout
+      communicationType: dto.communicationType,
+      fcmToken:          dto.fcmToken ?? null,
     });
-
+  
     if (dto.customerIds?.length) {
       sirene.customers = await this.customerRepo.findBy({ id: In(dto.customerIds) });
     }
-
+  
     const saved = await this.sireneRepo.save(sirene);
+  
+    // ─── Assigner la nouvelle sirène à tous les AudioAlerteBngrc existants ───
+    const allAudios = await this.audioAlerteBngrcRepo.find({
+      relations: ['sirenes'],
+    });
+  
+    if (allAudios.length) {
+      for (const audio of allAudios) {
+        const alreadyAssigned = audio.sirenes.some(s => s.id === saved.id);
+        if (!alreadyAssigned) {
+          audio.sirenes.push(saved);
+        }
+      }
+      await this.audioAlerteBngrcRepo.save(allAudios);
+    }
+  
     return saved;
   }
 
@@ -92,6 +115,7 @@ export class SirenesService {
       villageId:        dto.villageId        ?? sirene.villageId,
       isActive:         dto.isActive         ?? sirene.isActive,
       communicationType:         dto.communicationType         ?? sirene.communicationType,
+      fcmToken: dto.fcmToken !== undefined ? dto.fcmToken : sirene.fcmToken,
     });
 
     if (dto.customerIds !== undefined) {

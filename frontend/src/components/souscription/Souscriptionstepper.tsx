@@ -3,6 +3,7 @@ import { ChevronRight, Check, MapPin, Radio, X } from 'lucide-react';
 import type { PackType } from '@/types/diffusion';
 import { packTypeApi, souscriptionApi } from '@/services/diffusion.api';
 import { sirenesApi } from '../../services/sirene.api'; // adaptez le chemin
+import Swal from 'sweetalert2';
 
 interface Sirene {
   id: number;
@@ -188,11 +189,55 @@ export default function SouscriptionStepper({ userId, customerId, onSuccess }: S
     if (!selectedPack || !selectedIds.size) return;
     setSubmitting(true); setError(null);
     try {
-      await souscriptionApi.create({ userId, customerId, packTypeId: selectedPack.id, sireneIds: Array.from(selectedIds) });
-      setDone(true); onSuccess?.();
+      await souscriptionApi.create({
+        userId,
+        customerId,
+        packTypeId: selectedPack.id,
+        sireneIds: Array.from(selectedIds),
+      });
+  
+      // ← Capturer le résultat dans une variable
+      const result = await Swal.fire({
+        icon:             'success',
+        title:            'Souscription activée !',
+        html: `
+          <div style="text-align:left;font-size:14px;line-height:1.6">
+            <p>Le pack <strong>${selectedPack.name}</strong> a été attribué avec succès.</p>
+            <p style="margin-top:8px;color:#64748b">
+              📡 <strong>${selectedIds.size}</strong> sirène${selectedIds.size > 1 ? 's' : ''} associée${selectedIds.size > 1 ? 's' : ''}
+            </p>
+          </div>
+        `,
+        confirmButtonText:  'Voir la liste',
+        confirmButtonColor: '#1d4ed8',
+        showCancelButton:   true,
+        cancelButtonText:   'Nouvelle souscription',
+        cancelButtonColor:  '#6b7280',
+        reverseButtons:     true,
+      });
+  
+      if (result.isConfirmed) {
+        onSuccess?.();
+      } else {
+        setDone(false);
+        setStep(0);
+        setSelectedPack(null);
+        setSelectedIds(new Set());
+        setError(null);
+      }
+  
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Erreur lors de la souscription');
-    } finally { setSubmitting(false); }
+      Swal.fire({
+        icon:              'error',
+        title:             'Erreur',
+        text:              e?.response?.data?.message ?? 'Une erreur est survenue',
+        confirmButtonText: 'Fermer',
+        confirmButtonColor: '#dc2626',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const reset = () => { setDone(false); setStep(0); setSelectedPack(null); setSelectedIds(new Set()); setError(null); };

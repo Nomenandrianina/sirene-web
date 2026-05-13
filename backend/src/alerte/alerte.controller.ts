@@ -9,10 +9,8 @@ export class AlerteController {
 
   @Get()
   findAll(@Req() req: any) {
-    const user          = req.user;
-    const isSuperAdmin  = user?.isSuperAdmin ?? true;
-    const customerId    = user?.customer?.id;
-    return this.service.findAll(isSuperAdmin, customerId);
+    const roleName = req.user?.role?.name?.toUpperCase() as string;
+    return this.service.findAll(roleName);
   }
 
   @Get(":id")

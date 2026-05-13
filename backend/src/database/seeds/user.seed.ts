@@ -23,23 +23,15 @@ export async function seedUsers(dataSource: DataSource): Promise<void> {
 
   // ⚠️ Le superadmin n'a PAS de customers_id
   await dataSource.query(`
-    INSERT INTO users (first_name,last_name,  email, password, roleId, is_active, customer_id)
+    INSERT INTO users (first_name,last_name,  email, password, roleId, is_active, customer_id,avatar_url)
     VALUES 
-      ('Super Admin', 'Super Admin',    'superadmin@app.com',  '${superadminPassword}', ${roleMap['superadmin']}, 1, NULL),
-      ('Admin Alpha',  'Admin Alpha',   'admin@alpha.com',      '${adminPassword}',      ${roleMap['admin']},      1, 1),
-      ('Manager Alpha', 'Admin Alpha',   'manager@alpha.com',    '${managerPassword}',    ${roleMap['manager']},    1, 1),
-      ('User Alpha',  'Admin Alpha',    'user@alpha.com',        '${userPassword}',       ${roleMap['user']},       1, 1),
-      ('Admin Demo',  'Admin Alpha',    'admin@demo.com',        '${adminPassword}',      ${roleMap['admin']},      1, 2),
-      ('User Demo',   'Admin Alpha',    'user@demo.com',         '${userPassword}',       ${roleMap['user']},       1, 2)
+      ('Super Admin', 'Super Admin',    'superadmin@app.com',  '${superadminPassword}', ${roleMap['SUPERADMIN']}, 1, NULL,NULL),
+      ('client admin', 'client admin',    'admin_mtec@gmail.com',  '${superadminPassword}', ${roleMap['CUSTOMER_ADMIN']}, 1, 3 ,NULL),
+      ('user m-tec', 'user m-tec',    'user_mtec@gmail.com',  '${superadminPassword}', ${roleMap['CUSTOMER_OPERATOR']}, 1, 3 ,NULL),
+      ('client bngrc', 'client bngrc',    'user_bngrc_alerte@gmail.com',  '${superadminPassword}', ${roleMap['BNGRC_ALERTE']}, 1, 1 ,NULL)
   `);
 
   console.log('✅ Users seeded successfully');
   console.log('');
   console.log('🔐 Credentials créés :');
-  console.log('   superadmin@app.com  →  Superadmin@2024!  (aucun client)');
-  console.log('   admin@alpha.com     →  Admin@2024!       (Customer: Entreprise Alpha)');
-  console.log('   manager@alpha.com   →  Manager@2024!     (Customer: Entreprise Alpha)');
-  console.log('   user@alpha.com      →  User@2024!        (Customer: Entreprise Alpha)');
-  console.log('   admin@demo.com      →  Admin@2024!       (Customer: Client Démo)');
-  console.log('   user@demo.com       →  User@2024!        (Customer: Client Démo)');
 }

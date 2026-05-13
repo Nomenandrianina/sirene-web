@@ -75,6 +75,17 @@ import { DiffusionConfigModule } from './diffusion-config/diffusion-config.modul
 import { DiffusionConfig } from './diffusion-config/entities/diffusion-config.entity';
 import { NotificationswebModule } from './notificationsweb/notificationsweb.module';
 import { Notificationsweb } from './notificationsweb/entities/notificationsweb.entity';
+import { AlerteBngrcModule } from './alerte-bngrc/alerte-bngrc.module';
+import { TypeAlerteBngrcModule } from './type-alerte-bngrc/type-alerte-bngrc.module';
+import { CategorieAlerteBngrcModule } from './categorie-alerte-bngrc/categorie-alerte-bngrc.module';
+import { AudioAlerteBngrcModule } from './audio-alerte-bngrc/audio-alerte-bngrc.module';
+import { AlerteBngrc } from './alerte-bngrc/entities/alerte-bngrc.entity';
+import { TypeAlerteBngrc } from './type-alerte-bngrc/entities/type-alerte-bngrc.entity';
+import { CategorieAlerteBngrc } from './categorie-alerte-bngrc/entities/categorie-alerte-bngrc.entity';
+import { AudioAlerteBngrc } from './audio-alerte-bngrc/entities/audio-alerte-bngrc.entity';
+import { SendAlerteBngrcModule } from './send-alerte-bngrc/send-alerte-bngrc.module';
+import { NotificationBngrcModule } from './notification-bngrc/notification-bngrc.module';
+import { NotificationBngrc } from './notification-bngrc/entities/notification-bngrc.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -89,12 +100,12 @@ import { Notificationsweb } from './notificationsweb/entities/notificationsweb.e
         username: config.get<string>('DB_USERNAME'), 
         password: config.get<string>('DB_PASSWORD'), 
         database: config.get<string>('DB_DATABASE'),
-        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany,PackType,DiffusionLog,Souscription,PlanningDiffusion,DiffusionPlanifiee,DiffusionConfig,Notificationsweb],
+        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany,PackType,DiffusionLog,Souscription,PlanningDiffusion,DiffusionPlanifiee,DiffusionConfig,Notificationsweb,AlerteBngrc,TypeAlerteBngrc,CategorieAlerteBngrc,AudioAlerteBngrc,NotificationBngrc],
         synchronize: true,
       }),
     })
     ,RolesModule, PermissionsModule, UsersModule,CustomersModule,AuthModule, ProvincesModule, RegionsModule, DistrictsModule, VillagesModule, FlowsModule, WeathersModule, ColorCodeModule, AlertLevelModule, SettingsModule, TimeSettingModule,ExportModule,
-    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule, PacktypeModule, SouscriptionModule, DiffusionLogModule, PlanningDiffusionModule, DiffusionSchedulerModule,AppCommandModule, DiffusionPlanifieeModule, DiffusionConfigModule, NotificationswebModule
+    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule, PacktypeModule, SouscriptionModule, DiffusionLogModule, PlanningDiffusionModule, DiffusionSchedulerModule,AppCommandModule, DiffusionPlanifieeModule, DiffusionConfigModule, NotificationswebModule, AlerteBngrcModule, TypeAlerteBngrcModule, CategorieAlerteBngrcModule, AudioAlerteBngrcModule, SendAlerteBngrcModule, NotificationBngrcModule
     
   ],
   controllers: [AppController],

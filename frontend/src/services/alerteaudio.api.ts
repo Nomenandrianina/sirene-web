@@ -20,9 +20,6 @@ const token = () => localStorage.getItem("access_token") ?? "";
   
     fd.append("mobileId",              dto.mobileId || "");
     fd.append("sousCategorieAlerteId", String(dto.sousCategorieAlerteId));
-
-    console.log('dto',dto)
-    console.log('dto.newSousCatName',dto.newSousCatName)
   
     if (dto.name)              fd.append("name",              dto.name);
     if (dto.description)       fd.append("description",       dto.description);
@@ -73,7 +70,8 @@ const token = () => localStorage.getItem("access_token") ?? "";
   
 export const alerteAudiosApi = {
     getAll:   (sousCategorieAlerteId?: number ) => get(`/alerte-audios${sousCategorieAlerteId ? `?sousCategorieAlerteId=${sousCategorieAlerteId}` : ""}`),
-    getAllByCustomer: (customerId?: string) => get(`/alerte-audios/findAllbycustumer${customerId ? `?customerId=${customerId}` : ''}`),
+    getAllByCustomer: (customerId?: number) => get(`/alerte-audios/findAllbycustumer${customerId ? `?customerId=${customerId}` : ''}`),
+    getAllWithDefaults: (customerId?: number) => get(`/alerte-audios/findAllWithDefaults${customerId ? `?customerId=${customerId}` : ''}`),
     getById:  (id: number) => get(`/alerte-audios/${id}`),
     getOne: (id: number): Promise<AlerteAudio> => get(`/alerte-audios/${id}`),
     create:   postAudio,

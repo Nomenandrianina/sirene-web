@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Param, Body, Query, ParseIntPipe,
 import { AlerteTypeService } from "./alerte-type.service";
 import { CreateAlerteTypeDto } from "./dto/create-alerte-type.dto";
 import { UpdateAlerteTypeDto } from "./dto/update-alerte-type.dto";
+import { ROLES } from "src/common/constants/roles.constants";
 
 @Controller("alerte-types")
 export class AlerteTypeController {
@@ -10,7 +11,7 @@ export class AlerteTypeController {
   @Get()
   findAll(@Query("alerteId") alerteId?: string, @Request() req?: any) {
     const user         = req?.user;
-    const isSuperAdmin = !user || user.role?.name?.toLowerCase() === "superadmin";
+    const isSuperAdmin = !user || user.role?.name?.toLowerCase() === ROLES.SUPERADMIN;
     const customerId   = user?.customerId ?? user?.customer?.id;
     return this.service.findAll(
       alerteId ? +alerteId : undefined,

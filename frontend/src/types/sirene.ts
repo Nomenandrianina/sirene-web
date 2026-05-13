@@ -14,5 +14,3 @@ export interface Sirene {
     village?:         Village;
     customers?:       { id: number; name: string }[];
 }
-
-    

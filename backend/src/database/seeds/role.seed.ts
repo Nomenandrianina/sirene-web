@@ -11,10 +11,10 @@ export async function seedRoles(dataSource: DataSource): Promise<void> {
   await dataSource.query(`
     INSERT INTO roles (name)
     VALUES 
-      ('superadmin'),
-      ('admin'),
-      ('manager'),
-      ('user')
+      ('SUPERADMIN'),
+      ('BNGRC_ALERTE'),
+      ('CUSTOMER_ADMIN'),
+      ('CUSTOMER_OPERATOR')
   `);
 
   console.log('✅ Roles seeded successfully');

@@ -119,9 +119,14 @@ export default function AlerteAudioRecord() {
   const allTypes = toArr(rawTypes);
   const allCats  = toArr(rawCats);
   const allSCats = toArr(rawSousCats);
+
   const sirenes = useMemo(() =>
     toArr(rawSirenes).filter((s: any) =>
-      s.isActive && (isSuperAdmin || s.customers[0].id === myCustomerId)
+      s.isActive &&
+      (
+        isSuperAdmin ||
+        s.customers?.some((c: any) => c.id === myCustomerId)
+      )
     ),
     [rawSirenes, isSuperAdmin, myCustomerId]
   );
@@ -206,6 +211,12 @@ export default function AlerteAudioRecord() {
   );
 
   function handleRecorded(file: File, duration: number) {
+    const MAX_SECONDS = 150;
+    if (duration > MAX_SECONDS) {
+      // Afficher une erreur — le recorder dépasse la limite
+      setError(`Enregistrement trop long : ${Math.round(duration)}s (max 2 min 30s). Veuillez recommencer.`);
+      return;
+    }
     setRecordedFile(file);
     setRecordedDuration(duration);
     if (!name) setName(`Enregistrement ${new Date().toLocaleString("fr-FR")}`);

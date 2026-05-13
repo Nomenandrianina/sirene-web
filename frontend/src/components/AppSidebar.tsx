@@ -1,12 +1,10 @@
-import {
-  LayoutDashboard, AlertTriangle, Radio,
-  Bell, Users, Building2, MapPin, LogOut, ChevronLeft,
-  ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings,
-} from "lucide-react";
+import { LayoutDashboard, AlertTriangle, Radio, Bell, Users, Building2, MapPin, LogOut, ChevronLeft, ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings,} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import "../styles/app-layout.css";
 import logoImg from "@/assets/logo_white.png";
+import { useRole } from "@/hooks/useRole";
+
 
 // Chaque item peut avoir une permission requise (optionnelle)
 // Si pas de permission → visible par tous les connectés
@@ -18,14 +16,15 @@ interface NavItem {
 }
 
 const mainItems: NavItem[] = [
-  { title: "Dashboard",          url: "/",                icon: LayoutDashboard },
-  { title: "Cartographie",          url: "/map",                icon: MapPinCheckInside },
-  { title: "Envoyer une diffusion", url: "/alertes/envoyer", icon: AlertTriangle,  permission: "send-alerte:execute" },
-  { title: "Sirènes",            url: "/sirenes",         icon: Radio,          permission: "sirenes:read" },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Cartographie", url: "/map", icon: MapPinCheckInside },
+  { title: "Envoi diffusion", url: "/alertes/envoyer", icon: Send,  permission: "send-alerte:execute" },
+  { title: "Risque et catastrophe", url: "/sendalerte-all", icon: AlertTriangle,permission: "alerte-bngrc:send"},
+  { title: "Sirènes", url: "/sirenes", icon: Radio, permission: "sirenes:read" },
   { title: "Pack", url: "/pack", icon: Package , permission: "pack-types:read"},
   { title: "Souscription", url: "/souscription", icon: FileCheck , permission: "souscriptions:read" },
   { title: "Planning", url: "/planning", icon: CalendarClock , permission: "planning:read" },
-  { title: "Mes offres", url: "/Offreclient", icon: Tag },
+  { title: "Mes offres", url: "/Offreclient", icon: Tag  , permission: "offre:read" },
 ];
 
 const dataItems: NavItem[] = [
@@ -38,20 +37,33 @@ const dataItems: NavItem[] = [
 ];
 
 const alertItems: NavItem[] = [
-  { title: "Alertes",                 url: "/alertes",                icon: AlertTriangle, permission: "alertes:read"                 },
-  { title: "Types d'alerte",          url: "/alerte-types",           icon: Tag,           permission: "alerte-types:read"            },
+  { title: "Alertes",                 url: "/alertes",                icon: AlertTriangle, permission: "alertes:read"         },
+  { title: "Types d'alerte",          url: "/alerte-types",           icon: Tag,           permission: "alerte-types:read"    },
   { title: "Catégories",              url: "/categorie-alertes",      icon: FolderOpen,    permission: "categorie-alertes:read"       },
   { title: "Sous-catégories",         url: "/sous-categorie-alertes", icon: Layers,        permission: "sous-categorie-alertes:read"  },
-  { title: "Audios/Sons ",           url: "/alerte-audios",          icon: Music,         permission: "alerte-audios:read"           },
-  { title: "Notifications",           url: "/notifications",          icon: LayoutList,    permission: "notifications:read"           },
+  { title: "Audios/Sons ",           url: "/alerte-audios",          icon: Music,         permission: "alerte-audios:read"   },
+  { title: "Notifications",           url: "/notifications",          icon: LayoutList,    permission: "notifications:read"   },
 ];
 
 const adminItems: NavItem[] = [
-  { title: "Utilisateurs", url: "/utilisateurs", icon: Users,       permission: "users:read"        },
+  { title: "Utilisateurs", url: "/utilisateurs", icon: Users,       permission: "users:read"},
   { title: "Clients",      url: "/clients",      icon: Building2,   permission: "customers:read"    },
-  { title: "Rôles",        url: "/roles",        icon: ShieldCheck, permission: "roles:read"        },
+  { title: "Rôles",        url: "/roles",        icon: ShieldCheck, permission: "roles:read"},
   { title: "Permissions",  url: "/permissions",  icon: Lock,        permission: "permissions:read"  },
   { title: "parametrage de diffusion",  url: "/parametrage-diffusion",  icon: Settings,        permission: "permissions:read"  },
+];
+
+const alertebngrcItem: NavItem[] = [
+  { title: "Alerte", url: "/alertebngrc", icon: AlertTriangle, permission: "alertebngrc:read"},
+  { title: "Type d'alerte", url: "/typealertebngrc", icon: Tag, permission: "typealertebngrc:read"},
+  { title: "Catégorie d'alerte", url: "/categorie-alerte-bngrc", icon: FolderOpen, permission: "categorie-alerte-bngrc:read"},
+  { title: "Alertes audio", url: "/audio-alerte-bngrc", icon: FolderOpen, permission: "audio-alerte-bngrc:read"},
+];
+
+
+const notificationsItem: NavItem[] = [
+  { title: "Notifications", url: "/notifications", icon: LayoutList,    permission: "notifications:read"},
+  { title: "Diffusions alerte", url: "/notifications-alerte", icon: LayoutList, permission: "notification-bngrc:read"},
 ];
 
 interface AppSidebarProps {
@@ -59,8 +71,20 @@ interface AppSidebarProps {
   onToggle:  () => void;
 }
 
+function getAlertItems(isBngrc: boolean): NavItem[] {
+  return [
+    { title: "Alertes", url: "/alertes", icon: AlertTriangle, permission: "alertes:read"        },
+    { title: "Types d'alerte",url: "/alerte-types", icon: Tag, permission: "alerte-types:read"   },
+    { title: "Catégories", url: "/categorie-alertes", icon: FolderOpen, permission: "categorie-alertes:read"      },
+    { title: "Sous-catégories", url: "/sous-categorie-alertes", icon: Layers, permission: "sous-categorie-alertes:read" },
+    { title: isBngrc ? "Alertes sonores" : "Audios/Sons",  url: "/alerte-audios", icon: Music, permission: "alerte-audios:read"  },
+                                       
+  ];
+}
+
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { user, logout, isSuperAdmin, can } = useAuth();
+  const { isBngrc } = useRole();
 
   // Filtrer les items selon les permissions
   const visible = (items: NavItem[]) =>
@@ -75,8 +99,10 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   const visibleMain  = visible(mainItems);
   const visibleData  = visible(dataItems);
-  const visibleAlert = visible(alertItems);
+  const visibleAlert = visible(getAlertItems(isBngrc)); ;
   const visibleAdmin = visible(adminItems);
+  const visibleAlertebngbrc = visible(alertebngrcItem);
+  const visiblenotifications = visible(notificationsItem);
 
   return (
     <aside className={`app-sidebar${collapsed ? " collapsed" : ""}`}>
@@ -128,8 +154,47 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         {/* Alertes */}
         {visibleAlert.length > 0 && (
           <>
+            <div className="nav-section-label">Communication </div>
+            {visibleAlert.map((item) => (
+              <NavLink key={item.url} to={item.url} end={false} className="nav-item" activeClassName="active">
+                <span className="nav-item-icon"><item.icon size={16} /></span>
+                <span className="nav-item-label">{item.title}</span>
+                <span className="nav-item-tooltip">{item.title}</span>
+              </NavLink>
+            ))}
+          </>
+        )}
+       
+        {visibleAlertebngbrc.length > 0 && (
+          <>
+            <div className="nav-section-label">Alertes</div>
+            {visibleAlertebngbrc.map((item) => (
+              <NavLink key={item.url} to={item.url} end={false} className="nav-item" activeClassName="active">
+                <span className="nav-item-icon"><item.icon size={16} /></span>
+                <span className="nav-item-label">{item.title}</span>
+                <span className="nav-item-tooltip">{item.title}</span>
+              </NavLink>
+            ))}
+          </>
+        )}
+
+        {/* {visibleAlert.length > 0 && (
+          <>
             <div className="nav-section-label">Alertes</div>
             {visibleAlert.map((item) => (
+              <NavLink key={item.url} to={item.url} end={false} className="nav-item" activeClassName="active">
+                <span className="nav-item-icon"><item.icon size={16} /></span>
+                <span className="nav-item-label">{item.title}</span>
+                <span className="nav-item-tooltip">{item.title}</span>
+              </NavLink>
+            ))}
+          </>
+        )} */}
+  
+        {visiblenotifications.length > 0 && (
+          <>
+            <div className="nav-section-label">Notifications</div>
+            {visiblenotifications.map((item) => (
               <NavLink key={item.url} to={item.url} end={false} className="nav-item" activeClassName="active">
                 <span className="nav-item-icon"><item.icon size={16} /></span>
                 <span className="nav-item-label">{item.title}</span>
@@ -153,7 +218,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             ))}
           </>
         )}
-
       </div>
 
       <div className="sidebar-footer">

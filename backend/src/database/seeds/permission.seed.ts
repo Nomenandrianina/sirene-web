@@ -1,107 +1,115 @@
 import { DataSource } from "typeorm";
 
 export async function seedPermissions(dataSource: DataSource) {
-  const existing = await dataSource.query("SELECT COUNT(*) as cnt FROM permissions");
-  if (parseInt(existing[0].cnt) > 0) {
-    console.log("Permissions déjà seedées — skip");
-    return;
-  }
 
   await dataSource.query(`
-    INSERT INTO permissions (name) VALUES
-      -- Utilisateurs
-      ('users:read'),
-      ('users:create'),
-      ('users:update'),
-      ('users:delete'),
+  INSERT IGNORE INTO permissions (name) VALUES
 
-      -- Clients
-      ('customers:read'),
-      ('customers:create'),
-      ('customers:update'),
-      ('customers:delete'),
+    ('users:read'),
+    ('users:create'),
+    ('users:update'),
+    ('users:delete'),
 
-      -- Rôles
-      ('roles:read'),
-      ('roles:create'),
-      ('roles:update'),
-      ('roles:delete'),
+    ('customers:read'),
+    ('customers:create'),
+    ('customers:update'),
+    ('customers:delete'),
 
-      -- Permissions
-      ('permissions:read'),
-      ('permissions:create'),
-      ('permissions:update'),
-      ('permissions:delete'),
+    ('roles:read'),
+    ('roles:create'),
+    ('roles:update'),
+    ('roles:delete'),
 
-      -- Provinces
-      ('provinces:read'),
-      ('provinces:create'),
-      ('provinces:update'),
-      ('provinces:delete'),
+    ('permissions:read'),
+    ('permissions:create'),
+    ('permissions:update'),
+    ('permissions:delete'),
 
-      -- Régions
-      ('regions:read'),
-      ('regions:create'),
-      ('regions:update'),
-      ('regions:delete'),
+    ('provinces:read'),
+    ('provinces:create'),
+    ('provinces:update'),
+    ('provinces:delete'),
 
-      -- Districts
-      ('districts:read'),
-      ('districts:create'),
-      ('districts:update'),
-      ('districts:delete'),
+    ('regions:read'),
+    ('regions:create'),
+    ('regions:update'),
+    ('regions:delete'),
 
-      -- Villages
-      ('villages:read'),
-      ('villages:create'),
-      ('villages:update'),
-      ('villages:delete'),
+    ('districts:read'),
+    ('districts:create'),
+    ('districts:update'),
+    ('districts:delete'),
 
-      -- Sirènes
-      ('sirenes:read'),
-      ('sirenes:create'),
-      ('sirenes:update'),
-      ('sirenes:delete'),
+    ('villages:read'),
+    ('villages:create'),
+    ('villages:update'),
+    ('villages:delete'),
 
-      -- Alertes
-      ('alertes:read'),
-      ('alertes:create'),
-      ('alertes:update'),
-      ('alertes:delete'),
+    ('sirenes:read'),
+    ('sirenes:create'),
+    ('sirenes:update'),
+    ('sirenes:delete'),
 
-      -- Types d alerte
-      ('alerte-types:read'),
-      ('alerte-types:create'),
-      ('alerte-types:update'),
-      ('alerte-types:delete'),
+    ('alertes:read'),
+    ('alertes:create'),
+    ('alertes:update'),
+    ('alertes:delete'),
 
-      -- Catégories d alerte
-      ('categorie-alertes:read'),
-      ('categorie-alertes:create'),
-      ('categorie-alertes:update'),
-      ('categorie-alertes:delete'),
+    ('alerte-types:read'),
+    ('alerte-types:create'),
+    ('alerte-types:update'),
+    ('alerte-types:delete'),
 
-      -- Sous-catégories d alerte
-      ('sous-categorie-alertes:read'),
-      ('sous-categorie-alertes:create'),
-      ('sous-categorie-alertes:update'),
-      ('sous-categorie-alertes:delete'),
+    ('categorie-alertes:read'),
+    ('categorie-alertes:create'),
+    ('categorie-alertes:update'),
+    ('categorie-alertes:delete'),
 
-      -- Audios alerte
-      ('alerte-audios:read'),
-      ('alerte-audios:create'),
-      ('alerte-audios:update'),
-      ('alerte-audios:delete'),
+    ('sous-categorie-alertes:read'),
+    ('sous-categorie-alertes:create'),
+    ('sous-categorie-alertes:update'),
+    ('sous-categorie-alertes:delete'),
 
-      -- Notifications
-      ('notifications:read'),
-      ('notifications:create'),
-      ('notifications:update'),
-      ('notifications:delete'),
+    ('alerte-audios:read'),
+    ('alerte-audios:create'),
+    ('alerte-audios:update'),
+    ('alerte-audios:delete'),
+    ('alerte-audios:review'),
 
-      -- Envoi alerte
-      ('send-alerte:execute')
-  `);
+    ('notifications:read'),
+    ('notifications:create'),
+    ('notifications:update'),
+    ('notifications:delete'),
+
+    ('send-alerte:execute'),
+    ('offre:read'),
+    ('planning:read'),
+
+    
+    ('alertebngrc:read'),
+    ('alertebngrc:create'),
+    ('alertebngrc:update'),
+    ('alertebngrc:delete'),
+
+    ('typealertebngrc:read'),
+    ('typealertebngrc:create'),
+    ('typealertebngrc:update'),
+    ('typealertebngrc:delete'),
+
+    ('categorie-alerte-bngrc:read'),
+    ('categorie-alerte-bngrc:create'),
+    ('categorie-alerte-bngrc:update'),
+    ('categorie-alerte-bngrc:delete'),
+
+    ('audio-alerte-bngrc:read'),
+    ('audio-alerte-bngrc:create'),
+    ('audio-alerte-bngrc:update'),
+    ('audio-alerte-bngrc:delete'),
+    
+    ('alerte-bngrc:send'),
+    ('notification-bngrc:read')
+    
+`);
 
   console.log("✅ Permissions seedées (65 permissions)");
 }

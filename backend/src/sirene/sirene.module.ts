@@ -5,10 +5,11 @@ import { Customer }         from '../customers/entity/customer.entity';
 import { SirenesService }   from './sirene.service';
 import { SirenesController } from './sirene.controller';
 import { SmsModule }        from '../sms/sms.module';
+import { AudioAlerteBngrc } from 'src/audio-alerte-bngrc/entities/audio-alerte-bngrc.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Sirene, Customer]),
+    TypeOrmModule.forFeature([Sirene, Customer, AudioAlerteBngrc]),
     SmsModule,
   ],
   controllers: [SirenesController],
