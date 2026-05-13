@@ -9,7 +9,7 @@ import { districtsApi } from "@/services/districts.api";
 import { communesApi }  from "@/services/commune.api";
 import { fokontanyApi } from "@/services/fokontany.api";
 import { CreateSireneDto } from "@/services/sirene.api";
-import { ChevronLeft, Loader2, MapPin, Navigation, X, Search } from "lucide-react";
+import { ChevronLeft, Loader2, MapPin, Navigation, X, Search, Copy } from "lucide-react";
 
 const DEFAULT_LAT  = -18.9249;
 const DEFAULT_LNG  =  47.5185;
@@ -228,6 +228,8 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
   const mapRef     = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<any>(null);
   const markerRef  = useRef<any>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "info" } | null>(null);
+
 
   // ── États cascade ──────────────────────────────────────────────────────────
   const [provinceId,  setProvinceId]  = useState<number>(0);
@@ -255,6 +257,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
     isActive:         initialData?.isActive         ?? 1,
     customerIds:      initialData?.customerIds      ?? [],
     communicationType: initialData?.communicationType ?? "SMS", 
+    fcmToken: initialData?.fcmToken ?? null,
   });
 
   const [latInput, setLatInput] = useState(initialData?.latitude  ?? "");
@@ -278,6 +281,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
         isActive:         initialData.isActive         ?? 1,
         customerIds:      initialData.customerIds      ?? [],
         communicationType: initialData.communicationType ?? "SMS", 
+        fcmToken: initialData.fcmToken ?? null, 
       });
       setLatInput(initialData.latitude  ?? "");
       setLngInput(initialData.longitude ?? "");
@@ -380,6 +384,11 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
     setVillageSearch("");
   }
 
+  function showToast(msg: string, type: "success" | "info" = "success") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }
+
   // ── Téléphone ─────────────────────────────────────────────────────────────
   function validatePhone(brain: string, relai: string) {
     const errors = { brain: "", relai: "" };
@@ -424,10 +433,6 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
 
   useEffect(() => {
     if (!mapRef.current || leafletRef.current) return;
-    const link = document.createElement("link");
-    link.rel  = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
 
     import("leaflet").then(L => {
       if (!mapRef.current || leafletRef.current) return;
@@ -473,6 +478,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
     e.preventDefault();
     if (!validatePhone(form.phoneNumberBrain ?? "", form.phoneNumberRelai ?? "")) return;
     await onSubmit(form);
+    showToast(isEdit ? "Sirène mise à jour avec succès" : "Sirène créée avec succès");
   }
 
   // ── Breadcrumb localisation ───────────────────────────────────────────────
@@ -488,7 +494,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-  <div className="min-h-full bg-slate-50 pb-10">
+    <div className="bg-slate-50 pb-10 w-full">
 
       {/* ── Header ── */}
       <div className="bg-white border-b border-slate-200 px-4 py-4">
@@ -506,7 +512,7 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-7xl mx-auto px-3 py-5 flex flex-col gap-4">
+      <form onSubmit={handleSubmit}   className="max-w-7xl mx-auto px-3 py-5 flex flex-col gap-4 w-full">
 
         {/* ── Informations ── */}
         <SectionCard title="Informations">
@@ -600,6 +606,36 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
               </div>
             </Field>
 
+            {/* FCM Token — lecture seule en édition, saisie en création */}
+            <Field label="FCM Token" className="sm:col-span-2">
+              <div className="flex gap-2 items-center">
+                <input
+                  value={form.fcmToken ?? ""}
+                  onChange={e => set("fcmToken", e.target.value || null)}
+                  placeholder="Token Firebase Cloud Messaging (optionnel)"
+                  readOnly={isEdit}
+                  className={`${inputCls} font-mono text-xs ${isEdit ? "bg-slate-50 text-slate-500 cursor-default" : ""}`}
+                />
+                {isEdit && form.fcmToken && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(form.fcmToken ?? "");
+                      showToast("Token copié dans le presse-papier", "info");
+                    }}
+                    title="Copier le token"
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-sky-600 hover:bg-sky-50 text-xs font-medium transition flex-shrink-0 whitespace-nowrap"
+                  >
+                    <Copy size={13} /> Copier
+                  </button>
+                )}
+              </div>
+              {isEdit && (
+                <span className="text-xs text-slate-400">
+                  Token géré par l'appareil — lecture seule
+                </span>
+              )}
+            </Field>
           </div>
         </SectionCard>
 

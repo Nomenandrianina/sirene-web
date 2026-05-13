@@ -1,12 +1,3 @@
-// Remplacer dans seed.ts :
-
-// ✅ Après — process.cwd() part toujours de la racine du projet
-// entities: [path.join(process.cwd(), "dist/**/*.entity.js")],
-
-// ─────────────────────────────────────────────────────────────────
-// Votre seed.ts corrigé complet :
-// ─────────────────────────────────────────────────────────────────
-
 import { DataSource } from 'typeorm';
 import * as path from 'path';
 import { seedCustomers }    from './customer.seed';
@@ -40,19 +31,19 @@ async function runSeeders() {
     await AppDataSource.initialize();
     console.log('🔌 Database connected\n');
 
-    await seedCustomers(AppDataSource);
+    // await seedCustomers(AppDataSource);
     await seedRoles(AppDataSource);
     await seedPermissions(AppDataSource);
     await seedUsers(AppDataSource);
-    await seedProvince(AppDataSource);
-    await seedColorCodes(AppDataSource);
-    await seedTimeSettings(AppDataSource);
-    await seedSettings(AppDataSource);
-    await seedAlertes(AppDataSource);
-    await seedCommuneFokontanyPermissions(AppDataSource);
+    // await seedProvince(AppDataSource);
+    // await seedColorCodes(AppDataSource);
+    // await seedTimeSettings(AppDataSource);
+    // await seedSettings(AppDataSource);
+    // await seedAlertes(AppDataSource);
+    // await seedCommuneFokontanyPermissions(AppDataSource);
     // await seedZone(AppDataSource);
-    await seedDiffusionModule(AppDataSource);
-    await seedDiffusionConfigs(AppDataSource);
+    // await seedDiffusionModule(AppDataSource);
+    // await seedDiffusionConfigs(AppDataSource);
 
     console.log('\n🌱 All seeders completed!');
   } catch (error) {

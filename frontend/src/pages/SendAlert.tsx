@@ -14,11 +14,7 @@ import { villagesApi }             from "@/services/village.api";
 import { sirenesApi }              from "@/services/sirene.api";
 import { notificationsApi }        from "@/services/notification.api";
 import { sendAlerteApi, SendAlertePayload } from "@/services/sendalerte.api";
-import {
-  CheckCircle, ChevronRight, ChevronLeft, Send, Loader2,
-  AlertTriangle, Radio, Play, Pause, Music, Clock, Zap,
-  Layers, Plus, X, List, RotateCcw, Timer, Bell, Minus,
-} from "lucide-react";
+import { CheckCircle, ChevronRight, ChevronLeft, Send, Loader2, AlertTriangle, Radio, Play, Pause, Music, Clock, Zap, Layers, Plus, X, List, RotateCcw, Timer, Bell, Minus, } from "lucide-react";
 import "@/styles/send-alerte.css";
 import { useAuth } from "@/contexts/AuthContext";
 

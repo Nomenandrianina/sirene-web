@@ -66,8 +66,8 @@
 /* ── Option cards ─────────────────────────────────────────────────────── */
 .sa-options-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* ← était 3 colonnes */
+  gap: 14px;
 }
 .sa-options-grid--single { grid-template-columns: 1fr; }
 

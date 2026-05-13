@@ -97,7 +97,6 @@ export function usePlanning(opts: {
         get<WeekStats>(`/planning-diffusion/stats?${query}`),
       ]);
 
-      console.log('planRes :',planRes);
       setSlots(Array.isArray(planRes) ? planRes : []);
       setStats(statsRes ?? null);
     } catch (e: any) {

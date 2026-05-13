@@ -157,9 +157,15 @@ export class DiffusionPlanifieeService {
       // ── Souscription → alerte_audio ─────────────────────────────────────────
       // dp.souscription_id → souscription.alerte_audio_id → alerte_audio
       .leftJoin(
+        'alerte_audio_sirene',
+        'aas',
+        'aas.sirene_id = dp.sirene_id'
+      )
+      .leftJoin(
         'alerte_audio',
         'aa',
-        'aa.sirene_id = dp.sirene_id AND aa.customer_id = dp.customer_id'
+        'aa.id = aas.alerte_audio_id AND aa.customer_id = dp.customer_id AND aa.deleted_at IS NULL AND aa.status = :approvedStatus',
+        { approvedStatus: 'approved' }
       )
    
       // ── alerte_audio → sous_categorie_alerte ────────────────────────────────

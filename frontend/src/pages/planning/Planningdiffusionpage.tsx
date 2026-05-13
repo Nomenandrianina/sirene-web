@@ -87,8 +87,6 @@ function PlanningCard({
     ?? group.items.find(i => i.status === 'sent')
     ?? group.items[0]).status;
 
-    console.log('group :',group)
-
   const c = STATUS_CFG[dominant];
 
   // Le clic sur la card ouvre le drawer du premier item

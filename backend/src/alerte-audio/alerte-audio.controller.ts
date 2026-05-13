@@ -1,8 +1,4 @@
-import {
-  Controller, Get, Post, Patch, Delete,
-  Param, Body, Query, ParseIntPipe,
-  UseInterceptors, UploadedFile, BadRequestException, Res, Req, Request,
-} from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, ParseIntPipe,UseInterceptors, UploadedFile, BadRequestException, Res, Req, Request, } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname } from "path";
@@ -42,6 +38,12 @@ export class AlerteAudioController {
   @Get('findAllbycustumer')
   findAllByCustomers( @Query('customerId') customerId?: string,  ) {
     return this.service.findAllbyCustomer(customerId ? +customerId : undefined);
+  }
+
+  
+  @Get('findAllWithDefaults')
+  findAllWithDefaults(@Query('customerId') customerId?: string) {
+    return this.service.findAllByCustomerWithDefaults(customerId ? +customerId : undefined );
   }
 
   // GET /alerte-audios/used-sous-categories  — préservé

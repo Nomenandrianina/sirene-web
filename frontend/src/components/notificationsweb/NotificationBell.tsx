@@ -360,7 +360,6 @@ export function NotificationBell() {
               textAlign: "center",
             }}>
               <button
-                onClick={() => { navigate("/notifications"); setOpen(false); }}
                 style={{
                   fontSize:   12,
                   color:      "#3b82f6",

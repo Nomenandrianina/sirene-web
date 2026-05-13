@@ -12,6 +12,7 @@ import { get, del, patch } from "./base";
     if (filters.userId)                params.set("userId",                String(filters.userId));
     if (filters.page)                  params.set("page",                  String(filters.page));
     if (filters.limit)                 params.set("limit",                 String(filters.limit));
+    if (filters.customerId)            params.set("customerId",             String(filters.customerId));
     const q = params.toString();
     return q ? `?${q}` : "";
   }
@@ -19,7 +20,14 @@ import { get, del, patch } from "./base";
   export const notificationsApi = {
     getAll:       (filters: NotificationFilters = {}) => get(`/notifications${buildQuery(filters)}`),
     getById:      (id: number)                        => get(`/notifications/${id}`),
-    getStats:     ()                                  => get("/notifications/stats"),
-    updateStatus: (id: number, dto: any)              => patch(`/notifications/${id}/status`, dto),
+    getStats: (filters: Partial<NotificationFilters> = {}) => {
+      const params = new URLSearchParams();
+      if (filters.customerId)            params.append("customerId",            String(filters.customerId));
+      if (filters.sireneId)              params.append("sireneId",              String(filters.sireneId));
+      if (filters.sousCategorieAlerteId) params.append("sousCategorieAlerteId", String(filters.sousCategorieAlerteId));
+      if (filters.startDate)             params.append("startDate",             filters.startDate);
+      if (filters.endDate)               params.append("endDate",               filters.endDate);
+      return get(`/notifications/stats?${params.toString()}`);
+    },    updateStatus: (id: number, dto: any)              => patch(`/notifications/${id}/status`, dto),
     remove:       (id: number)                        => del(`/notifications/${id}`),
   };

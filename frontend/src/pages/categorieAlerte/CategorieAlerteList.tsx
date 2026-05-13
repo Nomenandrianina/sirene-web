@@ -19,7 +19,6 @@ export default function CategorieAlerteList() {
 
   const {data:raw,isLoading}=useQuery({queryKey:["categorie-alertes"],queryFn:()=>categorieAlertesApi.getAll()});
   const items=Array.isArray(raw)?raw:(raw as any)?.response??[];
-  console.log("raw :",raw)
 
   const filtered=useMemo(()=>{const q=search.toLowerCase();return items.filter((a:any)=>(a.name||"").toLowerCase().includes(q)||(a.alerteType?.name||"").toLowerCase().includes(q)||(a.alerteType?.alerte?.name||"").toLowerCase().includes(q));},[items,search]);
   const totalPages=Math.max(1,Math.ceil(filtered.length/PER_PAGE));

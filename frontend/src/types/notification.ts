@@ -11,6 +11,7 @@ export interface NotificationFilters {
     userId?:                number;
     page?:                  number;
     limit?:                 number;
+    customerId?:                 number;
   }
    
   export interface NotificationListResponse {
@@ -38,9 +39,11 @@ export interface Notification {
     alerteAudioId: number;
     souscription_id: number;
     sousCategorieAlerteId: number;
+    customerId: number;
     userId?: number;
     sirene?:        { id: number; imei: string; phoneNumberBrain: string };
     alerteAudio?:   { id: number; name: string };
     sousCategorie?: { id: number; name: string };
     user?:          { id: number; first_name: string; last_name: string };
+    Customer?: { id: number; name:string }
 }

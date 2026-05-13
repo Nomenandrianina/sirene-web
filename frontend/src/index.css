@@ -104,3 +104,17 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+.leaflet-container {
+  height: 288px;
+}

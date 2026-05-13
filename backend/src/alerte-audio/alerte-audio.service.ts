@@ -1,11 +1,9 @@
-import {
-  Injectable, NotFoundException, ConflictException, BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In , IsNull } from 'typeorm';
 import * as fs   from 'fs';
 import * as path from 'path';
-import { AlerteAudio, AudioValidationStatus }          from './entities/alerte-audio.entity';
+import { AlerteAudio, AudioValidationStatus } from './entities/alerte-audio.entity';
 import { CreateAlerteAudioDto } from './dto/create-alerte-audio.dto';
 import { UpdateAlerteAudioDto } from './dto/update-alerte-audio.dto';
 import { SousCategorieAlerte }  from '@/sous-categorie-alerte/entities/sous-categorie-alerte.entity';
@@ -18,6 +16,7 @@ import { join } from "path";
 import { NotificationswebService } from 'src/notificationsweb/notificationsweb.service';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entity/customer.entity';
+import { AUTO_APPROVED_ROLES, ROLES } from 'src/common/constants/roles.constants';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 ffmpeg.setFfprobePath(ffprobeInstaller.path);
@@ -83,6 +82,7 @@ async findAllbyCustomer(customerId?: number) {
       .leftJoinAndSelect('aa.sousCategorie', 'sc')
       .where('s.id = :sireneId', { sireneId })
       .andWhere('aa.deletedAt IS NULL')
+      .andWhere('aa.status = :status', { status: 'approved' })
       .orderBy('aa.createdAt', 'DESC')
       .getMany();
   }
@@ -115,6 +115,20 @@ async findAllbyCustomer(customerId?: number) {
     }));
   }
 
+
+  // alerte-audio.service.ts
+  async findAllByCustomerWithDefaults(customerId?: number): Promise<AlerteAudio[]> {
+    
+    return this.repo.find({
+      where: [
+        { customerId },           // audios du client
+        { customerId: IsNull() }, // audios globaux
+      ],
+      relations: ['sirenes', 'sousCategorie', 'createdByUser', 'customer'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   // ── CREATE ────────────────────────────────────────────────────────────────
   // ✅ MODIFIÉ — crée un AlerteAudio par sirène sélectionnée
   //    Logique mobileId, préfixe ALT_/ANN_ et deleteFile : tous préservés
@@ -122,7 +136,13 @@ async findAllbyCustomer(customerId?: number) {
   async create( dto: CreateAlerteAudioDto, file: Express.Multer.File, currentUser: { id: number; role: { name: string } },): Promise<AlerteAudio[]> {
   
     const isSuperAdmin = currentUser.role?.name === 'superadmin';
-  
+
+    const roleName = currentUser.role?.name?.toUpperCase();
+    const isAutoApproved = AUTO_APPROVED_ROLES.includes(roleName as any);
+
+    console.log("isAutoApproved :",isAutoApproved)
+
+    
     // 1. Parser sireneIds
     const rawIds = Array.isArray((dto as any).sireneIds)
       ? (dto as any).sireneIds
@@ -238,14 +258,15 @@ async findAllbyCustomer(customerId?: number) {
     audio.duration              = duree;
     audio.customerId            = dto.customerId ?? null;
     audio.createdByUserId       = currentUser.id;
-    audio.status                = isSuperAdmin
-      ? AudioValidationStatus.APPROVED
-      : AudioValidationStatus.PENDING;
+    audio.status = isAutoApproved
+    ? AudioValidationStatus.APPROVED
+    : AudioValidationStatus.PENDING;
+
   
     const saved = await this.repo.save(audio);
   
     // 6. Notif après création — seulement si client
-    if (!isSuperAdmin) {
+    if (!isAutoApproved) {
       const creator = await this.userRepo.findOne({
         where:  { id: currentUser.id },
         select: ['id', 'first_name', 'last_name', 'email'],
@@ -261,12 +282,18 @@ async findAllbyCustomer(customerId?: number) {
         : null;
       const customerName = customer?.name || '';
   
-      const superAdmins = await this.userRepo.find({
-        where:     { role: { name: 'superadmin' } },
-        relations: ['role'],
+      // ← CHANGEMENT CLÉ : notifier les CUSTOMER_ADMIN du même customer
+      if (!dto.customerId) return [saved];
+
+      const customerAdmins = await this.userRepo.find({
+        where: {
+          role:     { name: ROLES.CUSTOMER_ADMIN },
+          customer: { id: dto.customerId },
+        },
+        relations: ['role', 'customer'],
         select:    ['id'],
       });
-      const adminIds = superAdmins.map(u => u.id);
+      const adminIds = customerAdmins.map(u => u.id);
   
       if (adminIds.length > 0) {
         const sireneCount = sirenes.length;

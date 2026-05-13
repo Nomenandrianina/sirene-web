@@ -6,14 +6,15 @@ import { CreateNotificationDto } from "./dto/create-notification.dto";
 import { UpdateNotificationStatusDto } from "./dto/update-notification.dto";
 
 export interface NotificationFilters {
-  sireneId?:             number;
-  status?:               NotificationStatus;
-  startDate?:            string;
-  endDate?:              string;
+  sireneId?: number;
+  status?: NotificationStatus;
+  startDate?: string;
+  endDate?: string;
   sousCategorieAlerteId?: number;
-  userId?:               number;
-  page?:                 number;
-  limit?:                number;
+  userId?: number;
+  page?: number;
+  limit?: number;
+  customerId?: number;
 }
 
 @Injectable()
@@ -24,13 +25,15 @@ export class NotificationService {
   ) {}
 
   async findAll(filters: NotificationFilters = {}) {
-    const { sireneId, status, startDate, endDate, sousCategorieAlerteId, userId, page = 1, limit = 20 } = filters;
-
+    const { sireneId, status, startDate, endDate, sousCategorieAlerteId,  userId, customerId, page = 1, limit = 15 } = filters;
     const qb = this.repo
       .createQueryBuilder("n")
-      .leftJoinAndSelect("n.sirene", "sirene","sirene.village")
+      .leftJoinAndSelect("n.sirene", "sirene")
+      .leftJoinAndSelect("sirene.village", "village")
+      .leftJoinAndSelect("village.region", "region")
       .leftJoinAndSelect("n.alerteAudio", "alerteAudio")
       .leftJoinAndSelect("n.sousCategorie", "sousCategorie")
+      .leftJoinAndSelect("n.Customer", "customer")
       .leftJoinAndSelect("n.user", "user")
       .orderBy("n.createdAt", "DESC");
 
@@ -38,6 +41,8 @@ export class NotificationService {
     if (status)                qb.andWhere("n.status = :status", { status });
     if (sousCategorieAlerteId) qb.andWhere("n.sousCategorieAlerteId = :sousCategorieAlerteId", { sousCategorieAlerteId });
     if (userId)                qb.andWhere("n.userId = :userId", { userId });
+    if (customerId) qb.andWhere("n.customerId = :customerId", { customerId });
+
     if (startDate && endDate) {
       qb.andWhere("n.sendingTime BETWEEN :startDate AND :endDate", {
         startDate: new Date(startDate),
@@ -88,11 +93,34 @@ export class NotificationService {
   }
 
   // Stats globales pour le dashboard
-  async getStats() {
-    const total   = await this.repo.count();
-    const sent    = await this.repo.count({ where: { status: NotificationStatus.SENT } });
-    const failed  = await this.repo.count({ where: { status: NotificationStatus.FAILED } });
-    const pending = await this.repo.count({ where: { status: NotificationStatus.PENDING } });
+  async getStats(filters: Partial<NotificationFilters> = {}) {
+    const { customerId, sireneId, sousCategorieAlerteId, startDate, endDate } = filters;
+  
+    const buildQb = (status?: NotificationStatus) => {
+      const qb = this.repo.createQueryBuilder("n");
+      if (status)                qb.andWhere("n.status = :status",                { status });
+      if (customerId)            qb.andWhere("n.customerId = :customerId",         { customerId });
+      if (sireneId)              qb.andWhere("n.sireneId = :sireneId",             { sireneId });
+      if (sousCategorieAlerteId) qb.andWhere("n.sousCategorieAlerteId = :sousCategorieAlerteId", { sousCategorieAlerteId });
+      if (startDate && endDate) {
+        qb.andWhere("n.sendingTime BETWEEN :startDate AND :endDate", {
+          startDate: new Date(startDate), endDate: new Date(endDate),
+        });
+      } else if (startDate) {
+        qb.andWhere("n.sendingTime >= :startDate", { startDate: new Date(startDate) });
+      } else if (endDate) {
+        qb.andWhere("n.sendingTime <= :endDate",   { endDate: new Date(endDate) });
+      }
+      return qb;
+    };
+  
+    const [total, sent, failed, pending] = await Promise.all([
+      buildQb().getCount(),
+      buildQb(NotificationStatus.SENT).getCount(),
+      buildQb(NotificationStatus.FAILED).getCount(),
+      buildQb(NotificationStatus.PENDING).getCount(),
+    ]);
+  
     return { total, sent, failed, pending };
   }
 }

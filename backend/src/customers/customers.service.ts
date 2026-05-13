@@ -4,6 +4,7 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entity/customer.entity';
 import { Repository } from 'typeorm/repository/Repository';
 import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
+import { ROLES } from 'src/common/constants/roles.constants';
 
 @Injectable()
 export class CustomersService {
@@ -26,7 +27,7 @@ export class CustomersService {
 
   /** Admin → tous les clients | User → son propre client uniquement */
   async findAll(currentUser: { sub: number; role?: { name: string } }): Promise<Customer[]> {
-    const isAdmin = currentUser?.role?.name === 'superadmin';
+    const isAdmin = currentUser?.role?.name ===  ROLES.SUPERADMIN;
     
     if (isAdmin) {
       // Admin : tous les clients avec relations
@@ -50,7 +51,7 @@ export class CustomersService {
   }
 
   async findOne(id: number, currentUser: { sub: number; role?: { name: string } }): Promise<Customer> {
-    const isAdmin = currentUser?.role?.name === 'superadmin';
+    const isAdmin = currentUser?.role?.name ===  ROLES.SUPERADMIN;
 
     const customer = await this.customerRepo.findOne({
       where: { id },
@@ -71,7 +72,7 @@ export class CustomersService {
     updateCustomerDto: UpdateCustomerDto,
     currentUser: { sub: number; role?: { name: string } },
   ): Promise<Customer> {
-    const isAdmin = currentUser?.role?.name === 'superadmin';
+    const isAdmin = currentUser?.role?.name ===  ROLES.SUPERADMIN;
 
     const customer = await this.customerRepo.findOne({
       where: { id }
@@ -88,7 +89,7 @@ export class CustomersService {
   }
 
   async remove(id: number, currentUser: { sub: number; role?: { name: string } }) {
-    const isAdmin = currentUser?.role?.name === 'superadmin';
+    const isAdmin = currentUser?.role?.name ===  ROLES.SUPERADMIN;
 
     if (!isAdmin) throw new ForbiddenException('Only admins can delete customers');
 

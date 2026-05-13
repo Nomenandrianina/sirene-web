@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft, Loader2, Upload, Music, Play, Pause,
-  X, FileAudio, Search, Check, ChevronDown,
+  X, FileAudio, Search, Check, ChevronDown, Clock,
 } from "lucide-react";
 import { alertesApi }              from "@/services/alertes.api";
 import { alerteTypesApi }          from "@/services/alertetypes.api";
@@ -193,7 +193,7 @@ function SearchableMultiSelect({
 export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props) {
   const isEdit   = !!initialData?.id;
   const navigate = useNavigate();
-  const { isSuperAdmin, isClient, customerId: myCustomerId } = useRole();
+  const { isSuperAdmin, isClient, customerId: myCustomerId ,  isCustomerAdmin,   isCustomerOperator,  } = useRole();
 
   const [form, setForm] = useState<AlerteAudioFormData>({
     name:                  initialData?.name                  ?? "",
@@ -205,7 +205,6 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
     categorieAlerteId:     initialData?.categorieAlerteId     ?? 0,
     customerId:            initialData?.customerId            ?? null, 
     newSousCatName:  "",
-
   });
 
   useEffect(() => {
@@ -237,7 +236,14 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
   const existingUrl = initialData?.existingAudio ? alerteAudiosApi.audioUrl(initialData.existingAudio) : null;
   const playerUrl   = previewUrl ?? (isEdit ? existingUrl : null);
 
+  const isClientUser = isCustomerAdmin || isCustomerOperator;
 
+  const labels = {
+    alerte:       isClientUser ? "Sensibilisation" : "Alerte",
+    alerteType:   isClientUser ? "Type"            : "Type d'alerte",
+    categorie:    isClientUser ? "Catégorie"       : "Catégorie",
+    sousCat:      isClientUser ? "Sous-catégorie"  : "Sous-catégorie",
+  };
   
 
 
@@ -271,9 +277,25 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
       setFileError(`Format non supporté (acceptés : ${allowed.join(", ")})`);
       return;
     }
-    setFileError("");
-    setFile(f);
-    if (playing && audioRef.current) { audioRef.current.pause(); setPlaying(false); }
+  
+    // ← Vérifier la durée avant d'accepter le fichier
+    const url  = URL.createObjectURL(f);
+    const temp = new Audio(url);
+    temp.addEventListener("loadedmetadata", () => {
+      URL.revokeObjectURL(url);
+      const MAX_SECONDS = 150; // 2min 30s
+      if (temp.duration > MAX_SECONDS) {
+        setFileError(`Durée maximale dépassée : ${Math.floor(temp.duration)}s (max 2 min 30s)`);
+        return;
+      }
+      setFileError("");
+      setFile(f);
+      if (playing && audioRef.current) { audioRef.current.pause(); setPlaying(false); }
+    });
+    temp.addEventListener("error", () => {
+      URL.revokeObjectURL(url);
+      setFileError("Impossible de lire ce fichier audio");
+    });
   }
 
   // ── Données ─────────────────────────────────────────────────────────────────
@@ -478,6 +500,12 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
                 <Upload size={28} style={{ color: "#94a3b8", marginBottom: 8 }} />
                 <p>Glissez un fichier audio ou <span style={{ color: "#152a8a", fontWeight: 600 }}>cliquez pour choisir</span></p>
                 <p style={{ fontSize: "0.74rem", color: "#94a3b8", marginTop: 4 }}>MP3, WAV, OGG, AAC, M4A, OPUS</p>
+                <p style={{
+                  fontSize: "0.72rem", color: "#f59e0b", marginTop: 6,
+                  display: "flex", alignItems: "center", gap: 4, justifyContent: "center",
+                }}>
+                  <Clock size={11} /> Durée maximale : 2 min 30s
+                </p>
               </div>
             )}
           </div>
@@ -646,7 +674,7 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
           <div className="sirene-fields-grid">
 
             <div className="sirene-field">
-              <label>Alerte</label>
+            <label>{labels.alerte}</label>
               <select
                 value={form.alerteId || ""}
                 onChange={e => {
@@ -654,13 +682,13 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
                   setForm(f => ({ ...f, alerteId: v, alerteTypeId: 0, categorieAlerteId: 0, sousCategorieAlerteId: 0 }));
                 }}
               >
-                <option value="">— Toutes les alertes —</option>
+                <option value="">— Tous —</option>
                 {alertes.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
 
             <div className="sirene-field">
-              <label>Type d'alerte</label>
+            <label>{labels.alerteType}</label>
               <select
                 value={form.alerteTypeId || ""}
                 disabled={!form.alerteId}
@@ -746,7 +774,6 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
                 </>
               )}
             </div>
-
           </div>
         </div>
 

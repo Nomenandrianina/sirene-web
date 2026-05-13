@@ -9,7 +9,7 @@ import {
   Search, Plus, Pencil, Trash2, Loader2,
   ChevronLeft, ChevronRight, Music, Play, Pause,
   Download, Volume2, X, Eye, Radio, Clock, HardDrive,
-  CheckCircle2, AlertCircle, Timer,
+  CheckCircle2, AlertCircle, Timer, Building2,
 } from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
@@ -243,6 +243,21 @@ function AudioCard({
               </div>
             )}
           </div>
+
+          {isSuperAdmin && audio.customer && (
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              fontSize: 11, fontWeight: 500,
+              color: "#0891b2", background: "#ecfeff",
+              padding: "2px 8px", borderRadius: 10,
+            }}>
+              <Building2 size={9} />
+              {audio.customer.name}
+            </span>
+          )}
+
+          
+
         </div>
 
         {/* Statut */}
@@ -355,20 +370,23 @@ function AudioCard({
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          {isSuperAdmin && isPending && (
-            <button
-              onClick={onReview}
-              title="Examiner"
-              style={{
-                display: "flex", alignItems: "center", gap: 4,
-                padding: "5px 10px", borderRadius: 8, border: "1px solid #ede9fe",
-                background: "#f5f3ff", color: "#7c3aed",
-                fontSize: 11, fontWeight: 500, cursor: "pointer",
-              }}
-            >
-              <Eye size={12} /> Examiner
-            </button>
-          )}
+          
+          <CanDo permission="alerte-audios:review">
+            {isPending && (
+                <button
+                  onClick={onReview}
+                  title="Examiner"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "5px 10px", borderRadius: 8, border: "1px solid #ede9fe",
+                    background: "#f5f3ff", color: "#7c3aed",
+                    fontSize: 11, fontWeight: 500, cursor: "pointer",
+                  }}
+                >
+                  <Eye size={12} /> Examiner
+              </button>
+            )}
+          </CanDo>
 
           <button
             onClick={onDownload}
@@ -430,7 +448,10 @@ export default function AlerteAudioList() {
 
   const audioRef            = useRef<HTMLAudioElement | null>(null);
   const [player, setPlayer] = useState<PlayerState | null>(null);
-  const { isSuperAdmin, customerId } = useRole();
+  const { isSuperAdmin, customerId ,role } = useRole();
+  const isBngrc = role?.name === 'BNGRC_ALERTE';
+
+  console.log('isBngrc :',role?.name);
 
   useEffect(() => {
     return () => {
@@ -500,11 +521,14 @@ export default function AlerteAudioList() {
 
   // ── Données ────────────────────────────────────────────────────────
   const { data: raw, isLoading } = useQuery({
-    queryKey: ["alerte-audios"],
-    queryFn:  () => isSuperAdmin
-      ? alerteAudiosApi.getAll()
-      : alerteAudiosApi.getAllByCustomer(customerId),
+    queryKey: ["alerte-audios", isSuperAdmin ? "all" : customerId],
+    queryFn: () => {
+      if (isSuperAdmin) return alerteAudiosApi.getAll();
+      if (isBngrc)      return alerteAudiosApi.getAllWithDefaults(customerId);
+      return alerteAudiosApi.getAllByCustomer(customerId);
+    },
   });
+
   const items: AlerteAudio[] = Array.isArray(raw) ? raw : (raw as any)?.response ?? [];
 
   const filtered = useMemo(() => {
@@ -560,7 +584,7 @@ export default function AlerteAudioList() {
           </div>
           <CanDo permission="alerte-audios:create">
             <button className="btn-primary" onClick={() => navigate("/alerte-audios/create")}>
-              <Plus size={15} /> Nouvel audio
+              <Plus size={15} /> Soumission audio
             </button>
           </CanDo>
         </div>

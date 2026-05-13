@@ -1,5 +1,3 @@
-// ── Types partagés frontend ──────────────────────────────────────────────
-
 import { Customer } from "./customer";
 
 export type Periode = 'weekly' | 'monthly';
