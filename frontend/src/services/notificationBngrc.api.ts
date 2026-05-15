@@ -1,4 +1,4 @@
-import { NotificationBngrcFilters } from '@/types/NotificationBngrc';
+import { NotificationBngrcFilters } from '@/types/notificationBngrc';
 import { get, del }                 from './base';
 
 // ── Builder de query string — même pattern que notificationsApi ───────────────

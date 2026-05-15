@@ -19,7 +19,7 @@ const mainItems: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Cartographie", url: "/map", icon: MapPinCheckInside },
   { title: "Envoi diffusion", url: "/alertes/envoyer", icon: Send,  permission: "send-alerte:execute" },
-  { title: "Risque et catastrophe", url: "/sendalerte-all", icon: AlertTriangle,permission: "alerte-bngrc:send"},
+  { title: "ALERTES", url: "/sendalerte-all", icon: AlertTriangle,permission: "alerte-bngrc:send"},
   { title: "Sirènes", url: "/sirenes", icon: Radio, permission: "sirenes:read" },
   { title: "Pack", url: "/pack", icon: Package , permission: "pack-types:read"},
   { title: "Souscription", url: "/souscription", icon: FileCheck , permission: "souscriptions:read" },
@@ -57,7 +57,7 @@ const alertebngrcItem: NavItem[] = [
   { title: "Alerte", url: "/alertebngrc", icon: AlertTriangle, permission: "alertebngrc:read"},
   { title: "Type d'alerte", url: "/typealertebngrc", icon: Tag, permission: "typealertebngrc:read"},
   { title: "Catégorie d'alerte", url: "/categorie-alerte-bngrc", icon: FolderOpen, permission: "categorie-alerte-bngrc:read"},
-  { title: "Alertes audio", url: "/audio-alerte-bngrc", icon: FolderOpen, permission: "audio-alerte-bngrc:read"},
+  { title: "Bibliothèque audio", url: "/audio-alerte-bngrc", icon: FolderOpen, permission: "audio-alerte-bngrc:read"},
 ];
 
 
@@ -128,7 +128,13 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           <>
             <div className="nav-section-label">Navigation</div>
             {visibleMain.map((item) => (
-              <NavLink key={item.url} to={item.url} end={item.url === "/"} className="nav-item" activeClassName="active">
+              <NavLink
+                key={item.url}
+                to={item.url}
+                end={item.url === "/"}
+                className={`nav-item${item.url === "/sendalerte-all" ? " nav-item--alert-pulse" : ""}`}
+                activeClassName="active"
+              >
                 <span className="nav-item-icon"><item.icon size={16} /></span>
                 <span className="nav-item-label">{item.title}</span>
                 <span className="nav-item-tooltip">{item.title}</span>
@@ -177,20 +183,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             ))}
           </>
         )}
-
-        {/* {visibleAlert.length > 0 && (
-          <>
-            <div className="nav-section-label">Alertes</div>
-            {visibleAlert.map((item) => (
-              <NavLink key={item.url} to={item.url} end={false} className="nav-item" activeClassName="active">
-                <span className="nav-item-icon"><item.icon size={16} /></span>
-                <span className="nav-item-label">{item.title}</span>
-                <span className="nav-item-tooltip">{item.title}</span>
-              </NavLink>
-            ))}
-          </>
-        )} */}
-  
+        
         {visiblenotifications.length > 0 && (
           <>
             <div className="nav-section-label">Notifications</div>

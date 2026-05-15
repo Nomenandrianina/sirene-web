@@ -89,7 +89,7 @@ export function AppLayout({ children, noPadding }: { children: React.ReactNode; 
                 </div>
                 <div className="flex flex-col text-left">
                   <span className="text-[13px] font-semibold text-[#1a1f2e] max-w-[120px] truncate leading-tight">{fullName}</span>
-                  <span className="text-[10px] text-[#9aa0a6]">{user?.role?.name || "Utilisateur"}</span>
+                  {/* <span className="text-[10px] text-[#9aa0a6]">{user?.role?.name || "Utilisateur"}</span> */}
                 </div>
                 <ChevronDown size={13} className={`text-[#9aa0a6] transition-transform ${dropOpen ? "rotate-180" : ""}`} />
               </button>

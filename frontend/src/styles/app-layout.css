@@ -522,22 +522,56 @@
 .dropdown-item:hover       { background: #f4f6f9; color: #1a1f2e; }
 .dropdown-item.danger:hover { background: #fef2f2; color: #dc2626; }
 
+/* ── Envoi Alerte : item spécial ─────────────────────────── */
+.nav-item--alert-pulse {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #fff !important;
+  border-radius: 8px;
+  margin: 4px 8px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  animation: alert-ring 2s ease-in-out infinite;
+  position: relative;
+  overflow: visible;
+}
 
+.nav-item--alert-pulse .nav-item-icon {
+  color: #fff !important;
+}
 
+.nav-item--alert-pulse .nav-item-label {
+  color: #fff !important;
+}
 
+/* Halo qui pulse autour du bouton */
+@keyframes alert-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(220, 38, 38, 0.7); }
+  50%  { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(220, 38, 38, 0);   }
+}
 
+/* Icône qui scintille */
+.nav-item--alert-pulse .nav-item-icon {
+  animation: alert-flicker 1.4s ease-in-out infinite;
+}
 
+@keyframes alert-flicker {
+  0%, 100% { opacity: 1;    transform: scale(1);    }
+  30%       { opacity: 0.5; transform: scale(0.9);  }
+  60%       { opacity: 1;   transform: scale(1.15); }
+  80%       { opacity: 0.7; transform: scale(1);    }
+}
 
+/* État actif (page courante) */
+.nav-item--alert-pulse.active {
+  background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.5);
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+/* Sidebar collapsed : tooltip garde le style */
+.app-sidebar.collapsed .nav-item--alert-pulse {
+  margin: 4px auto;
+  width: 40px;
+  justify-content: center;
+}

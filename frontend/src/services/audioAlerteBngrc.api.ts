@@ -26,12 +26,26 @@ async function putAudioBngrc(id: number, formData: FormData): Promise<any> {
   return res.json();
 }
 
+// ── Dériver les catégories déjà utilisées depuis getAll ──────────────────────
+async function getUsedCategorieIds(): Promise<number[]> {
+  const raw  = await get('/audio-alerte-bngrc');
+  const list: any[] = Array.isArray(raw) ? raw : raw?.data ?? raw?.response ?? [];
+  return [...new Set(
+    list
+      .map((a: any) => a.categorieAlerteBngrcId)
+      .filter((id: any) => typeof id === 'number' && !isNaN(id))
+  )] as number[];
+}
+
 // ── API exportée ──────────────────────────────────────────────────────────────
 export const audioAlerteBngrcApi = {
-  getAll:         ()                              => get('/audio-alerte-bngrc'),
+  getAll:         ()                               => get('/audio-alerte-bngrc'),
   getByCategorie: (categorieAlerteBngrcId: number) =>
                     get(`/audio-alerte-bngrc?categorieAlerteBngrcId=${categorieAlerteBngrcId}`),
-  getById:        (id: number)                    => get(`/audio-alerte-bngrc/${id}`),
+  getById:        (id: number)                     => get(`/audio-alerte-bngrc/${id}`),
+
+  /** IDs des catégories déjà associées à un audio — unicité catégorie/audio */
+  getUsedCategorieIds,
 
   create: postAudioBngrc,
   update: putAudioBngrc,
@@ -47,7 +61,7 @@ export const audioAlerteBngrcApi = {
 
   remove: (id: number) => del(`/audio-alerte-bngrc/${id}`),
 
-  // URL publique pour lecture audio — même logique qu'alerteAudiosApi.audioUrl
+  // URL publique pour lecture audio
   audioUrl: (audioPath: string) => {
     const normalized = audioPath.replace(/\\/g, '/');
     return `${BASE.replace('/api', '')}/${normalized}`;

@@ -204,9 +204,11 @@ export default function SireneList() {
                       <td>
                         <span className="imei-code">{s.name ?? "—"}</span>
                       </td>
-                      <td>
-                        <span className="imei-code">{s.imei ?? "—"}</span>
-                      </td>
+                      {isSuperAdmin && (
+                        <td>
+                          <span className="imei-code">{s.imei ?? "—"}</span>
+                        </td>
+                      )}
                       <td>
                         <div className="village-cell">
                           <MapPin size={13} className="pin-icon" />
@@ -242,30 +244,36 @@ export default function SireneList() {
                         <span className= "status-badge active">{s.longitude} </span>
                         <span className= "status-badge active">{s.latitude}</span>
                       </td>
+                      {isSuperAdmin && (
                       <td>
                         <span className="phone-badge relai">{s.communicationType ?? "—"}</span>
                       </td>
-                      <td>
-                        <div className="action-btns">
-                          <CanDo permission="sirenes:update">
-                            <button
-                              className="btn-icon-action edit"
-                              title="Modifier"
-                              onClick={() => navigate(`/sirenes/${s.id}/edit`)}
-                            ><Edit2 size={14} /></button>
-                          </CanDo>
-                          <CanDo permission="sirenes:delete">
-                            <button
-                              className="btn-icon-action delete"
-                              title="Supprimer"
-                              onClick={() => {
-                                if (confirm(`Supprimer la sirène ${s.imei ?? s.id} ?`))
-                                  deleteMutation.mutate(s.id);
-                              }}
-                            ><Trash2 size={14} /></button>
-                          </CanDo>
-                        </div>
-                      </td>
+                      )}
+
+                      {isSuperAdmin && (
+                        <td>
+                          <div className="action-btns">
+                            <CanDo permission="sirenes:update">
+                              <button
+                                className="btn-icon-action edit"
+                                title="Modifier"
+                                onClick={() => navigate(`/sirenes/${s.id}/edit`)}
+                              ><Edit2 size={14} /></button>
+                            </CanDo>
+                            <CanDo permission="sirenes:delete">
+                              <button
+                                className="btn-icon-action delete"
+                                title="Supprimer"
+                                onClick={() => {
+                                  if (confirm(`Supprimer la sirène ${s.imei ?? s.id} ?`))
+                                    deleteMutation.mutate(s.id);
+                                }}
+                              ><Trash2 size={14} /></button>
+                            </CanDo>
+                          </div>
+                        </td>
+                      )}
+                
                     </tr>
                   ))}
                 </tbody>
