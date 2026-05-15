@@ -111,7 +111,8 @@ export class AudioAlerteBngrcService {
       .replace(/^_+|_+$/g, '')
       .slice(0, 12);
     const prefix      = alerteSlug ? `BNGRC_${alerteSlug}_` : 'BNGRC_';
-    const generatedMobileId = `${prefix}${catSlug}_${Date.now()}`;
+    const alerte_prefix = 'ALT_';
+    const generatedMobileId = `${alerte_prefix}${prefix}${catSlug}_${Date.now()}`;
  
     // 4b. Garantir l'unicité du mobileId généré (collision ultra-rare mais possible)
     const existing = await this.repo.findOne({ where: { mobileId: generatedMobileId } });

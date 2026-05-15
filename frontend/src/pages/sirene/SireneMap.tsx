@@ -96,16 +96,11 @@ function buildPopupHTML(s: any) {
         <div style="color:rgba(255,255,255,0.8);font-size:11px;">📍 ${s.village?.name ?? "Village inconnu"}</div>
       </div>
       <div style="padding:10px 14px;display:flex;flex-direction:column;gap:7px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Statut</span>
-          <span style="background:${bg};color:${fill};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">${label}</span>
-        </div>
-        ${row("IMEI", s.imei ?? "—")}
-        ${row("N° Brain", s.phoneNumberBrain ?? "—")}
-        ${row("N° Relai", s.phoneNumberRelai ?? "—")}
+       
+        ${row("District", s.village.fokontany.commune.district.name ?? "—")}
         ${s.latitude && s.longitude ? `
           <div style="margin-top:2px;padding-top:7px;border-top:.5px solid #f1f5f9;display:flex;justify-content:space-between;">
-            <span style="color:#94a3b8;font-size:10px;">GPS</span>
+            <span style="color:#94a3b8;font-size:10px;">COORDONNEES</span>
             <span style="color:#94a3b8;font-size:10px;font-family:monospace;">
               ${parseFloat(s.latitude).toFixed(4)}, ${parseFloat(s.longitude).toFixed(4)}
             </span>
@@ -237,6 +232,8 @@ export default function SireneMap() {
   const { data: rawRegions } = useQuery({
     queryKey: ["regions"], queryFn: () => regionsApi.getAll(),
   });
+
+  console.log('rawSirenes :',rawSirenes);
 
   const sirenes    = useMemo(() => toArr(rawSirenes),   [rawSirenes]);
   const provinces  = useMemo(() => toArr(rawProvinces), [rawProvinces]);
