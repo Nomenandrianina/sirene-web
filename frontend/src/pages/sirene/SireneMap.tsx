@@ -1,12 +1,13 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { sirenesApi }   from "@/services/sirene.api";
 import { provincesApi } from "@/services/province.api";
 import { regionsApi }   from "@/services/region.api";
 import { AppLayout }    from "@/components/AppLayout";
 import {
   Radio, Wifi, WifiOff, MapPin, Activity,
-  Layers,  Map as MapIcon, ChevronDown, RotateCcw,
+  Layers, Map as MapIcon, ChevronDown, RotateCcw,
 } from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -15,12 +16,11 @@ const toArr = (r: any) =>
 
 // ─── Icône SVG sirène ─────────────────────────────────────────────────────────
 function sireneSVG(active: boolean, isOwned: boolean) {
-    const fill = !isOwned
-    ? "#eab308" // jaune (non possédé)
+  const fill = !isOwned
+    ? "#eab308"
     : active
-    ? "#16a34a" // vert
-    : "#dc2626"; // rouge
-
+    ? "#16a34a"
+    : "#dc2626";
   const ring = active ? "#bbf7d0" : "#fecaca";
   return `
     <div class="sirene-map-icon ${active ? "active" : "inactive"}">
@@ -74,33 +74,39 @@ const MAP_CSS = `
   }
   .leaflet-popup-content { margin:0 !important; min-width:210px; }
   .leaflet-popup-tip-container { display:none; }
+  .sirene-marker-highlight {
+    box-shadow:0 4px 14px rgba(0,0,0,0.22), 0 0 0 4px #3b82f6 !important;
+    transform:scale(1.18) !important;
+  }
 `;
 
 // ─── Popup HTML ───────────────────────────────────────────────────────────────
 function buildPopupHTML(s: any) {
-    const ownerLabel = s.isOwned ? "Votre sirène" : "Autre sirène";
-    const fill  = s.isActive ? "#16a34a" : "#dc2626";
-    const bg    = s.isActive ? "#f0fdf4" : "#fef2f2";
-    const label = s.isActive ? "Active" : "Inactive";
-    const row = (k: string, v: string) => `
+  const fill = s.isActive ? "#16a34a" : "#dc2626";
+  const row  = (k: string, v: string) => `
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <span style="color:#64748b;font-size:11px;">${k}</span>
       <span style="color:#1e293b;font-weight:500;font-size:11px;font-family:monospace;">${v}</span>
     </div>`;
+
   return `
     <div style="font-family:system-ui,sans-serif;font-size:13px;">
       <div style="background:${fill};padding:12px 14px;">
         <div style="color:white;font-weight:700;font-size:14px;margin-bottom:2px;">
           ${s.name ?? s.imei ?? `Sirene #${s.id}`}
         </div>
-        <div style="color:rgba(255,255,255,0.8);font-size:11px;">📍 ${s.village?.name ?? "Village inconnu"}</div>
+        <div style="color:rgba(255,255,255,0.8);font-size:11px;">
+          📍 ${s.village?.name ?? "Village inconnu"}
+        </div>
       </div>
       <div style="padding:10px 14px;display:flex;flex-direction:column;gap:7px;">
-       
-        ${row("District", s.village.fokontany.commune.district.name ?? "—")}
+        ${s.village?.district   ? row("District",  s.village.district.name)   : ""}
+        ${s.village?.region     ? row("Région",    s.village.region.name)     : ""}
+        ${s.village?.province   ? row("Province",  s.village.province.name)   : ""}
         ${s.latitude && s.longitude ? `
-          <div style="margin-top:2px;padding-top:7px;border-top:.5px solid #f1f5f9;display:flex;justify-content:space-between;">
-            <span style="color:#94a3b8;font-size:10px;">COORDONNEES</span>
+          <div style="margin-top:2px;padding-top:7px;border-top:.5px solid #f1f5f9;
+                      display:flex;justify-content:space-between;">
+            <span style="color:#94a3b8;font-size:10px;">COORDONNÉES</span>
             <span style="color:#94a3b8;font-size:10px;font-family:monospace;">
               ${parseFloat(s.latitude).toFixed(4)}, ${parseFloat(s.longitude).toFixed(4)}
             </span>
@@ -168,7 +174,7 @@ function MapToggle({ mode, onChange }: { mode: "map" | "satellite"; onChange: (m
             cursor: "pointer", transition: "all .15s", fontFamily: "inherit",
           }}
         >
-          {m === "map" ? <MapIcon  size={13} /> : <Layers size={13} />}
+          {m === "map" ? <MapIcon size={13} /> : <Layers size={13} />}
           {m === "map" ? "Plan" : "Satellite"}
         </button>
       ))}
@@ -204,23 +210,28 @@ function StatusChip({ value, current, label, color, bg, onClick }: any) {
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function SireneMap() {
-  const mapRef      = useRef<HTMLDivElement>(null);
-  const leafletRef  = useRef<any>(null);
-  const markersRef  = useRef<Map<number, any>>(new Map());
-  const tileRef     = useRef<any>(null);
+  const mapRef     = useRef<HTMLDivElement>(null);
+  const leafletRef = useRef<any>(null);
+  const markersRef = useRef<Map<number, any>>(new Map());
+  const tileRef    = useRef<any>(null);
+
+  const [searchParams] = useSearchParams();
+  // ID passé depuis SireneList (?id=42)
+  const focusId = searchParams.get("id") ? Number(searchParams.get("id")) : null;
+  // true une fois que le fly-to initial a été exécuté (évite de rejouer à chaque re-render)
+  const focusDoneRef = useRef(false);
 
   const [mapReady,     setMapReady]     = useState(false);
   const [selected,     setSelected]     = useState<any>(null);
   const [mapMode,      setMapMode]      = useState<"map" | "satellite">("map");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
-  // Filtres géographiques
-  const [selProvince,   setSelProvince]   = useState("");
-  const [selRegion,     setSelRegion]     = useState("");
-  const [selDistrict,   setSelDistrict]   = useState("");
-  const [selCommune,    setSelCommune]    = useState("");
-  const [selFokontany,  setSelFokontany]  = useState("");
-  const [selVillage,    setSelVillage]    = useState("");
+  const [selProvince,  setSelProvince]  = useState("");
+  const [selRegion,    setSelRegion]    = useState("");
+  const [selDistrict,  setSelDistrict]  = useState("");
+  const [selCommune,   setSelCommune]   = useState("");
+  const [selFokontany, setSelFokontany] = useState("");
+  const [selVillage,   setSelVillage]   = useState("");
 
   // ── Requêtes ─────────────────────────────────────────────────────
   const { data: rawSirenes, isLoading } = useQuery({
@@ -233,34 +244,33 @@ export default function SireneMap() {
     queryKey: ["regions"], queryFn: () => regionsApi.getAll(),
   });
 
-  console.log('rawSirenes :',rawSirenes);
-
   const sirenes    = useMemo(() => toArr(rawSirenes),   [rawSirenes]);
   const provinces  = useMemo(() => toArr(rawProvinces), [rawProvinces]);
   const allRegions = useMemo(() => toArr(rawRegions),   [rawRegions]);
 
-  // ── Arbre géographique dérivé des sirènes ─────────────────────────
+  // ── Arbre géographique ───────────────────────────────────────────
   const geoTree = useMemo(() => {
-    const districts:  Map<string, { id: string; name: string; regionId: string }> = new Map();
-    const communes:   Map<string, { id: string; name: string; districtId: string }> = new Map();
-    const fokontanys: Map<string, { id: string; name: string; communeId: string }> = new Map();
+    const districts:  Map<string, { id: string; name: string; regionId: string }>    = new Map();
+    const communes:   Map<string, { id: string; name: string; districtId: string }>  = new Map();
+    const fokontanys: Map<string, { id: string; name: string; communeId: string }>   = new Map();
     const villages:   Map<string, { id: string; name: string; fokontanyId: string }> = new Map();
 
     sirenes.forEach((s: any) => {
-      const v = s.village; if (!v) return;
-      const vId  = String(v.id ?? v.name ?? "");
-      const fId  = String(v.fokontany?.id ?? v.fokontanyId ?? "");
-      const fNm  = v.fokontany?.name ?? v.fokontanyName ?? "";
-      const cId  = String(v.fokontany?.commune?.id ?? v.communeId ?? "");
-      const cNm  = v.fokontany?.commune?.name ?? v.communeName ?? "";
-      const dId  = String(v.fokontany?.commune?.district?.id ?? v.districtId ?? "");
-      const dNm  = v.fokontany?.commune?.district?.name ?? v.districtName ?? "";
-      const rId  = String(v.region?.id ?? v.regionId ?? v.fokontany?.commune?.district?.region?.id ?? "");
+      const v = s.village;
+      if (!v) return;
+      const vId = String(v.id ?? "");
+      const fId = String(v.fokontany?.id ?? "");
+      const fNm = v.fokontany?.name ?? "";
+      const cId = String(v.commune?.id ?? "");
+      const cNm = v.commune?.name ?? "";
+      const dId = String(v.district?.id ?? "");
+      const dNm = v.district?.name ?? "";
+      const rId = String(v.region?.id ?? "");
 
-      if (dId && dNm) districts.set(dId,   { id: dId,  name: dNm,  regionId: rId });
-      if (cId && cNm) communes.set(cId,    { id: cId,  name: cNm,  districtId: dId });
-      if (fId && fNm) fokontanys.set(fId,  { id: fId,  name: fNm,  communeId: cId });
-      if (vId && v.name) villages.set(vId, { id: vId,  name: v.name, fokontanyId: fId });
+      if (dId && dNm) districts.set(dId,   { id: dId, name: dNm, regionId: rId });
+      if (cId && cNm) communes.set(cId,    { id: cId, name: cNm, districtId: dId });
+      if (fId && fNm) fokontanys.set(fId,  { id: fId, name: fNm, communeId: cId });
+      if (vId && v.name) villages.set(vId, { id: vId, name: v.name, fokontanyId: fId });
     });
 
     return {
@@ -271,38 +281,18 @@ export default function SireneMap() {
     };
   }, [sirenes]);
 
-  // Options filtrées par sélection parente
-  const filteredRegions    = useMemo(() =>
-    selProvince
-      ? allRegions.filter((r: any) => String(r.provinceId ?? r.province_id) === selProvince)
-      : allRegions,
-    [allRegions, selProvince]
-  );
-  const filteredDistricts  = useMemo(() =>
-    selRegion ? geoTree.districts.filter(d => d.regionId === selRegion) : geoTree.districts,
-    [geoTree, selRegion]
-  );
-  const filteredCommunes   = useMemo(() =>
-    selDistrict ? geoTree.communes.filter(c => c.districtId === selDistrict) : geoTree.communes,
-    [geoTree, selDistrict]
-  );
-  const filteredFokontanys = useMemo(() =>
-    selCommune ? geoTree.fokontanys.filter(f => f.communeId === selCommune) : geoTree.fokontanys,
-    [geoTree, selCommune]
-  );
-  const filteredVillages   = useMemo(() =>
-    selFokontany ? geoTree.villages.filter(v => v.fokontanyId === selFokontany) : geoTree.villages,
-    [geoTree, selFokontany]
-  );
+  const filteredRegions    = useMemo(() => selProvince ? allRegions.filter((r: any) => String(r.provinceId ?? r.province?.id ?? r.province_id) === selProvince) : allRegions, [allRegions, selProvince]);
+  const filteredDistricts  = useMemo(() => selRegion   ? geoTree.districts.filter(d => d.regionId === selRegion)     : geoTree.districts,  [geoTree, selRegion]);
+  const filteredCommunes   = useMemo(() => selDistrict  ? geoTree.communes.filter(c => c.districtId === selDistrict)  : geoTree.communes,   [geoTree, selDistrict]);
+  const filteredFokontanys = useMemo(() => selCommune   ? geoTree.fokontanys.filter(f => f.communeId === selCommune)  : geoTree.fokontanys, [geoTree, selCommune]);
+  const filteredVillages   = useMemo(() => selFokontany ? geoTree.villages.filter(v => v.fokontanyId === selFokontany): geoTree.villages,   [geoTree, selFokontany]);
 
-  // Reset cascade descendante
   const handleProvince  = (v: string) => { setSelProvince(v);  setSelRegion(""); setSelDistrict(""); setSelCommune(""); setSelFokontany(""); setSelVillage(""); };
   const handleRegion    = (v: string) => { setSelRegion(v);    setSelDistrict(""); setSelCommune(""); setSelFokontany(""); setSelVillage(""); };
   const handleDistrict  = (v: string) => { setSelDistrict(v);  setSelCommune(""); setSelFokontany(""); setSelVillage(""); };
   const handleCommune   = (v: string) => { setSelCommune(v);   setSelFokontany(""); setSelVillage(""); };
   const handleFokontany = (v: string) => { setSelFokontany(v); setSelVillage(""); };
-
-  const hasGeoFilter = !!(selProvince || selRegion || selDistrict || selCommune || selFokontany || selVillage);
+  const hasGeoFilter    = !!(selProvince || selRegion || selDistrict || selCommune || selFokontany || selVillage);
 
   const resetAllFilters = () => {
     setStatusFilter("all");
@@ -310,38 +300,39 @@ export default function SireneMap() {
     setSelCommune(""); setSelFokontany(""); setSelVillage("");
   };
 
-  // ── Sirènes visibles après filtres ───────────────────────────────
+  // ── Sirènes visibles ─────────────────────────────────────────────
   const visibleSirenes = useMemo(() => {
     return sirenes.filter((s: any) => {
       if (statusFilter === "active"   && !s.isActive) return false;
       if (statusFilter === "inactive" &&  s.isActive) return false;
 
-      const v   = s.village;
-      const fId = String(v?.fokontany?.id ?? v?.fokontanyId ?? "");
-      const cId = String(v?.fokontany?.commune?.id ?? v?.communeId ?? "");
-      const dId = String(v?.fokontany?.commune?.district?.id ?? v?.districtId ?? "");
-      const rId = String(v?.region?.id ?? v?.regionId ?? "");
-      const vId = String(v?.id ?? v?.name ?? "");
+      const v = s.village;
+      if (!v) return !selVillage && !selFokontany && !selCommune && !selDistrict && !selRegion && !selProvince;
 
-      if (selVillage   && vId  !== selVillage)   return false;
-      if (selFokontany && fId  !== selFokontany) return false;
-      if (selCommune   && cId  !== selCommune)   return false;
-      if (selDistrict  && dId  !== selDistrict)  return false;
-      if (selRegion    && rId  !== selRegion)    return false;
-      if (selProvince) {
-        const reg = allRegions.find((r: any) => String(r.id) === rId);
-        if (!reg || String(reg.provinceId ?? reg.province_id) !== selProvince) return false;
-      }
+      const vId = String(v.id ?? "");
+      const fId = String(v.fokontany?.id ?? "");
+      const cId = String(v.commune?.id ?? "");
+      const dId = String(v.district?.id ?? "");
+      const rId = String(v.region?.id ?? "");
+      const pId = String(v.province?.id ?? "");
+
+      if (selVillage   && vId !== selVillage)   return false;
+      if (selFokontany && fId !== selFokontany) return false;
+      if (selCommune   && cId !== selCommune)   return false;
+      if (selDistrict  && dId !== selDistrict)  return false;
+      if (selRegion    && rId !== selRegion)    return false;
+      if (selProvince  && pId !== selProvince)  return false;
+
       return true;
     });
-  }, [sirenes, statusFilter, selVillage, selFokontany, selCommune, selDistrict, selRegion, selProvince, allRegions]);
+  }, [sirenes, statusFilter, selVillage, selFokontany, selCommune, selDistrict, selRegion, selProvince]);
 
   const withCoords = useMemo(
     () => visibleSirenes.filter((s: any) => s.latitude && s.longitude),
     [visibleSirenes]
   );
 
-  // ── Init Leaflet ────────────────────────────────────────────────
+  // ── Init Leaflet ──────────────────────────────────────────────────
   useEffect(() => {
     if (!document.getElementById("lf-css")) {
       const l = document.createElement("link");
@@ -385,7 +376,7 @@ export default function SireneMap() {
     if (!mapReady || !leafletRef.current) return;
     import("leaflet").then((L: any) => {
       if (tileRef.current) leafletRef.current.removeLayer(tileRef.current);
-      const url = mapMode === "satellite"
+      const url  = mapMode === "satellite"
         ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
       const attr = mapMode === "satellite"
@@ -395,7 +386,7 @@ export default function SireneMap() {
     });
   }, [mapMode, mapReady]);
 
-  // ── Markers : recalcul quand filtres ou données changent ──────────
+  // ── Markers ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapReady || !leafletRef.current) return;
     import("leaflet").then((L: any) => {
@@ -415,7 +406,26 @@ export default function SireneMap() {
         markersRef.current.set(s.id, marker);
       });
 
-      if (withCoords.length > 0) {
+      // Fly to la sirène ciblée (une seule fois après le premier chargement des markers)
+      if (focusId && !focusDoneRef.current) {
+        const target = withCoords.find((s: any) => s.id === focusId);
+        if (target) {
+          focusDoneRef.current = true;
+          setTimeout(() => {
+            map.flyTo([parseFloat(target.latitude), parseFloat(target.longitude)], 14, { duration: 1 });
+            setTimeout(() => {
+              const m = markersRef.current.get(focusId);
+              if (m) {
+                m.openPopup();
+                // Anneau bleu sur le marker ciblé
+                const el = m.getElement()?.querySelector(".sirene-marker") as HTMLElement | null;
+                if (el) el.classList.add("sirene-marker-highlight");
+              }
+            }, 1100);
+          }, 300);
+        }
+      } else if (!focusId && withCoords.length > 0) {
+        // Comportement normal : fitBounds sur tous les markers
         const bounds = L.latLngBounds(
           withCoords.map((s: any) => [parseFloat(s.latitude), parseFloat(s.longitude)])
         );
@@ -424,7 +434,7 @@ export default function SireneMap() {
     });
   }, [mapReady, withCoords]);
 
-  // ── Fly to sur sélection ──────────────────────────────────────────
+  // ── Fly to sur sélection manuelle ────────────────────────────────
   useEffect(() => {
     if (!selected || !mapReady || !leafletRef.current) return;
     const marker = markersRef.current.get(selected.id);
@@ -462,6 +472,11 @@ export default function SireneMap() {
             </h1>
             <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
               {withCoords.length} affichée{withCoords.length > 1 ? "s" : ""} sur {sirenes.length} au total
+              {focusId && (
+                <span style={{ marginLeft: 8, color: "#3b82f6", fontWeight: 600 }}>
+                  · Sirène #{focusId} mise en avant
+                </span>
+              )}
             </p>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
@@ -472,78 +487,34 @@ export default function SireneMap() {
           </div>
         </div>
 
-        {/* ── Toolbar filtres (hors carte) ── */}
+        {/* ── Toolbar filtres ── */}
         <div style={{
           padding: "10px 24px", background: "#fafbfc",
           borderBottom: "0.5px solid #e2e8f0", flexShrink: 0,
           display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
         }}>
-
-          {/* --- Statut --- */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginRight: 2 }}>
               Statut
             </span>
-            <StatusChip
-              value="active" current={statusFilter}
-              label={`Actives (${activeCount})`}
-              color="#16a34a" bg="#f0fdf4"
-              onClick={setStatusFilter}
-            />
-            <StatusChip
-              value="inactive" current={statusFilter}
-              label={`Inactives (${inactiveCount})`}
-              color="#dc2626" bg="#fef2f2"
-              onClick={setStatusFilter}
-            />
+            <StatusChip value="active"   current={statusFilter} label={`Actives (${activeCount})`}   color="#16a34a" bg="#f0fdf4" onClick={setStatusFilter} />
+            <StatusChip value="inactive" current={statusFilter} label={`Inactives (${inactiveCount})`} color="#dc2626" bg="#fef2f2" onClick={setStatusFilter} />
           </div>
 
-          {/* Séparateur */}
           <div style={{ width: 1, height: 22, background: "#e2e8f0", margin: "0 4px", flexShrink: 0 }} />
 
-          {/* --- Cascade géographique --- */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginRight: 2 }}>
               Zone
             </span>
-            <FilterSelect
-              label="Province" value={selProvince}
-              options={provinces.map((p: any) => ({ id: p.id, name: p.name }))}
-              onChange={handleProvince}
-            />
-            <FilterSelect
-              label="Région" value={selRegion}
-              options={filteredRegions.map((r: any) => ({ id: r.id, name: r.name }))}
-              onChange={handleRegion}
-              disabled={!selProvince && provinces.length > 0}
-            />
-            <FilterSelect
-              label="District" value={selDistrict}
-              options={filteredDistricts.map(d => ({ id: d.id, name: d.name }))}
-              onChange={handleDistrict}
-              disabled={!selRegion}
-            />
-            <FilterSelect
-              label="Commune" value={selCommune}
-              options={filteredCommunes.map(c => ({ id: c.id, name: c.name }))}
-              onChange={handleCommune}
-              disabled={!selDistrict}
-            />
-            <FilterSelect
-              label="Fokontany" value={selFokontany}
-              options={filteredFokontanys.map(f => ({ id: f.id, name: f.name }))}
-              onChange={handleFokontany}
-              disabled={!selCommune}
-            />
-            <FilterSelect
-              label="Village" value={selVillage}
-              options={filteredVillages.map(v => ({ id: v.id, name: v.name }))}
-              onChange={setSelVillage}
-              disabled={!selFokontany}
-            />
+            <FilterSelect label="Province"   value={selProvince}  options={provinces.map((p: any) => ({ id: p.id, name: p.name }))}          onChange={handleProvince}  />
+            <FilterSelect label="Région"     value={selRegion}    options={filteredRegions.map((r: any) => ({ id: r.id, name: r.name }))}     onChange={handleRegion}    disabled={!selProvince && provinces.length > 0} />
+            <FilterSelect label="District"   value={selDistrict}  options={filteredDistricts.map(d => ({ id: d.id, name: d.name }))}          onChange={handleDistrict}  disabled={!selRegion} />
+            <FilterSelect label="Commune"    value={selCommune}   options={filteredCommunes.map(c => ({ id: c.id, name: c.name }))}           onChange={handleCommune}   disabled={!selDistrict} />
+            <FilterSelect label="Fokontany"  value={selFokontany} options={filteredFokontanys.map(f => ({ id: f.id, name: f.name }))}         onChange={handleFokontany} disabled={!selCommune} />
+            <FilterSelect label="Village"    value={selVillage}   options={filteredVillages.map(v => ({ id: v.id, name: v.name }))}           onChange={setSelVillage}   disabled={!selFokontany} />
           </div>
 
-          {/* Reset */}
           {isFiltered && (
             <button
               onClick={resetAllFilters}
@@ -558,17 +529,15 @@ export default function SireneMap() {
             </button>
           )}
 
-          {/* Toggle Plan/Satellite poussé à droite */}
           <div style={{ marginLeft: "auto" }}>
             <MapToggle mode={mapMode} onChange={setMapMode} />
           </div>
         </div>
 
-        {/* ── Zone carte plein écran ── */}
+        {/* ── Carte ── */}
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
-          {/* Compteur résultats filtrés (overlay discret) */}
           {isFiltered && (
             <div style={{
               position: "absolute", top: 12, right: 12, zIndex: 1000,
@@ -583,7 +552,6 @@ export default function SireneMap() {
             </div>
           )}
 
-          {/* Badge sirènes sans GPS */}
           {sirenes.length > withCoords.length && (
             <div style={{
               position: "absolute", bottom: 14, left: 14, zIndex: 1000,
@@ -596,7 +564,6 @@ export default function SireneMap() {
             </div>
           )}
 
-          {/* Loader */}
           {isLoading && (
             <div style={{
               position: "absolute", inset: 0, display: "flex", alignItems: "center",

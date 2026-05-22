@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
 import { NotificationBngrcService } from './notification-bngrc.service';
 import { CreateNotificationBngrcDto } from './dto/create-notification-bngrc.dto';
 import { UpdateNotificationBngrcDto } from './dto/update-notification-bngrc.dto';
@@ -24,6 +24,7 @@ export class NotificationBngrcController {
     @Query('page')                   page?:                   string,
     @Query('limit')                  limit?:                  string,
   ) {
+
     return this.notificationBngrcService.findAll({
       sireneId:               sireneId               ? +sireneId               : undefined,
       status,
@@ -35,13 +36,21 @@ export class NotificationBngrcController {
       limit:                  limit                  ? +limit                  : 20,
     });
   }
- 
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notificationBngrcService.findOne(+id);
+  
+  
+  @Get('stats')
+  getStats( @Query('startDate') startDate?: string,  @Query('endDate') endDate?: string) {
+    return this.notificationBngrcService.getStats({
+      startDate,
+      endDate,
+    });
   }
 
+  // Controller
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.notificationBngrcService.findOne(id);
+  }
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateNotificationBngrcDto: UpdateNotificationBngrcDto) {
   //   return this.notificationBngrcService.update(+id, updateNotificationBngrcDto);
@@ -51,4 +60,6 @@ export class NotificationBngrcController {
   remove(@Param('id') id: string) {
     return this.notificationBngrcService.remove(+id);
   }
+
+
 }

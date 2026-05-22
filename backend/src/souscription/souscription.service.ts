@@ -50,6 +50,7 @@ export class SouscriptionService {
     });
  
     const saved = await this.repo.save(souscription);
+    
  
     // Générer le planning immédiatement après création
     const withRelations = await this.repo.findOne({

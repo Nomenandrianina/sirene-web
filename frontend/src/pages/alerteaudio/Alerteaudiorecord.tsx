@@ -391,7 +391,7 @@ export default function AlerteAudioRecord() {
               <SectionCard title="Hiérarchie (cascade)">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                  <Field label="Alerte">
+                  <Field label="Diffusion">
                     <select
                       value={alerteId || ""}
                       onChange={e => {
@@ -402,12 +402,12 @@ export default function AlerteAudioRecord() {
                       }}
                       className={inputCls}
                     >
-                      <option value="">— Toutes les alertes —</option>
+                      <option value="">— Tous —</option>
                       {alertes.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                   </Field>
 
-                  <Field label="Type d'alerte">
+                  <Field label="Type">
                     <select
                       value={alerteTypeId || ""}
                       disabled={!alerteId}

@@ -74,6 +74,7 @@ export class SouscriptionController {
    */
   @Post('admin')
   adminCreate(@Body() dto: AdminCreateSouscriptionDto) {
+    console.log('souscription taffa');
     return this.service.create(dto);
   }
 

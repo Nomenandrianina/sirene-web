@@ -142,19 +142,57 @@ export class SirenesService {
   }
  
 
-  async findAllForMap(isSuperAdmin: boolean, customerId?: number) {
+  async findAllForMap(isGlobalViewer: boolean, customerId?: number) {
     const sirenes = await this.sireneRepo.find({
-      relations: ['customers', 'village', 'village.fokontany', 'village.fokontany.commune', 'village.fokontany.commune.district'],
+      relations: [
+        'customers',
+        'village',
+        'village.fokontany',
+        'village.commune',
+        'village.district',
+        'village.region',
+        'village.province',
+      ],
     });
   
     return sirenes.map((s) => {
-      const isOwned = isSuperAdmin
+      const isOwned = isGlobalViewer
         ? true
         : s.customers?.some(c => c.id === customerId);
   
       return {
-        ...s,
-        isOwned, // 🔥 IMPORTANT
+        id:          s.id,
+        name:        s.name,
+        imei:        s.imei,
+        latitude:    s.latitude,
+        longitude:   s.longitude,
+        isActive:    !!s.isActive,
+        isOwned,
+        village: s.village ? {
+          id:   s.village.id,
+          name: s.village.name,
+          fokontany: s.village.fokontany ? {
+            id:   s.village.fokontany.id,
+            name: s.village.fokontany.name,
+          } : null,
+          commune: s.village.commune ? {
+            id:   s.village.commune.id,
+            name: s.village.commune.name,
+          } : null,
+          district: s.village.district ? {
+            id:   s.village.district.id,
+            name: s.village.district.name,
+          } : null,
+          region: s.village.region ? {
+            id:         s.village.region.id,
+            name:       s.village.region.name,
+            provinceId: s.village.region.province?.id ?? null,
+          } : null,
+          province: s.village.province ? {
+            id:   s.village.province.id,
+            name: s.village.province.name,
+          } : null,
+        } : null,
       };
     });
   }
@@ -168,6 +206,62 @@ export class SirenesService {
     await this.sireneRepo.save(sirene);
     
   }
+
+  async findByCustomer(customerId: number) {
+    const sirenes = await this.sireneRepo.find({
+      relations: [
+        'customers',
+        'village',
+        'village.fokontany',
+        'village.commune',
+        'village.district',
+        'village.region',
+        'village.province',
+      ],
+      where: {
+        customers: { id: customerId },
+      },
+    });
+   
+    return sirenes.map((s) => ({
+      id:                s.id,
+      name:              s.name,
+      imei:              s.imei,
+      latitude:          s.latitude,
+      longitude:         s.longitude,
+      isActive:          !!s.isActive,
+      phoneNumberBrain:  s.phoneNumberBrain  ?? null,
+      phoneNumberRelai:  s.phoneNumberRelai  ?? null,
+      communicationType: s.communicationType ?? null,
+      customers: s.customers?.map(c => ({ id: c.id, name: c.name })) ?? [],
+      village: s.village ? {
+        id:   s.village.id,
+        name: s.village.name,
+        fokontany: s.village.fokontany ? {
+          id:   s.village.fokontany.id,
+          name: s.village.fokontany.name,
+          commune: s.village.fokontany.commune ? {
+            id:   s.village.fokontany.commune.id,
+            name: s.village.fokontany.commune.name,
+          } : null,
+        } : null,
+        district: s.village.district ? {
+          id:   s.village.district.id,
+          name: s.village.district.name,
+        } : null,
+        region: s.village.region ? {
+          id:         s.village.region.id,
+          name:       s.village.region.name,
+          provinceId: s.village.region.province?.id ?? null,
+        } : null,
+        province: s.village.province ? {
+          id:   s.village.province.id,
+          name: s.village.province.name,
+        } : null,
+      } : null,
+    }));
+  }
+   
 
   // ── Historique alertes ────────────────────────────────────────────────
   // Retourne les logs d'audit de type alerte pour cette sirène

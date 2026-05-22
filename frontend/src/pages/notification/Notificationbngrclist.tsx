@@ -433,37 +433,6 @@ export default function NotificationBngrcList() {
           </div>
         </div>
 
-        {/* KPIs */}
-        {/* {stats && stats.total > 0 && (
-          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-            {[
-              { key: "sent",    label: "Envoyés",      bg: "#d1fae5", color: "#065f46", count: stats.sent    },
-              { key: "pending", label: "En attente",   bg: "#fef3c7", color: "#92400e", count: stats.pending },
-              { key: "failed",  label: "Échoués",      bg: "#fee2e2", color: "#991b1b", count: stats.failed  },
-            ].map(s => (
-              <div key={s.key} style={{
-                padding: "8px 14px", borderRadius: 10, background: s.bg, color: s.color,
-                fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
-              }}>
-                <span style={{ fontSize: 16, fontWeight: 700 }}>{s.count ?? 0}</span> {s.label}
-              </div>
-            ))}
-          </div>
-        )} */}
-
-        {/* Alerte taux d'échec */}
-        {/* {stats && stats.total > 0 && (stats.failed / stats.total) > 0.1 && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 10,
-            background: "#fff7ed", border: "1px solid #fed7aa",
-            borderRadius: 10, padding: "10px 16px", marginBottom: 16,
-            fontSize: 13, color: "#9a3412",
-          }}>
-            <AlertTriangle size={16} style={{ color: "#ea580c", flexShrink: 0 }} />
-            <span>Taux d'échec élevé : <strong>{Math.round((stats.failed / stats.total) * 100)}%</strong> des diffusions BNGRC ont échoué</span>
-          </div>
-        )} */}
-
         <div className="panel">
 
           {/* Barre recherche + filtres */}

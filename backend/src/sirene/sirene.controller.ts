@@ -1,13 +1,11 @@
-import {
-  Controller, Get, Post, Patch, Delete, Param,
-  Body, ParseIntPipe, Request,HttpCode ,HttpStatus, NotFoundException, InternalServerErrorException, UseGuards
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe, Request,HttpCode ,HttpStatus, NotFoundException, InternalServerErrorException, UseGuards, BadRequestException} from '@nestjs/common';
 import { SirenesService }   from './sirene.service';
 import { CreateSireneDto }  from './dto/create-sirene.dto';
 import { UpdateSireneDto }  from './dto/update-sirene.dto';
 import { SmsService } from '@/sms/sms.service';
 import { Public } from 'src/common/decarators/public.decorator';
 import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
+import { ROLES } from 'src/common/constants/roles.constants';
 
 class SendAlertDto {
   message: string;
@@ -18,6 +16,7 @@ class SendAlertDto {
 export class SirenesController {
   constructor(private readonly sirenesService: SirenesService,private readonly smsService: SmsService) {}
 
+  
   @Get('all')
   findAllNoFilter() {
     return this.sirenesService.findAllWithoutfilter();
@@ -26,19 +25,29 @@ export class SirenesController {
   @Get()
   findAll(@Request() req) {
     const user         = req.user;
-    const isSuperAdmin = user.isSuperAdmin ?? user.role?.name === 'superadmin';
-    const customerId   = user.customerId   ?? user.customer?.id;
+    const roleName     = user.role?.name?.toUpperCase();
+    const isSuperAdmin = roleName === ROLES.SUPERADMIN;
+    const customerId   = user.customerId ?? user.customer?.id;
     return this.sirenesService.findAll(isSuperAdmin, customerId);
-  } 
+  }
   
   @Get('getallformap')
   findAllForMap(@Request() req) {
-    const user         = req.user;
-    const isSuperAdmin = user.isSuperAdmin ?? user.role?.name === 'superadmin';
-    const customerId   = user.customerId   ?? user.customer?.id;
-    return this.sirenesService.findAllForMap(isSuperAdmin, customerId);
-  } 
+    const user     = req.user;
+    const roleName = user.role?.name?.toUpperCase();
+    
+    const isGlobalViewer = roleName === ROLES.SUPERADMIN || roleName === ROLES.BNGRC_ALERTE;
+    const customerId     = user.customerId ?? user.customer?.id;
+    
+    return this.sirenesService.findAllForMap(isGlobalViewer, customerId);
+  }
 
+  @Get('by-customer/:customerId')
+  findByCustomer(@Param('customerId') customerId: string) {
+    const id = parseInt(customerId.trim(), 10);
+    if (isNaN(id)) throw new BadRequestException('customerId must be a number');
+    return this.sirenesService.findByCustomer(id);
+  }
   
   @Get('messageavailable')
   getmessageavalaible(@Request() req) {
@@ -84,6 +93,8 @@ export class SirenesController {
     }
   }
 
+
+  
   /** POST /sirenes/:id/alert — déclencher une alerte SMS */
   // @Post(':id/alert')
   // sendAlert(

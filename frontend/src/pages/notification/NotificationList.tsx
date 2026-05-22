@@ -224,9 +224,6 @@ function NotifCard({ n, onDelete, showCustomer }: {
               Délai : {fmtDate(n.sendingTimeAfterAlerte)}
             </div>
           )}
-          {n.operator && (
-            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>via {n.operator}</div>
-          )}
         </div>
 
         {/* Actions */}
@@ -267,9 +264,8 @@ function NotifCard({ n, onDelete, showCustomer }: {
           <InfoBlock label="Date envoi"        value={fmtDate(n.sendingTime)} />
           <InfoBlock label="Délai post-alerte" value={fmtDate(n.sendingTimeAfterAlerte)} />
           <InfoBlock label="Zone"              value={zone} />
-          {(n as any).sirene?.imei && <InfoBlock label="IMEI sirène" value={(n as any).sirene.imei} mono />}
           {n.sousCategorie && <InfoBlock label="Sous-catégorie" value={n.sousCategorie.name} />}
-          {n.type && <InfoBlock label="Type alerte" value={n.type} />}
+          {n.type && <InfoBlock label="Catégorie" value={n.type} />}
           {showCustomer && (n as any).Customer && <InfoBlock label="Client" value={(n as any).Customer.name} />}
           {n.observation && <InfoBlock label="Observation" value={n.observation} />}
         </div>

@@ -11,23 +11,23 @@ export class NotificationController {
   constructor(private readonly service: NotificationService) {}
 
   @Get()
-    findAll(  @Query("sireneId")              sireneId?:              string,
-      @Query("status")                status?:                NotificationStatus,
-      @Query("startDate")             startDate?:             string,
-      @Query("endDate")               endDate?:               string,
+    findAll(  @Query("sireneId") sireneId?: string,
+      @Query("status") status?: NotificationStatus,
+      @Query("startDate") startDate?: string,
+      @Query("endDate") endDate?: string,
       @Query("sousCategorieAlerteId") sousCategorieAlerteId?: string,
-      @Query("userId")                userId?:                string,
-      @Query("customerId")            customerId?:            string,  
-      @Query("page")                  page?:                  string,
-      @Query("limit")                 limit?:                 string,
+      @Query("userId") userId?: string,
+      @Query("customerId") customerId?: string,  
+      @Query("page") page?: string,
+      @Query("limit") limit?: string,
     ) {
       return this.service.findAll({
-        sireneId:              sireneId              ? +sireneId              : undefined,
+        sireneId: sireneId ? +sireneId : undefined,
         status,
         startDate, endDate,
         sousCategorieAlerteId: sousCategorieAlerteId ? +sousCategorieAlerteId : undefined,
-        userId:                userId                ? +userId                : undefined,
-        customerId:            customerId            ? +customerId            : undefined,  // ← ajouter
+        userId: userId ? +userId : undefined,
+        customerId: customerId ? +customerId : undefined,  // ← ajouter
         page:  page  ? +page  : 1,
         limit: limit ? +limit : 20,
       });
@@ -35,16 +35,16 @@ export class NotificationController {
 
   @Get("stats")
   getStats(
-    @Query("customerId")            customerId?:            string,
-    @Query("sireneId")              sireneId?:              string,
+    @Query("customerId") customerId?: string,
+    @Query("sireneId") sireneId?:              string,
     @Query("sousCategorieAlerteId") sousCategorieAlerteId?: string,
-    @Query("status")                status?:                string,
-    @Query("startDate")             startDate?:             string,
-    @Query("endDate")               endDate?:               string,
+    @Query("status") status?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
   ) {
     return this.service.getStats({
-      customerId:            customerId            ? +customerId            : undefined,
-      sireneId:              sireneId              ? +sireneId              : undefined,
+      customerId: customerId ? +customerId : undefined,
+      sireneId:   sireneId   ? +sireneId   : undefined,
       sousCategorieAlerteId: sousCategorieAlerteId ? +sousCategorieAlerteId : undefined,
       startDate,
       endDate,
@@ -58,10 +58,7 @@ export class NotificationController {
 
   // PATCH status — pour callback Orange ou correction manuelle
   @Patch(":id/status")
-  updateStatus(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateNotificationStatusDto,
-  ) {
+  updateStatus( @Param("id", ParseIntPipe) id: number, @Body() dto: UpdateNotificationStatusDto,) {
     return this.service.updateStatus(id, dto);
   }
 

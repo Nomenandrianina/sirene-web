@@ -319,6 +319,8 @@ async findAllbyCustomer(customerId?: number) {
       relations: ['sirenes', 'sousCategorie'],
     });
     if (!audio) throw new NotFoundException(`Audio #${id} introuvable`);
+
+    console.log('UpdateAlerteAudioDto :',UpdateAlerteAudioDto)
   
     // Vérifier conflit si la sous-catégorie change
     if (dto.sousCategorieAlerteId && dto.sousCategorieAlerteId !== audio.sousCategorieAlerteId) {

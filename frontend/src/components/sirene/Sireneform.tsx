@@ -613,7 +613,6 @@ export function SireneForm({ initialData, onSubmit, loading, error }: SireneForm
                   value={form.fcmToken ?? ""}
                   onChange={e => set("fcmToken", e.target.value || null)}
                   placeholder="Token Firebase Cloud Messaging (optionnel)"
-                  readOnly={isEdit}
                   className={`${inputCls} font-mono text-xs ${isEdit ? "bg-slate-50 text-slate-500 cursor-default" : ""}`}
                 />
                 {isEdit && form.fcmToken && (
