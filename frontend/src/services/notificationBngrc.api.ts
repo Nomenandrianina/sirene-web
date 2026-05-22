@@ -20,11 +20,9 @@ function buildQuery(filters: NotificationBngrcFilters): string {
 // ── API ───────────────────────────────────────────────────────────────────────
 
 export const notificationsBngrcApi = {
-  getAll:  (filters: NotificationBngrcFilters = {}) =>
-    get(`/notification-bngrc${buildQuery(filters)}`),
+  getAll:  (filters: NotificationBngrcFilters = {}) => get(`/notification-bngrc${buildQuery(filters)}`),
 
-  getById: (id: number) =>
-    get(`/notification-bngrc/${id}`),
+  getById: (id: number) =>  get(`/notification-bngrc/${id}`),
 
   getStats: (filters: Partial<NotificationBngrcFilters> = {}) => {
     const params = new URLSearchParams();
@@ -33,7 +31,7 @@ export const notificationsBngrcApi = {
     if (filters.startDate)              params.append('startDate',              filters.startDate);
     if (filters.endDate)                params.append('endDate',                filters.endDate);
     return get(`/notification-bngrc/stats?${params.toString()}`);
-  },
+  },  
 
   remove: (id: number) => del(`/notification-bngrc/${id}`),
 };

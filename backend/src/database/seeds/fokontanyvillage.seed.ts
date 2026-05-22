@@ -12,7 +12,7 @@ export async function seedFokontanyVillage(dataSource: DataSource): Promise<void
       ('Isotry',                (SELECT id FROM communes WHERE name = 'Antananarivo Renivohitra')),
       ('Ambondrona',            (SELECT id FROM communes WHERE name = 'Antananarivo Renivohitra')),
       ('Anatihazo',             (SELECT id FROM communes WHERE name = 'Antananarivo Renivohitra')),
- 
+      
       -- Ambohimangakely
       ('Ambohimangakely Centre',(SELECT id FROM communes WHERE name = 'Ambohimangakely')),
       ('Ankadindramamy',        (SELECT id FROM communes WHERE name = 'Ambohimangakely')),

@@ -57,7 +57,7 @@ const alertebngrcItem: NavItem[] = [
   { title: "Alerte", url: "/alertebngrc", icon: AlertTriangle, permission: "alertebngrc:read"},
   { title: "Type d'alerte", url: "/typealertebngrc", icon: Tag, permission: "typealertebngrc:read"},
   { title: "Catégorie d'alerte", url: "/categorie-alerte-bngrc", icon: FolderOpen, permission: "categorie-alerte-bngrc:read"},
-  { title: "Bibliothèque audio", url: "/audio-alerte-bngrc", icon: FolderOpen, permission: "audio-alerte-bngrc:read"},
+  { title: "Bibliothèque audio", url: "/audio-alerte-catastrophe", icon: FolderOpen, permission: "audio-alerte-bngrc:read"},
 ];
 
 

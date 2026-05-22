@@ -473,7 +473,7 @@ export default function AudioAlerteBngrcList() {
             </p>
           </div>
           <CanDo permission="alertes:create">
-            <button className="btn-primary" onClick={() => navigate("/audio-alerte-bngrc/create")}>
+            <button className="btn-primary" onClick={() => navigate("/audio-alerte-catastrophe/create")}>
               <Plus size={15} /> Nouvel audio alertes
             </button>
           </CanDo>
@@ -541,7 +541,7 @@ export default function AudioAlerteBngrcList() {
                       duration={isActive ? (player?.duration ?? 0) : 0}
                       onPlay={() => playAudio(a)}
                       onDownload={() => handleDownload(a)}
-                      onEdit={() => navigate(`/audio-alerte-bngrc/${a.id}/edit`)}
+                      onEdit={() => navigate(`/audio-alerte-catastrophe/${a.id}/edit`)}
                       onDelete={() => { setDelError(""); setDelItem({ id: a.id, name: a.name || a.originalFilename || String(a.id) }); }}
                     />
                   );

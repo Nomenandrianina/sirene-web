@@ -217,28 +217,7 @@ function SouscriptionCard({
       </div>
 
       {/* Footer actions */}
-      <div className="px-5 pb-5 flex items-center gap-2 pt-1">
-        <button
-          onClick={onReport}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition"
-        >
-          <FileText size={13} /> Rapport PDF
-        </button>
-        <button
-          onClick={onDetail}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
-        >
-          <Eye size={13} /> Détail
-        </button>
-        {isActive && (
-          <button
-            onClick={onRenew}
-            className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-white bg-amber-500 hover:bg-amber-600 transition"
-          >
-            <RefreshCw size={13} /> Renouveler
-          </button>
-        )}
-      </div>
+     
     </div>
   );
 }

@@ -577,7 +577,7 @@ export default function AlerteAudioList() {
         {/* ── Header ── */}
         <div className="page-header">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Audios d'alerte</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Liste des audios </h1>
             <p className="page-subtitle">
               {items.length} audio{items.length > 1 ? "s" : ""} enregistré{items.length > 1 ? "s" : ""}
             </p>

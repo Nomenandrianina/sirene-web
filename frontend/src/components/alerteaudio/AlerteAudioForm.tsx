@@ -195,6 +195,7 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
   const navigate = useNavigate();
   const { isSuperAdmin, isClient, customerId: myCustomerId ,  isCustomerAdmin,   isCustomerOperator,  } = useRole();
 
+
   const [form, setForm] = useState<AlerteAudioFormData>({
     name:                  initialData?.name                  ?? "",
     description:           initialData?.description           ?? "",
@@ -583,12 +584,11 @@ export function AlerteAudioForm({ initialData, onSubmit, loading, error }: Props
                   );
                 return {
                   ...f,
-                  sireneIds:             nextIds,
+                  sireneIds:nextIds,
                   sousCategorieAlerteId: wouldBeBlocked ? 0 : currentSousCat,
                 };
               });
             }}
-            disabled={isEdit}
           />
           {form.sireneIds.length > 0 && (
             <p className="text-xs text-slate-400 mt-1">

@@ -6,8 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import SendAlert from "./pages/SendAlert";
+import Dashboard from "./pages/dashboard/index";
+import SendAlert from "./pages/SendAlert";  
 import Audios from "./pages/Audios";
 import Geography from "./pages/Geography";
 import NotFound from "./pages/NotFound";
@@ -171,11 +171,11 @@ const App = () => (
               <Route path="/categorie-alerte-bngrc/create"   element={<ProtectedRoute permission="categorie-alerte-bngrc:create"><CategorieAlerteBngrcCreate /></ProtectedRoute>} />
               <Route path="/categorie-alerte-bngrc/:id/edit" element={<ProtectedRoute permission="categorie-alerte-bngrc:update"><CategorieAlerteBngrcEdit /></ProtectedRoute>} />
               
-              <Route path="/audio-alerte-bngrc"       element={<ProtectedRoute permission="audio-alerte-bngrc:read"><AudioAlerteBngrcList /></ProtectedRoute>} />
-              <Route path="/audio-alerte-bngrc/create"   element={<ProtectedRoute permission="audio-alerte-bngrc:create"><AudioAlerteBngrcChooseMode /></ProtectedRoute>} />
-              <Route path="/audio-alerte-bngrc/create/upload"   element={<ProtectedRoute permission="audio-alerte-bngrc:create"><AudioAlerteBngrcCreateUpload /></ProtectedRoute>} />
-              <Route path="/audio-alerte-bngrc/create/record"   element={<ProtectedRoute permission="audio-alerte-bngrc:create"><AudioAlerteBngrcRecord /></ProtectedRoute>} />
-              <Route path="/audio-alerte-bngrc/:id/edit"   element={<ProtectedRoute permission="audio-alerte-bngrc:update"><AudioAlerteBngrcEdit /></ProtectedRoute>} />
+              <Route path="/audio-alerte-catastrophe"       element={<ProtectedRoute permission="audio-alerte-bngrc:read"><AudioAlerteBngrcList /></ProtectedRoute>} />
+              <Route path="/audio-alerte-catastrophe/create"   element={<ProtectedRoute permission="audio-alerte-bngrc:create"><AudioAlerteBngrcChooseMode /></ProtectedRoute>} />
+              <Route path="/audio-alerte-catastrophe/create/upload"   element={<ProtectedRoute permission="audio-alerte-bngrc:create"><AudioAlerteBngrcCreateUpload /></ProtectedRoute>} />
+              <Route path="/audio-alerte-catastrophe/create/record"   element={<ProtectedRoute permission="audio-alerte-bngrc:create"><AudioAlerteBngrcRecord /></ProtectedRoute>} />
+              <Route path="/audio-alerte-catastrophe/:id/edit"   element={<ProtectedRoute permission="audio-alerte-bngrc:update"><AudioAlerteBngrcEdit /></ProtectedRoute>} />
              
               <Route path="/sendalerte-all"   element={<ProtectedRoute permission="alerte-bngrc:send"><SendAlerteBngrc /></ProtectedRoute>} />
               <Route path="/notifications-alerte"   element={<ProtectedRoute permission="notification-bngrc:read"><NotificationBngrcList /></ProtectedRoute>} />

@@ -82,6 +82,8 @@ function PlanningCard({
   cancelling:  number | null;
   isSuperAdmin?: boolean;
 }) {
+
+  console.log('group :',group)
   // Statut dominant : si au moins un item est planned → planned ; sinon le plus fréquent
   const dominant = (group.items.find(i => i.status === 'planned')
     ?? group.items.find(i => i.status === 'sent')

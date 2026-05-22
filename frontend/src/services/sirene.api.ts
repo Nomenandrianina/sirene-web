@@ -19,6 +19,7 @@ export interface UpdateSireneDto extends Partial<CreateSireneDto> {}
 
 export const sirenesApi = {
   getAllForMap:      ()                              => get<Sirene[]>('/sirenes/getallformap'),
+  getByCustomer:      (customerId: number) => get<Sirene[]>(`/sirenes/by-customer/ ${customerId}`),
   getAllwithoutfilter:      ()                              => get<Sirene[]>('/sirenes/all'),
   getAll:      ()                              => get<Sirene[]>('/sirenes'),
   getAvalaibleMessage:      ()                              => get<any>('/sirenes/messageavailable'),

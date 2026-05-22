@@ -42,6 +42,7 @@ export default function AlerteAudioEdit() {
     alerteId:              item.sousCategorie?.alerteId ?? item.sousCategorie?.alerte?.id ?? 0,
     existingAudio:         item.audio,
     originalFilename:      item.originalFilename,
+      sireneIds:             (item.sirenes ?? []).map((s: any) => s.id),
   } : undefined;
 
   return (
