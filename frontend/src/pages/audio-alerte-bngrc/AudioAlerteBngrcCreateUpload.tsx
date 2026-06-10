@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams }                from "react-router-dom";
-import { AppLayout }                             from "@/components/AppLayout";
+import { useNavigate, useParams } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout";
 import { AudioAlerteBngrcUploadForm, AudioAlerteBngrcUploadFormData } from "@/components/audio-alerte-bngrc/AudioAlerteBngrcUploadForm";
-import { audioAlerteBngrcApi }                   from "@/services/audioAlerteBngrc.api";
+import { audioAlerteBngrcApi } from "@/services/audioAlerteBngrc.api";
 
 // ── Create via upload ─────────────────────────────────────────────────────────
 export function AudioAlerteBngrcCreateUpload() {
   const navigate = useNavigate();
-  const qc       = useQueryClient();
+  const qc = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: ({ data, file }: { data: AudioAlerteBngrcUploadFormData; file: File }) => {
@@ -27,11 +27,7 @@ export function AudioAlerteBngrcCreateUpload() {
     },
   });
 
-  const errorMsg = mutation.isError
-    ? (mutation.error as any)?.message
-      || (mutation.error as any)?.response?.data?.message
-      || "Erreur lors de l'upload"
-    : undefined;
+  const errorMsg = mutation.isError ? (mutation.error as any)?.message || (mutation.error as any)?.response?.data?.message || "Erreur lors de l'upload" : undefined;
 
   return (
     <AppLayout>

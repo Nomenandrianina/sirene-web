@@ -17,7 +17,6 @@ import { sendAlerteApi, SendAlertePayload } from "@/services/sendalerte.api";
 import { CheckCircle, ChevronRight, ChevronLeft, Send, Loader2, AlertTriangle, Radio, Play, Pause, Music, Clock, Zap, Layers, Plus, X, List, RotateCcw, Timer, Bell, Minus, } from "lucide-react";
 import "@/styles/send-alerte.css";
 import { useAuth } from "@/contexts/AuthContext";
-
 import { ZonesStep } from "@/components/zone/ZoneItem";
 import { communesApi }  from "@/services/commune.api";
 import { fokontanyApi } from "@/services/fokontany.api";

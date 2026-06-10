@@ -11,6 +11,7 @@ export function useRole() {
         isSuperAdmin:       false,
         isBngrc:            false,
         isCustomerAdmin:    false,
+        isbngrcControl:    false,
         isCustomerOperator: false,
         isClient:           false,
         isAutoApproved:     false,
@@ -25,6 +26,7 @@ export function useRole() {
     const isBngrc          = roleName === ROLES.BNGRC_ALERTE;
     const isCustomerAdmin  = roleName === ROLES.CUSTOMER_ADMIN;
     const isCustomerOperator = roleName === ROLES.CUSTOMER_OPERATOR;
+    const isbngrcControl = roleName === ROLES.BNGRC_CONTROL;
 
     // isClient = appartient à un customer (admin ou operator)
     const isClient         = isCustomerAdmin || isCustomerOperator;
@@ -37,6 +39,7 @@ export function useRole() {
       isBngrc,
       isCustomerAdmin,
       isCustomerOperator,
+      isbngrcControl,
       isClient,
       isAutoApproved,
       customerId: user.customer?.id ?? null,

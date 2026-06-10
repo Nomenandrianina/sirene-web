@@ -24,6 +24,21 @@ export const notificationsBngrcApi = {
 
   getById: (id: number) =>  get(`/notification-bngrc/${id}`),
 
+    /**
+   * Retourne les notifications BNGRC récentes/en cours pour la carte d'alertes.
+   * status=sent, sendingTime dans [now - lookbackMin, now + lookaheadMin]
+   *
+   * @param lookbackMin  – fenêtre dans le passé en minutes  (défaut backend : 30)
+   * @param lookaheadMin – fenêtre dans le futur en minutes  (défaut backend : 5)
+   */
+  getActive: (lookbackMin?: number, lookaheadMin?: number) => {
+    const params = new URLSearchParams();
+    if (lookbackMin  !== undefined) params.set('lookbackMin',  String(lookbackMin));
+    if (lookaheadMin !== undefined) params.set('lookaheadMin', String(lookaheadMin));
+    const q = params.toString();
+    return get(`/notification-bngrc/active${q ? `?${q}` : ''}`);
+  },
+
   getStats: (filters: Partial<NotificationBngrcFilters> = {}) => {
     const params = new URLSearchParams();
     if (filters.sireneId)               params.append('sireneId',               String(filters.sireneId));
@@ -34,4 +49,12 @@ export const notificationsBngrcApi = {
   },  
 
   remove: (id: number) => del(`/notification-bngrc/${id}`),
+
+  getHistory: (date: string, hour: number) => {
+    const params = new URLSearchParams();
+    params.set("date", date);
+    params.set("hour", String(hour));
+    return get(`/notification-bngrc/history?${params.toString()}`);
+  },
+  
 };

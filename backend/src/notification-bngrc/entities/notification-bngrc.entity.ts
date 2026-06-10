@@ -11,7 +11,7 @@ export enum NotificationBngrcStatus {
     PENDING  = 'pending',
     DELIVERY = 'delivery',
 }
-  
+
 export enum OrangeBngrcStatus {
     DELIVERED_TO_NETWORK  = 'DeliveredToNetwork',
     DELIVERY_UNCERTAIN    = 'DeliveryUncertain',

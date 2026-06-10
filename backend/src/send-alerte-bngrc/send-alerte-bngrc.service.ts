@@ -1,18 +1,16 @@
-import {
-  Injectable, Logger,
-  NotFoundException, BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException,} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In }   from 'typeorm';
-import { Sirene }           from '@/sirene/entities/sirene.entity';
-import { Village }          from '@/villages/entities/village.entity';
+import { Sirene } from '@/sirene/entities/sirene.entity';
+import { Village } from '@/villages/entities/village.entity';
 import { SmsService }       from '@/sms/sms.service';
 import { SendAlerteBngrcDto } from './dto/send-alerte-bngrc.dto';
 import { AudioAlerteBngrc, AudioBngrcStatus } from '@/audio-alerte-bngrc/entities/audio-alerte-bngrc.entity';
 import { CategorieAlerteBngrc } from '@/categorie-alerte-bngrc/entities/categorie-alerte-bngrc.entity';
 import { NotificationBngrc, NotificationBngrcStatus } from '@/notification-bngrc/entities/notification-bngrc.entity';
-import { User }             from '@/users/entities/user.entity';
-import { ROLES }            from 'src/common/constants/roles.constants';
+import { User } from '@/users/entities/user.entity';
+import { ROLES } from 'src/common/constants/roles.constants';
+import { Notificationsweb }   from '@/notificationsweb/entities/notificationsweb.entity';
 
 // ── Heure Madagascar (UTC+3) ──────────────────────────────────────────────────
 function toMadagascarISOString(date: Date): string {
@@ -43,6 +41,9 @@ export class SendAlerteBngrcService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+  
+    @InjectRepository(Notificationsweb)
+    private readonly notifWebRepo: Repository<Notificationsweb>,
 
     private readonly smsService: SmsService,
   ) {}
@@ -63,9 +64,7 @@ export class SendAlerteBngrcService {
   }
 
   // ── Envoi principal ───────────────────────────────────────────────────────
-  async sendAlerteBngrc(
-    dto: SendAlerteBngrcDto,
-  ): Promise<{ created: number; sent: number; planned: number }> {
+  async sendAlerteBngrc( dto: SendAlerteBngrcDto,  ): Promise<{ created: number; sent: number; planned: number }> {
     const {
       categorieAlerteBngrcId,
       provinceIds, regionIds, districtIds, villageIds,
@@ -78,7 +77,7 @@ export class SendAlerteBngrcService {
 
     // 1. Vérifier que la catégorie BNGRC existe
     const categorie = await this.categorieRepo.findOne({
-      where: { id: categorieAlerteBngrcId },
+      where: { id: categorieAlerteBngrcId }, relations: ['type'], 
     });
     if (!categorie) {
       throw new NotFoundException(
@@ -209,6 +208,35 @@ export class SendAlerteBngrcService {
       const saved = await this.notifRepo.save(notif);
       await this.dispatchNotification(saved, sirene);
       sent++;
+
+      if (sent > 0) {
+        let senderName   = 'Admin';
+        let customerName = '';
+     
+        if (userId) {
+          // Charger l'user avec son rôle ET son client (relation customer)
+          const sender = await this.userRepo.findOne({
+            where:     { id: userId },
+            relations: ['role', 'customer'],
+          });
+     
+          if (sender) {
+            // Nom affiché : "Prénom Nom" ou email en fallback
+            senderName = [sender.first_name, sender.last_name].filter(Boolean).join(' ').trim() || sender.email || 'Utilisateur';
+            customerName = sender.customer?.name ?? '';
+          }
+        }
+     
+        await this.createBngrcNotifWeb({
+          typeAlerteName: categorie.type?.name ?? '', 
+          categorieName: categorie.name,
+          sentCount:     sent,
+          totalCount:    sirenes.length,
+          senderName,
+          customerName,
+          scheduledDate,
+        });
+      }
     }
 
     return { created: sirenes.length, sent, planned: 0 };
@@ -268,9 +296,7 @@ export class SendAlerteBngrcService {
   }
 
   // ── Preview zones — identique à SendAlerteService.preview ────────────────
-  async preview(
-    dto: Partial<SendAlerteBngrcDto>,
-  ): Promise<{ sireneCount: number; sirenes: any[] }> {
+  async preview( dto: Partial<SendAlerteBngrcDto>, ): Promise<{ sireneCount: number; sirenes: any[] }> {
     const { provinceIds, regionIds, districtIds, villageIds } = dto;
 
     const hasVillageFilter  = !!(villageIds?.length);
@@ -319,4 +345,69 @@ export class SendAlerteBngrcService {
     const sirenes = await sireneQb.getMany();
     return { sireneCount: sirenes.length, sirenes };
   }
+
+  private async createBngrcNotifWeb(params: {
+    typeAlerteName: string; 
+    categorieName:  string;
+    sentCount:      number;
+    totalCount:     number;
+    senderName:     string;
+    customerName:   string;
+    scheduledDate:  Date;
+  }): Promise<void> {
+    const {
+      typeAlerteName, categorieName,
+      sentCount, totalCount,
+      senderName, customerName,
+      scheduledDate,
+    } = params;
+   
+    const targets = await this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.role', 'r')
+      .where('r.name IN (:...roles)', {
+        roles: [ROLES.SUPERADMIN, ROLES.BNGRC_ALERTE, ROLES.BNGRC_CONTROL],
+      })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
+   
+    if (!targets.length) return;
+   
+    // ── Format date/heure ──────────────────────────────────────────────────────
+    const dateLabel = scheduledDate.toLocaleDateString('fr-FR', {
+      day:   '2-digit',
+      month: '2-digit',
+      year:  'numeric',
+    }); // ex: "14/06/2026"
+   
+    const timeLabel = scheduledDate.toLocaleTimeString('fr-FR', {
+      hour:   '2-digit',
+      minute: '2-digit',
+    }); // ex: "14:33"
+   
+    // ── Ligne principale : TypeAlerteBngrc — CategorieAlerteBngrc — X/Y sirènes — date heure
+    // Ex: "Cyclone — Alerte rouge — 3/5 sirènes — 14/06/2026 à 14:33"
+    const alerteLabel = typeAlerteName
+      ? `${typeAlerteName} — ${categorieName}`
+      : categorieName;
+   
+    const mainText = `${alerteLabel} — ${sentCount}/${totalCount} sirène${sentCount > 1 ? 's' : ''} — ${dateLabel} à ${timeLabel}`;
+   
+    // Format "texte||expéditeur||client" (compatible parseMessage frontend)
+    const message = [mainText, senderName, customerName].join('||');
+   
+    const notifs = targets.map(user => {
+      const n      = new Notificationsweb();
+      n.type       = 'BNGRC_ALERTE';
+      n.message    = message;
+      n.entityType = 'notification_sirene_alerte_bngrc';
+      n.url        = '/sirene-map-alert';
+      n.isRead     = false;
+      n.userId     = user.id;
+      return n;
+    });
+   
+    await this.notifWebRepo.save(notifs);
+  }
+  
 }

@@ -3,6 +3,7 @@ export const ROLES = {
     BNGRC_ALERTE:      'BNGRC_ALERTE',
     CUSTOMER_ADMIN:    'CUSTOMER_ADMIN',
     CUSTOMER_OPERATOR: 'CUSTOMER_OPERATOR',
+    BNGRC_CONTROL: 'BNGRC_CONTROL',
   } as const;
   
   export type RoleName = typeof ROLES[keyof typeof ROLES];

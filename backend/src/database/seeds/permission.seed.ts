@@ -107,8 +107,11 @@ export async function seedPermissions(dataSource: DataSource) {
     ('audio-alerte-bngrc:delete'),
     
     ('alerte-bngrc:send'),
-    ('notification-bngrc:read')
-    
+    ('notification-bngrc:read'),
+    ('sirene-map-alert:read'),
+    ('sirene-map-alert:story'),
+    ('sirene-map:read')
+
 `);
 
   console.log("✅ Permissions seedées (65 permissions)");

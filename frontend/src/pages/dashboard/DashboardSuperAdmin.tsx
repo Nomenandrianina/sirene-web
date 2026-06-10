@@ -146,7 +146,7 @@ export default function DashboardSuperAdmin() {
     : null;
 
   // ── Graphique combiné (période filtrée) ───────────────────────────────────
-  // On affiche deux séries : alertes BNGRC + diffusions client
+  // On affiche deux séries : alertes + diffusions client
 
   const chartData = useMemo(() => {
     const start    = new Date(applied.start + "T00:00:00");
@@ -246,7 +246,7 @@ export default function DashboardSuperAdmin() {
       .slice(0, 5),
   [customers, sirenes, clientAll]);
 
-  // ── Dernières alertes BNGRC (période filtrée) ─────────────────────────────
+  // ── Dernières alertes (période filtrée) ─────────────────────────────
 
   const lastBngrcNotifs = useMemo(() =>
     [...bngrcFiltered]
@@ -289,7 +289,7 @@ export default function DashboardSuperAdmin() {
                 {period === "matin" ? "☀️" : period === "journée" ? "🌤️" : period === "soir" ? "🌙" : "🌃"}
               </span>
             </h1>
-            <p className="page-subtitle">Vue globale — alertes BNGRC & diffusions clients</p>
+            <p className="page-subtitle">Vue globale — alertes & diffusions clients</p>
           </div>
 
           {/* Filtre date */}
@@ -390,7 +390,7 @@ export default function DashboardSuperAdmin() {
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444" }} />
-                  <span style={{ fontSize: 11, color: "#64748b" }}>Alertes BNGRC</span>
+                  <span style={{ fontSize: 11, color: "#64748b" }}>Alertes </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 2, background: "#7c3aed" }} />
@@ -412,7 +412,7 @@ export default function DashboardSuperAdmin() {
                       labelStyle={{ fontSize: 11, color: "#94a3b8" }}
                       cursor={{ fill: "rgba(0,0,0,0.02)" }}
                     />
-                    <Bar dataKey="bngrc" name="Alertes BNGRC" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="bngrc" name="Alertes" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="client" name="Diffusions clients" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -421,10 +421,10 @@ export default function DashboardSuperAdmin() {
           </div>
         </div>
 
-        {/* ── Alertes BNGRC : liste + catégories ── */}
+        {/* ── Alertes : liste + catégories ── */}
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-            ▌ Alertes BNGRC
+            ▌ Alertes
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14, marginBottom: 24 }}>

@@ -3,17 +3,18 @@ import { CreateNotificationBngrcDto } from './dto/create-notification-bngrc.dto'
 import { UpdateNotificationBngrcDto } from './dto/update-notification-bngrc.dto';
 import { NotificationBngrc, NotificationBngrcStatus } from './entities/notification-bngrc.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository }                    from 'typeorm';
+import { Repository ,Between } from 'typeorm';
+import { DateTime } from 'luxon';
 
 export interface NotificationBngrcFilters {
-  sireneId?:               number;
-  status?:                 NotificationBngrcStatus;
-  startDate?:              string;
-  endDate?:                string;
+  sireneId?: number;
+  status?:NotificationBngrcStatus;
+  startDate?:string;
+  endDate?: string;
   categorieAlerteBngrcId?: number;
-  userId?:                 number;
-  page?:                   number;
-  limit?:                  number;
+  userId?:number;
+  page?:  number;
+  limit?: number;
 }
 
 @Injectable()
@@ -44,10 +45,10 @@ export class NotificationBngrcService {
       .leftJoinAndSelect('user.customer', 'customer') 
       .orderBy('n.createdAt', 'DESC');
  
-    if (sireneId)               qb.andWhere('n.sireneId = :sireneId',                             { sireneId });
-    if (status)                 qb.andWhere('n.status = :status',                                 { status });
+    if (sireneId) qb.andWhere('n.sireneId = :sireneId', { sireneId });
+    if (status) qb.andWhere('n.status = :status', { status });
     if (categorieAlerteBngrcId) qb.andWhere('n.categorieAlerteBngrcId = :categorieAlerteBngrcId', { categorieAlerteBngrcId });
-    if (userId)                 qb.andWhere('n.userId = :userId',                                 { userId });
+    if (userId) qb.andWhere('n.userId = :userId', { userId });
  
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -132,7 +133,6 @@ export class NotificationBngrcService {
       failed,
     };
   }
-
  
   // async getStats(filters: Partial<NotificationBngrcFilters> = {}) {
   //   const { sireneId, categorieAlerteBngrcId, startDate, endDate } = filters;
@@ -155,10 +155,76 @@ export class NotificationBngrcService {
   // }
  
   // ── Suppression ────────────────────────────────────────────────────────────
- 
+  
   async remove(id: number): Promise<{ message: string }> {
     const item = await this.findOne(id);
     await this.repo.remove(item);
     return { message: `NotificationBngrc #${id} supprimée` };
   }
+
+  
+  async getActiveForMap( lookbackMin  = 30, lookaheadMin = 5,): Promise<NotificationBngrc[]> {
+    const now      = new Date();
+    const fromDate = new Date(now.getTime() - lookbackMin  * 60_000);
+    const toDate   = new Date(now.getTime() + lookaheadMin * 60_000);
+ 
+    return this.repo.find({
+      where: {
+        status:      NotificationBngrcStatus.SENT,
+        sendingTime: Between(fromDate, toDate),
+      },
+      relations: [
+        'audioBngrc',
+        'categorieAlerteBngrc',
+        'user',
+        'sirene',
+        'categorieAlerteBngrc.type',
+        'categorieAlerteBngrc.type.alerte',
+        'user',
+        'sirene',
+        'sirene.village',
+        'sirene.village.district',
+        'sirene.village.region',
+        'sirene.village.province',
+      ],
+      order: {
+        sendingTime: 'ASC',
+      },
+    });
+  }
+
+  async getHistory(date: string, hour: number) {
+    const zone = 'Indian/Antananarivo';
+  
+    // 1. heure métier (locale utilisateur)
+    const startLocal = DateTime.fromISO(
+      `${date}T${String(hour).padStart(2, '0')}:00:00`,
+      { zone }
+    );
+  
+    const endLocal = startLocal.endOf('hour');
+  
+    // 2. conversion UTC pour la DB
+    const from = startLocal.toUTC().toJSDate();
+    const to = endLocal.toUTC().toJSDate();
+  
+    return this.repo.find({
+      where: {
+        status: NotificationBngrcStatus.SENT,
+        sendingTime: Between(from, to),
+      },
+      relations: [
+        'audioBngrc',
+        'categorieAlerteBngrc',
+        'user',
+        'sirene',
+        'sirene.village',
+        'sirene.village.district',
+        'sirene.village.region',
+        'sirene.village.province',
+      ],
+      order: { sendingTime: 'ASC' },
+    });
+  }
+
 }

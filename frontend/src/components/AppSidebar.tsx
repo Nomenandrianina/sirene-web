@@ -1,4 +1,4 @@
-import { LayoutDashboard, AlertTriangle, Radio, Bell, Users, Building2, MapPin, LogOut, ChevronLeft, ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings,} from "lucide-react";
+import { LayoutDashboard, AlertTriangle, Radio, Bell, Users, Building2, MapPin, LogOut, ChevronLeft, ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings, TriangleAlert, Siren, History,} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import "../styles/app-layout.css";
@@ -17,7 +17,8 @@ interface NavItem {
 
 const mainItems: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Cartographie", url: "/map", icon: MapPinCheckInside },
+  { title: "Cartographie", url: "/map", icon: MapPinCheckInside ,permission: "sirene-map:read" },
+  { title: "Cartographie des alertes", url: "/sirene-map-alert", icon: Siren ,  permission: "sirene-map-alert:read"  },
   { title: "Envoi diffusion", url: "/alertes/envoyer", icon: Send,  permission: "send-alerte:execute" },
   { title: "ALERTES", url: "/sendalerte-all", icon: AlertTriangle,permission: "alerte-bngrc:send"},
   { title: "Sirènes", url: "/sirenes", icon: Radio, permission: "sirenes:read" },
@@ -64,6 +65,7 @@ const alertebngrcItem: NavItem[] = [
 const notificationsItem: NavItem[] = [
   { title: "Notifications", url: "/notifications", icon: LayoutList,    permission: "notifications:read"},
   { title: "Diffusions alerte", url: "/notifications-alerte", icon: LayoutList, permission: "notification-bngrc:read"},
+  { title: "Historique des alertes", url: "/sirene-map-alert-history", icon: History  , permission: "sirene-map-alert:story" },
 ];
 
 interface AppSidebarProps {
@@ -220,7 +222,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <div className="user-name">
               {[user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.email}
             </div>
-            <div className="user-role">{user?.role?.name || "Utilisateur"}</div>
           </div>
         </div>
       </div>
