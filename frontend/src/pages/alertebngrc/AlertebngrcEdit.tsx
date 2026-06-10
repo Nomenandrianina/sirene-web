@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient }           from "@tanstack/react-query";
-import { useNavigate, useParams }                           from "react-router-dom";
-import { AppLayout }                             from "@/components/AppLayout";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout";
 import { AlerteBngrcForm, AlerteBngrcFormData }  from "@/components/alertebngrc/Alertebngrcform";
-import { alerteBngrcApi }                        from "@/services/alertebngrc.api";
-
+import { alerteBngrcApi } from "@/services/alertebngrc.api";
 
 export function AlerteBngrcEdit() {
   const { id }   = useParams<{ id: string }>();

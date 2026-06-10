@@ -17,9 +17,6 @@ export async function seedUsers(dataSource: DataSource): Promise<void> {
   });
 
   const superadminPassword = await bcrypt.hash('AZERTY', 10);
-  const adminPassword      = await bcrypt.hash('AZERTY', 10);
-  const managerPassword    = await bcrypt.hash('AZERTY', 10);
-  const userPassword       = await bcrypt.hash('AZERTY', 10);
 
   // ⚠️ Le superadmin n'a PAS de customers_id
   await dataSource.query(`

@@ -8,16 +8,23 @@ import { initFirebase } from './config/firebase';
 
 async function bootstrap() {
   initFirebase();
-  
-  // NestExpressApplication pour pouvoir utiliser useStaticAssets
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.enableCors({ origin: '*', allowedHeaders: ['Content-Type', 'Authorization'] });
+  // ✅ CORS restreint avec credentials
+  app.enableCors({
+    origin: [
+      'https://sirene.manager.mitao-forecast.com',
+      'http://localhost:5173',
+      'http://localhost:8080',
+    ],
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
 
-  // Créer le dossier uploads/avatars automatiquement s'il n'existe pas
   mkdirSync(join(process.cwd(), 'uploads', 'avatars'), { recursive: true });
 
-  // Servir les fichiers statiques — accessibles via /uploads/avatars/fichier.jpg
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/backend/uploads',
   });

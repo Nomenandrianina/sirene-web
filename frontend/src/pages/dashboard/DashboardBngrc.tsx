@@ -209,8 +209,27 @@ export default function DashboardBngrc() {
   
     return (
       <AppLayout>
-        <div className="page-wrap">
-  
+          <div className="page-wrap"
+            style={{
+              minHeight: "100vh",
+              backgroundImage:  "linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('/images/sirene.jpeg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundAttachment: "fixed",
+            }}
+          >  
+
+        {/* <div
+          className="page-wrap"
+          style={{
+            backgroundImage: "url('/images/sirene.jpeg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            minHeight: "100vh",
+          }}
+        > */}
+
           {/* ── Header ── */}
           <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
             <div>
@@ -220,7 +239,7 @@ export default function DashboardBngrc() {
                   {period === "matin" ? "☀️" : period === "journée" ? "🌤️" : period === "soir" ? "🌙" : "🌃"}
                 </span>
               </h1>
-              <p className="page-subtitle">Tableau de bord BNGRC</p>
+              <p className="page-subtitle">Tableau de bord</p>
             </div>
   
             {/* Filtre date */}

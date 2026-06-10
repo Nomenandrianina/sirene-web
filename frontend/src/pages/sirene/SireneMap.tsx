@@ -5,10 +5,7 @@ import { sirenesApi }   from "@/services/sirene.api";
 import { provincesApi } from "@/services/province.api";
 import { regionsApi }   from "@/services/region.api";
 import { AppLayout }    from "@/components/AppLayout";
-import {
-  Radio, Wifi, WifiOff, MapPin, Activity,
-  Layers, Map as MapIcon, ChevronDown, RotateCcw,
-} from "lucide-react";
+import { Radio, Wifi, WifiOff, MapPin, Activity, Layers, Map as MapIcon, ChevronDown, RotateCcw,} from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const toArr = (r: any) =>

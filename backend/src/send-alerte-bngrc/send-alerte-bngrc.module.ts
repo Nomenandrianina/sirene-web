@@ -9,12 +9,13 @@ import { Village } from 'src/villages/entities/village.entity';
 import { Sirene } from 'src/sirene/entities/sirene.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationBngrc } from 'src/notification-bngrc/entities/notification-bngrc.entity';
+import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Sirene, Village, 
-      AudioAlerteBngrc, CategorieAlerteBngrc, User,NotificationBngrc
+      AudioAlerteBngrc, CategorieAlerteBngrc, User,NotificationBngrc,Notificationsweb
     ]),
     SmsModule,
   ],

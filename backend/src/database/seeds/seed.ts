@@ -45,7 +45,7 @@ async function runSeeders() {
     // await seedZone(AppDataSource);
     // await seedDiffusionModule(AppDataSource);
     // await seedDiffusionConfigs(AppDataSource);
-    await seedFokontanyVillage(AppDataSource);
+    // await seedFokontanyVillage(AppDataSource);
 
     console.log('\n🌱 All seeders completed!');
   } catch (error) {

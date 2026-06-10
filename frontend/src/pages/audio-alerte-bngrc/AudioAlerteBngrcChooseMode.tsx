@@ -24,7 +24,7 @@ export default function AudioAlerteBngrcChooseMode() {
 
           {/* Upload */}
           <button
-            onClick={() => navigate("/audio-alerte-bngrc/create/upload")}
+            onClick={() => navigate("/audio-alerte-catastrophe/create/upload")}
             className="group w-full text-left bg-white border border-slate-200 rounded-xl p-5 hover:border-sky-400 hover:shadow-sm transition flex items-start gap-4"
           >
             <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition">
@@ -41,7 +41,7 @@ export default function AudioAlerteBngrcChooseMode() {
 
           {/* Enregistrement */}
           <button
-            onClick={() => navigate("/audio-alerte-bngrc/create/record")}
+            onClick={() => navigate("/audio-alerte-catastrophe/create/record")}
             className="group w-full text-left bg-white border border-slate-200 rounded-xl p-5 hover:border-emerald-400 hover:shadow-sm transition flex items-start gap-4"
           >
             <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition">

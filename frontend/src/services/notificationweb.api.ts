@@ -11,5 +11,5 @@ export const notificationsWebApi = {
   
     markRead: (id: number) =>  patch<NotificationWeb>(`/notificationsweb/${id}/read`),
 
-    markAllRead: () => patch('/notificationsweb/read-all')
+    markAllRead: () => post('/notificationsweb/read-all-notification', {})
 };

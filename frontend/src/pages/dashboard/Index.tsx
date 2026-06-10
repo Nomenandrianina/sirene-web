@@ -1,6 +1,7 @@
 import { useRole } from "@/hooks/useRole";
 import DashboardSuperAdmin from "./DashboardSuperAdmin";
 import DashboardBngrc      from "./DashboardBngrc";
+import SireneMapAlert      from "./SireneMapAlert";
 import DashboardCustomer   from "./DashboardCustomer";
 
 /**
@@ -16,10 +17,11 @@ import DashboardCustomer   from "./DashboardCustomer";
  *   CUSTOMER_OPERATOR  → DashboardCustomer  (idem, lecture seule côté UI si besoin)
  */
 export default function Dashboard() {
-  const { isSuperAdmin, isBngrc, isClient } = useRole();
+  const { isSuperAdmin, isBngrc, isClient , isbngrcControl } = useRole();
 
   if (isSuperAdmin) return <DashboardSuperAdmin />;
   if (isBngrc)      return <DashboardBngrc />;
+  if (isbngrcControl)      return <SireneMapAlert />;
   if (isClient)     return <DashboardCustomer />;
 
   // Sécurité : ne devrait jamais arriver si les guards de route sont en place

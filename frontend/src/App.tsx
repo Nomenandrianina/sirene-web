@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
-import Dashboard from "./pages/dashboard/index";
+import Dashboard from "./pages/dashboard/Index";
 import SendAlert from "./pages/SendAlert";  
 import Audios from "./pages/Audios";
 import Geography from "./pages/Geography";
@@ -85,6 +85,8 @@ import AudioAlerteBngrcRecord from "./pages/audio-alerte-bngrc/AudioAlerteBngrcR
 import { AudioAlerteBngrcEdit } from "./pages/audio-alerte-bngrc/AudioAlerteBngrcEdit";
 import SendAlerteBngrc from "./pages/alertebngrc/SendAlerteBngrc";
 import NotificationBngrcList from "./pages/notification/Notificationbngrclist";
+import SireneMapAlert from "./pages/dashboard/SireneMapAlert";
+import SireneMapHistory from "./pages/dashboard/Sirenemaphistory";
 
 const queryClient = new QueryClient();
 
@@ -149,7 +151,7 @@ const App = () => (
               <Route path="/fokontany"       element={<ProtectedRoute permission="fokontany:read"><FokontanyList /></ProtectedRoute>} />
               <Route path="/fokontany/create"   element={<ProtectedRoute permission="fokontany:create"><FokontanyCreate /></ProtectedRoute>} />
               <Route path="/fokontany/:id/edit" element={<ProtectedRoute permission="fokontany:update"><FokontanyEdit /></ProtectedRoute>} />
-              <Route path="/map" element={<ProtectedRoute><SireneMap /></ProtectedRoute>} />
+              <Route path="/map" element={<ProtectedRoute permission="sirene-map:read"><SireneMap /></ProtectedRoute>} />
               <Route path="/pack" element={<ProtectedRoute permission="pack-types:read"><PackTypeAdminPage /></ProtectedRoute>} />
               <Route path="/souscription" element={<ProtectedRoute permission="souscriptions:read"><SouscriptionsListPage /></ProtectedRoute>} />
               <Route path="/souscription/new" element={<ProtectedRoute permission="souscriptions:create"><SouscriptionNewPage /></ProtectedRoute>} />
@@ -179,7 +181,9 @@ const App = () => (
              
               <Route path="/sendalerte-all"   element={<ProtectedRoute permission="alerte-bngrc:send"><SendAlerteBngrc /></ProtectedRoute>} />
               <Route path="/notifications-alerte"   element={<ProtectedRoute permission="notification-bngrc:read"><NotificationBngrcList /></ProtectedRoute>} />
-             
+              <Route path="/sirene-map-alert"   element={<ProtectedRoute permission="sirene-map-alert:read"><SireneMapAlert /></ProtectedRoute>} />
+              <Route path="/sirene-map-alert-history"   element={<ProtectedRoute permission="sirene-map-alert:story"><SireneMapHistory /></ProtectedRoute>} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
         </TooltipProvider>
