@@ -2,14 +2,9 @@ import { useRef, useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { sirenesApi }            from "@/services/sirene.api";
-import { provincesApi }          from "@/services/province.api";
-import { regionsApi }            from "@/services/region.api";
 import { notificationsBngrcApi } from "@/services/notificationBngrc.api";
 import { AppLayout }             from "@/components/AppLayout";
-import {
-  Radio, MapPin, Activity, AlertTriangle,
-  Layers, Map as MapIcon, ChevronDown, RotateCcw, Bell, Clock, User,
-} from "lucide-react";
+import { Radio, MapPin, Activity, AlertTriangle, Layers, Map as MapIcon, Bell, Clock, } from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const toArr = (r: any) =>
@@ -108,29 +103,33 @@ function playAlertSound() {
 }
 
 // ─── Icône SVG sirène ─────────────────────────────────────────────────────────
+// Couleurs : actif = vert (#16a34a), alerte/scintillement = rouge (#dc2626), inactif = jaune (#eab308)
 function sireneSVG(active: boolean, isOwned: boolean, isBlinking: boolean) {
-  const fill = !isOwned ? "#eab308" : active ? "#16a34a" : "#dc2626";
-  const ring = isBlinking ? "#fbbf24" : active ? "#bbf7d0" : "#fecaca";
+  // isBlinking (alerte déclenchée) → rouge
+  // active (actif sans alerte) → vert
+  // inactif → jaune
+  const fill = isBlinking ? "#dc2626" : (active ? "#16a34a" : "#eab308");
+  const ring = isBlinking ? "#fecaca" : (active ? "#bbf7d0" : "#fef9c3");
   return `
     <div class="sirene-map-icon ${active ? "active" : "inactive"} ${isBlinking ? "blinking-alert" : ""}">
       <div class="sirene-pulse-ring" style="background:${ring}"></div>
       ${isBlinking ? `<div class="sirene-alert-ring"></div>` : ""}
-      <div class="sirene-marker" style="background:${isBlinking ? "#f59e0b" : fill}">
+      <div class="sirene-marker" style="background:${fill}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <rect x="9" y="13" width="6" height="5" rx="1" fill="white" opacity="0.95"/>
-          <rect x="10" y="14" width="1.2" height="3" rx="0.4" fill="${isBlinking ? "#f59e0b" : fill}"/>
-          <rect x="12.4" y="14" width="1.2" height="3" rx="0.4" fill="${isBlinking ? "#f59e0b" : fill}"/>
+          <rect x="10" y="14" width="1.2" height="3" rx="0.4" fill="${fill}"/>
+          <rect x="12.4" y="14" width="1.2" height="3" rx="0.4" fill="${fill}"/>
           <path d="M7.5 10.5 C6.5 11.8 6.5 13.2 7.5 14.5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.8"/>
           <path d="M5.5 8.5 C3.8 10.5 3.8 14.5 5.5 16.5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.5"/>
           <path d="M16.5 10.5 C17.5 11.8 17.5 13.2 16.5 14.5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.8"/>
           <path d="M18.5 8.5 C20.2 10.5 20.2 14.5 18.5 16.5" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.5"/>
           <ellipse cx="12" cy="11" rx="3.5" ry="2.5" fill="white" opacity="0.95"/>
-          <ellipse cx="12" cy="11" rx="2" ry="1.4" fill="${isBlinking ? "#f59e0b" : fill}"/>
+          <ellipse cx="12" cy="11" rx="2" ry="1.4" fill="${fill}"/>
           <circle cx="12" cy="11" r="0.8" fill="white" opacity="0.9"/>
           <rect x="10.5" y="18" width="3" height="1.2" rx="0.5" fill="white" opacity="0.8"/>
         </svg>
       </div>
-      <div class="sirene-pin-tail" style="background:${isBlinking ? "#f59e0b" : fill}"></div>
+      <div class="sirene-pin-tail" style="background:${fill}"></div>
     </div>`;
 }
 
@@ -139,11 +138,11 @@ const MAP_CSS = `
   .sirene-map-icon { position:relative; width:44px; height:54px; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
   .sirene-pulse-ring { position:absolute; top:0; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; animation:sirene-pulse 2.4s ease-out infinite; opacity:0; }
   .sirene-map-icon.inactive .sirene-pulse-ring { animation:none; opacity:0.15; }
-  .sirene-alert-ring { position:absolute; top:-4px; left:50%; transform:translateX(-50%); width:52px; height:52px; border-radius:50%; border:3px solid #f59e0b; animation:alert-ring-pulse 0.6s ease-in-out infinite alternate; z-index:3; }
+  .sirene-alert-ring { position:absolute; top:-4px; left:50%; transform:translateX(-50%); width:52px; height:52px; border-radius:50%; border:3px solid #dc2626; animation:alert-ring-pulse 0.6s ease-in-out infinite alternate; z-index:3; }
   @keyframes alert-ring-pulse { 0%{transform:translateX(-50%) scale(0.9);opacity:1} 100%{transform:translateX(-50%) scale(1.2);opacity:0.3} }
   .blinking-alert .sirene-marker { animation:sirene-blink 0.5s ease-in-out infinite alternate !important; }
-  @keyframes sirene-blink { 0%{box-shadow:0 4px 14px rgba(0,0,0,0.22),0 0 0 3px white,0 0 20px #f59e0b;transform:scale(1)} 100%{box-shadow:0 4px 24px rgba(245,158,11,0.8),0 0 0 4px #fef3c7,0 0 35px #f59e0b;transform:scale(1.15)} }
-  .blinking-alert .sirene-pulse-ring { background:#fde68a !important; animation:sirene-pulse-fast 0.8s ease-out infinite !important; }
+  @keyframes sirene-blink { 0%{box-shadow:0 4px 14px rgba(0,0,0,0.22),0 0 0 3px white,0 0 20px #dc2626;transform:scale(1)} 100%{box-shadow:0 4px 24px rgba(220,38,38,0.8),0 0 0 4px #fee2e2,0 0 35px #dc2626;transform:scale(1.15)} }
+  .blinking-alert .sirene-pulse-ring { background:#fca5a5 !important; animation:sirene-pulse-fast 0.8s ease-out infinite !important; }
   @keyframes sirene-pulse-fast { 0%{transform:translateX(-50%) scale(0.6);opacity:0.9} 100%{transform:translateX(-50%) scale(2);opacity:0} }
   @keyframes sirene-pulse { 0%{transform:translateX(-50%) scale(0.6);opacity:0.7} 100%{transform:translateX(-50%) scale(1.6);opacity:0} }
   .sirene-marker { position:relative; z-index:2; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.22),0 0 0 3px white; transition:transform 0.15s ease; }
@@ -155,33 +154,31 @@ const MAP_CSS = `
 `;
 
 // ─── Popup HTML — localisation + aléa ────────────────────────────────────────
+// Quand alerte active : header rouge, détails alertes en rouge
+// Sans alerte : vert si actif, jaune si inactif
 function buildPopupHTML(s: any, alert?: ActiveAlert) {
-  const fill = alert ? "#f59e0b" : s.isActive ? "#16a34a" : "#dc2626";
+  const headerFill = alert ? "#dc2626" : (s.isActive ? "#16a34a" : "#eab308");
   const row  = (k: string, v: string) => `
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
       <span style="color:#64748b;font-size:11px;white-space:nowrap;">${k}</span>
       <span style="color:#1e293b;font-weight:500;font-size:11px;text-align:right;">${v}</span>
     </div>`;
 
-  // Section alerte : localisation + aléa (TypeAlerteBngrc) au lieu de durée/email
   const alertSection = alert ? (() => {
     const n    = alert.notification;
-    // Remonte la hiérarchie : notification → categorieAlerteBngrc → type (TypeAlerteBngrc) → name
-    const typeName = n.categorieAlerteBngrc?.type?.name          // TypeAlerteBngrc.name
-      ?? n.categorieAlerteBngrc?.alerte?.name                    // fallback AlerteBngrc
-      ?? "—";
+    const typeName = n.categorieAlerteBngrc?.type?.name ?? "—";
     const categName = n.categorieAlerteBngrc?.name ?? "—";
     const senderName = n.user
-      ? (`${n.user.firstName ?? ""} ${n.user.lastName ?? ""}`.trim() || "—")
+      ? (`${n.user.first_name ?? ""} ${n.user.last_name ?? ""}`.trim() || "—")
       : "—";
-    const region   = s.village?.region?.name   ?? s.village?.district?.region?.name ?? "—";
-    const district = s.village?.district?.name ?? "—";
+    const region   = (s.village?.region?.name   ?? s.village?.district?.region?.name ?? "—").toUpperCase();
+    const district = (s.village?.district?.name ?? "—").toUpperCase();
 
     return `
-      <div style="background:#fffbeb;border-top:1px solid #fde68a;padding:10px 14px;">
-        <div style="color:#92400e;font-size:11px;font-weight:700;text-transform:uppercase;
+      <div style="background:#fef2f2;border-top:1px solid #fecaca;padding:10px 14px;">
+        <div style="color:#991b1b;font-size:11px;font-weight:700;text-transform:uppercase;
                     letter-spacing:0.05em;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;
+          <span style="width:7px;height:7px;border-radius:50%;background:#dc2626;display:inline-block;
                        animation:blink-dot 0.5s infinite alternate;"></span>
           ALERTE EN COURS
         </div>
@@ -199,7 +196,7 @@ function buildPopupHTML(s: any, alert?: ActiveAlert) {
 
   return `
     <div style="font-family:system-ui,sans-serif;font-size:13px;">
-      <div style="background:${fill};padding:12px 14px;">
+      <div style="background:${headerFill};padding:12px 14px;">
         <div style="color:white;font-weight:700;font-size:14px;margin-bottom:2px;">
           ${s.name ?? s.imei ?? `Sirène #${s.id}`}
         </div>
@@ -208,15 +205,67 @@ function buildPopupHTML(s: any, alert?: ActiveAlert) {
         </div>
       </div>
       <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
-        ${s.village?.district ? row("District", s.village.district.name) : ""}
-        ${s.village?.region   ? row("Région",   s.village.region.name)   : ""}
-        ${s.village?.province ? row("Province", s.village.province.name) : ""}
+        ${s.village?.district ? row("District", s.village.district.name.toUpperCase()) : ""}
+        ${s.village?.region   ? row("Région",   s.village.region.name.toUpperCase())   : ""}
+        ${s.village?.province ? row("Province", s.village.province.name.toUpperCase()) : ""}
       </div>
       ${alertSection}
     </div>`;
 }
 
-// ─── Liste latérale : dernières 24h ──────────────────────────────────────────
+// ─── Popup HTML depuis la liste latérale (clic sur alerte récente) ────────────
+// Fond gris, aléa en gras, zones, référence sirène en bas
+function buildListPopupHTML(s: any, n: any) {
+  const typeName  = n.categorieAlerteBngrc?.type?.name ?? "—";
+  const categName = n.categorieAlerteBngrc?.name ?? "—";
+  const region    = (s.village?.region?.name   ?? s.village?.district?.region?.name ?? "—").toUpperCase();
+  const district  = (s.village?.district?.name ?? "—").toUpperCase();
+  const commune   = (s.village?.commune?.name  ?? "—").toUpperCase();
+  const sireneName = s.name ?? s.imei ?? `Sirène #${s.id}`;
+  const senderName = n.user
+    ? (`${n.user.first_name ?? ""} ${n.user.last_name ?? ""}`.trim() || "—")
+    : "—";
+
+  const row = (k: string, v: string) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;">
+      <span style="color:#64748b;font-size:11px;white-space:nowrap;">${k}</span>
+      <span style="color:#374151;font-weight:500;font-size:11px;text-align:right;">${v}</span>
+    </div>`;
+
+  return `
+    <div style="font-family:system-ui,sans-serif;font-size:13px;min-width:240px;">
+      <!-- Header gris -->
+      <div style="background:#475569;padding:12px 14px;">
+        <div style="color:white;font-weight:800;font-size:15px;margin-bottom:3px;letter-spacing:0.01em;">
+          🌀 ${typeName}
+        </div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;font-weight:500;">${categName}</div>
+      </div>
+      <!-- Zones -->
+      <div style="padding:10px 14px;background:#f8fafc;border-bottom:0.5px solid #e2e8f0;">
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Zone</div>
+        ${row("Région",   region)}
+        ${row("District", district)}
+        ${row("Commune",  commune)}
+        ${s.village?.name ? row("Village", s.village.name.toUpperCase()) : ""}
+      </div>
+      <!-- Détails envoi -->
+      <div style="padding:8px 14px;background:#f8fafc;border-bottom:0.5px solid #e2e8f0;">
+        ${n.sendingTime ? row("Envoyé le", new Date(n.sendingTime).toLocaleString("fr-FR", {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})) : ""}
+        ${row("Envoyé par", senderName)}
+      </div>
+      <!-- Référence sirène -->
+      <div style="padding:8px 14px;background:#fff;">
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Référence sirène</div>
+        <div style="font-size:12px;color:#64748b;display:flex;align-items:center;gap:5px;">
+          📡 ${sireneName}
+          ${s.village?.name ? `<span style="color:#94a3b8">· ${s.village.name}</span>` : ""}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── Helpers heure ────────────────────────────────────────────────────────────
 function fmtTime(d: string | Date) {
   return new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -233,25 +282,39 @@ function timeAgo(d: string | Date) {
   return `il y a ${Math.floor(h / 24)}j`;
 }
 
-function NotifSideList({ notifs, onSelect }: { notifs: any[]; onSelect: (n: any) => void }) {
+// ─── Calcul plage 01h00–23h59 du jour courant ─────────────────────────────────
+function getTodayRange(): { startDate: string; endDate: string } {
+  const now  = new Date();
+  const year = now.getFullYear();
+  const m    = String(now.getMonth() + 1).padStart(2, "0");
+  const d    = String(now.getDate()).padStart(2, "0");
+  const startDate = `${year}-${m}-${d}T01:00:00`;
+  const endDate   = `${year}-${m}-${d}T23:59:59`;
+  return { startDate, endDate };
+}
+
+// ─── Liste latérale : alertes du jour ────────────────────────────────────────
+function NotifSideList({ notifs, onSelect, sirenes = [] }: { notifs: any[]; onSelect: (n: any) => void; sirenes?: any[] }) {
   if (!notifs.length) return (
     <div style={{ padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontFamily: "system-ui,sans-serif" }}>
       <Clock size={24} style={{ margin: "0 auto 8px", display: "block", opacity: 0.4 }} />
-      <div style={{ fontSize: 12 }}>Aucune alerte dans les 24 dernières heures</div>
+      <div style={{ fontSize: 12 }}>Aucune alerte aujourd'hui</div>
     </div>
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {notifs.map((n, i) => {
+      {notifs.map((n) => {
         const typeName  = n.categorieAlerteBngrc?.type?.name ?? "—";
         const catName   = n.categorieAlerteBngrc?.name ?? "—";
-        const sirenName = n.sirene?.name ?? n.sirene?.imei ?? `#${n.sireneId}`;
-        const region    = n.sirene?.village?.region?.name ?? n.sirene?.village?.district?.region?.name ?? "—";
-        const district  = n.sirene?.village?.district?.name ?? "—";
-        const sender    = n.user
-          ? (`${n.user.firstName ?? ""} ${n.user.lastName ?? ""}`.trim() || "—")
-          : "—";
+        const sid       = n.sireneId ?? n.sirene?.id;
+        // Enrichir avec la sirène complète depuis le store (getAllForMap) qui a toutes les relations
+        const fullSirene = sirenes.find((s: any) => s.id === sid);
+        const v         = fullSirene?.village ?? n.sirene?.village;
+        const sirenName = fullSirene?.name ?? fullSirene?.imei ?? n.sirene?.name ?? n.sirene?.imei ?? `#${n.sireneId}`;
+        const region    = (v?.region?.name   ?? v?.district?.region?.name ?? "—").toUpperCase();
+        const district  = (v?.district?.name ?? "—").toUpperCase();
+        const commune   = (v?.commune?.name  ?? "—").toUpperCase();
 
         return (
           <div
@@ -267,30 +330,26 @@ function NotifSideList({ notifs, onSelect }: { notifs: any[]; onSelect: (n: any)
             onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#fafbfc"}
             onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "transparent"}
           >
-            {/* Ligne 1 : aléa + heure */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-              <span style={{
-                fontSize: 11, fontWeight: 700, color: "#ea580c",
-                background: "#fff7ed", padding: "1px 7px", borderRadius: 8,
-              }}>
+            {/* Ligne 1 : type alerte en gras + heure */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#dc2626" }}>
                 🌀 {typeName}
               </span>
               <span style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>
-                {fmtDate(n.sendingTime)} {fmtTime(n.sendingTime)}
+                {fmtTime(n.sendingTime)}
               </span>
             </div>
-            {/* Ligne 2 : sirène */}
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", marginBottom: 2 }}>
+            {/* Ligne 2 : catégorie (non gras) */}
+            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>
+              {catName}
+            </div>
+            {/* Ligne 3 : Zones en gras */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>
+              {region} · {district} · {commune}
+            </div>
+            {/* Ligne 4 : référence sirène, non gras, discret */}
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>
               📡 {sirenName}
-            </div>
-            {/* Ligne 3 : catégorie + lieu */}
-            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 2 }}>
-              {catName} · {district}, {region}
-            </div>
-            {/* Ligne 4 : expéditeur + il y a X */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 10, color: "#94a3b8" }}>👤 {sender}</span>
-              <span style={{ fontSize: 10, color: "#94a3b8" }}>{timeAgo(n.sendingTime)}</span>
             </div>
           </div>
         );
@@ -300,29 +359,6 @@ function NotifSideList({ notifs, onSelect }: { notifs: any[]; onSelect: (n: any)
 }
 
 // ─── Composants UI ────────────────────────────────────────────────────────────
-function FilterSelect({ label, value, options, onChange, disabled = false }: {
-  label: string; value: string;
-  options: { id: string | number; name: string }[];
-  onChange: (v: string) => void; disabled?: boolean;
-}) {
-  return (
-    <div style={{ position: "relative", minWidth: 140 }}>
-      <select disabled={disabled} value={value} onChange={e => onChange(e.target.value)} style={{
-        appearance: "none", width: "100%", padding: "7px 28px 7px 10px", fontSize: 13,
-        color: value ? "#1e293b" : "#94a3b8", background: "#fff",
-        border: `1.5px solid ${value ? "#3b82f6" : "#e2e8f0"}`,
-        borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.45 : 1, outline: "none", fontFamily: "inherit",
-      }}>
-        <option value="">{label}</option>
-        {options.map(o => <option key={o.id} value={String(o.id)}>{o.name}</option>)}
-      </select>
-      <ChevronDown size={13} color="#94a3b8"
-        style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-    </div>
-  );
-}
-
 function MapToggle({ mode, onChange }: { mode: "map" | "satellite"; onChange: (m: "map" | "satellite") => void }) {
   return (
     <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 8, padding: 2, gap: 2 }}>
@@ -387,9 +423,9 @@ function AlertPanel({ alerts, sirenes }: { alerts: ActiveAlert[]; sirenes: any[]
     }}>
       {alerts.length > 1 && (
         <div style={{
-          background: "rgba(245,158,11,0.95)", borderRadius: 8, padding: "5px 12px",
+          background: "rgba(220,38,38,0.95)", borderRadius: 8, padding: "5px 12px",
           fontSize: 11, fontWeight: 700, color: "white", textAlign: "center",
-          letterSpacing: "0.04em", boxShadow: "0 2px 8px rgba(245,158,11,0.4)",
+          letterSpacing: "0.04em", boxShadow: "0 2px 8px rgba(220,38,38,0.4)",
         }}>
           🔊 {alerts.length} ALERTES EN COURS SIMULTANÉES
         </div>
@@ -400,24 +436,24 @@ function AlertPanel({ alerts, sirenes }: { alerts: ActiveAlert[]; sirenes: any[]
         const sirene      = sirenes.find((s: any) => s.id === a.sireneId);
         const sireneName  = sirene?.name ?? sirene?.imei ?? `Sirène #${a.sireneId}`;
         const villageName = sirene?.village?.name ?? "—";
-        const region      = sirene?.village?.region?.name ?? "—";
-        const district    = sirene?.village?.district?.name ?? "—";
+        const region      = (sirene?.village?.region?.name ?? "—").toUpperCase();
+        const district    = (sirene?.village?.district?.name ?? "—").toUpperCase();
         const typeName    = n.categorieAlerteBngrc?.type?.name ?? "—";
         const catName     = n.categorieAlerteBngrc?.name ?? "—";
         const sender      = n.user
-          ? (`${n.user.firstName ?? ""} ${n.user.lastName ?? ""}`.trim() || "—")
+          ? (`${n.user.first_name ?? ""} ${n.user.last_name ?? ""}`.trim() || "—")
           : "—";
         const totalSecs = Math.round((a.endAt.getTime() - a.startAt.getTime()) / 1_000);
         const progress  = totalSecs > 0 ? Math.max(0, Math.min(1, secs / totalSecs)) : 0;
 
         return (
           <div key={a.notificationId} style={{
-            background: "rgba(255,255,255,0.97)", border: "1.5px solid #f59e0b",
-            borderRadius: 12, boxShadow: "0 4px 20px rgba(245,158,11,0.25)",
+            background: "rgba(255,255,255,0.97)", border: "1.5px solid #dc2626",
+            borderRadius: 12, boxShadow: "0 4px 20px rgba(220,38,38,0.25)",
             fontFamily: "system-ui,sans-serif", width: 270, overflow: "hidden",
             animation: "slideInRight 0.3s ease",
           }}>
-            <div style={{ background: "#f59e0b", padding: "9px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ background: "#dc2626", padding: "9px 12px", display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{
                 width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
@@ -435,8 +471,8 @@ function AlertPanel({ alerts, sirenes }: { alerts: ActiveAlert[]; sirenes: any[]
                 {String(Math.floor(secs / 60)).padStart(2, "0")}:{String(secs % 60).padStart(2, "0")}
               </div>
             </div>
-            <div style={{ height: 3, background: "#fde68a" }}>
-              <div style={{ height: "100%", background: "#f59e0b", width: `${progress * 100}%`, transition: "width 1s linear" }} />
+            <div style={{ height: 3, background: "#fecaca" }}>
+              <div style={{ height: "100%", background: "#dc2626", width: `${progress * 100}%`, transition: "width 1s linear" }} />
             </div>
             <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 5 }}>
               {[
@@ -467,7 +503,19 @@ export default function SireneMapAlert() {
   const markersRef  = useRef<Map<number, any>>(new Map());
   const tileRef     = useRef<any>(null);
   const blinkTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
-  const seenNotifIds = useRef<Map<number, number>>(new Map());
+
+  const seenNotifIds = useRef<Map<number, number>>((() => {
+    try {
+      const stored = sessionStorage.getItem("seen_notif_bngrc");
+      if (stored) {
+        const entries: [number, number][] = JSON.parse(stored);
+        const _now = Date.now();
+        const fresh = entries.filter(([, endAt]) => _now - endAt < 35 * 60_000);
+        return new Map<number, number>(fresh);
+      }
+    } catch (_) {}
+    return new Map<number, number>();
+  })());
 
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get("id") ? Number(searchParams.get("id")) : null;
@@ -476,12 +524,6 @@ export default function SireneMapAlert() {
   const [mapReady,     setMapReady]     = useState(false);
   const [mapMode,      setMapMode]      = useState<"map" | "satellite">("map");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [selProvince,  setSelProvince]  = useState("");
-  const [selRegion,    setSelRegion]    = useState("");
-  const [selDistrict,  setSelDistrict]  = useState("");
-  const [selCommune,   setSelCommune]   = useState("");
-  const [selFokontany, setSelFokontany] = useState("");
-  const [selVillage,   setSelVillage]   = useState("");
 
   const [activeAlerts, setActiveAlerts] = useState<Map<number, ActiveAlert>>(new Map());
   const [bannerAlerts, setBannerAlerts] = useState<ActiveAlert[]>([]);
@@ -490,37 +532,36 @@ export default function SireneMapAlert() {
   const { data: rawSirenes, isLoading } = useQuery({
     queryKey: ["sirenes"], queryFn: () => sirenesApi.getAllForMap(),
   });
-  const { data: rawProvinces } = useQuery({
-    queryKey: ["provinces"], queryFn: () => provincesApi.getAll(),
-  });
-  const { data: rawRegions } = useQuery({
-    queryKey: ["regions"], queryFn: () => regionsApi.getAll(),
-  });
+
   const { data: rawActiveNotifs } = useQuery({
     queryKey: ["active-notifications-bngrc"],
     queryFn:  () => notificationsBngrcApi.getActive(),
     refetchInterval: POLL_INTERVAL_MS,
     refetchIntervalInBackground: true,
   });
-  // Dernières 24h pour la liste latérale
-  const { data: rawRecent } = useQuery({
-    queryKey: ["recent-notifications-bngrc-24h"],
-    queryFn:  () => notificationsBngrcApi.getActive(1440, 0), // 24h en arrière, 0 futur
+
+  // Alertes du jour courant : 01h00 → 23h59
+  const todayRange = useMemo(() => getTodayRange(), []);
+  const { data: rawToday } = useQuery({
+    queryKey: ["today-notifications-bngrc", todayRange.startDate, todayRange.endDate],
+    queryFn:  () => notificationsBngrcApi.getAll({
+      startDate: todayRange.startDate,
+      endDate:   todayRange.endDate,
+      status:    "sent",
+    }),
     refetchInterval: POLL_INTERVAL_MS,
     refetchIntervalInBackground: true,
   });
 
-  const sirenes    = useMemo(() => toArr(rawSirenes),   [rawSirenes]);
-  const provinces  = useMemo(() => toArr(rawProvinces), [rawProvinces]);
-  const allRegions = useMemo(() => toArr(rawRegions),   [rawRegions]);
+  const sirenes = useMemo(() => toArr(rawSirenes), [rawSirenes]);
 
-  // Liste 24h triée par sendingTime DESC
-  const recentNotifs = useMemo(() => {
-    const arr = toArr(rawRecent);
+  // Liste du jour triée par sendingTime DESC
+  const todayNotifs = useMemo(() => {
+    const arr = toArr(rawToday);
     return [...arr].sort((a: any, b: any) =>
       new Date(b.sendingTime).getTime() - new Date(a.sendingTime).getTime()
     );
-  }, [rawRecent]);
+  }, [rawToday]);
 
   // ── Traitement alertes actives ────────────────────────────────────────────────
   useEffect(() => {
@@ -529,8 +570,13 @@ export default function SireneMapAlert() {
     const now = Date.now();
 
     seenNotifIds.current.forEach((endAt, id) => {
-      if (now - endAt > 2 * 3_600_000) seenNotifIds.current.delete(id);
+      if (now - endAt > 35 * 60_000) seenNotifIds.current.delete(id);
     });
+    try {
+      sessionStorage.setItem("seen_notif_bngrc",
+        JSON.stringify(Array.from(seenNotifIds.current.entries()))
+      );
+    } catch (_) {}
 
     const bySirene = new Map<number, any[]>();
     notifs.forEach(n => {
@@ -540,113 +586,67 @@ export default function SireneMapAlert() {
       bySirene.get(sid)!.push(n);
     });
 
-    const newActive: Map<number, ActiveAlert> = new Map();
-    const newBanner: ActiveAlert[] = [];
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    const startTimers: ReturnType<typeof setTimeout>[] = [];
+
+    const persistSeen = () => {
+      try {
+        const entries = Array.from(seenNotifIds.current.entries());
+        sessionStorage.setItem("seen_notif_bngrc", JSON.stringify(entries));
+      } catch (_) {}
+    };
+
+    const activateAlert = (n: any, sireneId: number, start: number, end: number) => {
+      seenNotifIds.current.set(n.id, end);
+      persistSeen();
+      const alert: ActiveAlert = {
+        notificationId: n.id, sireneId,
+        startAt: new Date(start), endAt: new Date(end),
+        notification: n,
+      };
+      setActiveAlerts(prev => { const m = new Map(prev); m.set(sireneId, alert); return m; });
+      setBannerAlerts(prev => [...prev.filter(a => a.sireneId !== sireneId), alert]);
+      playAlertSound();
+
+      const prev = blinkTimers.current.get(sireneId);
+      if (prev) clearTimeout(prev);
+      const tEnd = setTimeout(() => {
+        setActiveAlerts(p => { const m = new Map(p); m.delete(sireneId); return m; });
+        setBannerAlerts(p => p.filter(a => a.sireneId !== sireneId));
+        blinkTimers.current.delete(sireneId);
+      }, end - Date.now());
+      blinkTimers.current.set(sireneId, tEnd);
+    };
 
     bySirene.forEach((sireneNotifs, sireneId) => {
-      sireneNotifs.sort((a, b) => new Date(a.sendingTime).getTime() - new Date(b.sendingTime).getTime());
-      let cursor = new Date(sireneNotifs[0].sendingTime).getTime();
-
       sireneNotifs.forEach(n => {
-        const sendingTime   = new Date(n.sendingTime).getTime();
-        // Scintillement = 10 secondes fixes (indépendant de la durée audio)
-        const duration      = ALERT_SOUND_DURATION_MS;
-        const start         = Math.max(sendingTime, cursor);
-        const end           = start + duration;
-
         const seenEnd = seenNotifIds.current.get(n.id);
-        if (seenEnd !== undefined && now >= seenEnd) { cursor = end + ALERT_GAP_MS; return; }
-
-        if (start <= now && now < end) {
-          seenNotifIds.current.set(n.id, end);
-          const alert: ActiveAlert = { notificationId: n.id, sireneId, startAt: new Date(start), endAt: new Date(end), notification: n };
-          newActive.set(sireneId, alert);
-          newBanner.push(alert);
-          if (seenEnd === undefined) playAlertSound();
-        }
-
-        if (start > now) {
-          timers.push(setTimeout(() => {
-            const s2 = seenNotifIds.current.get(n.id);
-            if (s2 !== undefined && Date.now() >= s2) return;
-            seenNotifIds.current.set(n.id, end);
-            const alert: ActiveAlert = { notificationId: n.id, sireneId, startAt: new Date(start), endAt: new Date(end), notification: n };
-            setActiveAlerts(prev => { const m = new Map(prev); m.set(sireneId, alert); return m; });
-            setBannerAlerts(prev => [...prev.filter(a => a.sireneId !== sireneId), alert]);
-            playAlertSound();
-          }, start - now));
-        }
-        cursor = end + ALERT_GAP_MS;
+        if (seenEnd !== undefined) return;
+        const alertStart = now;
+        const alertEnd   = now + ALERT_SOUND_DURATION_MS;
+        activateAlert(n, sireneId, alertStart, alertEnd);
       });
     });
 
-    setActiveAlerts(newActive);
-    setBannerAlerts(newBanner);
-    return () => timers.forEach(t => clearTimeout(t));
+    return () => startTimers.forEach(t => clearTimeout(t));
   }, [rawActiveNotifs]);
 
-  // ── Géographie ────────────────────────────────────────────────────────────────
-  const geoTree = useMemo(() => {
-    const districts: Map<string,any> = new Map();
-    const communes:  Map<string,any> = new Map();
-    const fokontanys:Map<string,any> = new Map();
-    const villages:  Map<string,any> = new Map();
-    sirenes.forEach((s: any) => {
-      const v = s.village; if (!v) return;
-      const vId=String(v.id??""), fId=String(v.fokontany?.id??""), fNm=v.fokontany?.name??"";
-      const cId=String(v.commune?.id??""), cNm=v.commune?.name??"";
-      const dId=String(v.district?.id??""), dNm=v.district?.name??"";
-      const rId=String(v.region?.id??"");
-      if(dId&&dNm) districts.set(dId, {id:dId,name:dNm,regionId:rId});
-      if(cId&&cNm) communes.set(cId,  {id:cId,name:cNm,districtId:dId});
-      if(fId&&fNm) fokontanys.set(fId,{id:fId,name:fNm,communeId:cId});
-      if(vId&&v.name) villages.set(vId,{id:vId,name:v.name,fokontanyId:fId});
-    });
-    return { districts: Array.from(districts.values()), communes: Array.from(communes.values()), fokontanys: Array.from(fokontanys.values()), villages: Array.from(villages.values()) };
-  }, [sirenes]);
-
-  const filteredRegions    = useMemo(() => selProvince  ? allRegions.filter((r:any)=>String(r.provinceId??r.province?.id??r.province_id)===selProvince) : allRegions,  [allRegions,selProvince]);
-  const filteredDistricts  = useMemo(() => selRegion    ? geoTree.districts.filter(d=>d.regionId===selRegion)    : geoTree.districts,   [geoTree,selRegion]);
-  const filteredCommunes   = useMemo(() => selDistrict  ? geoTree.communes.filter(c=>c.districtId===selDistrict) : geoTree.communes,    [geoTree,selDistrict]);
-  const filteredFokontanys = useMemo(() => selCommune   ? geoTree.fokontanys.filter(f=>f.communeId===selCommune) : geoTree.fokontanys,  [geoTree,selCommune]);
-  const filteredVillages   = useMemo(() => selFokontany ? geoTree.villages.filter(v=>v.fokontanyId===selFokontany): geoTree.villages,   [geoTree,selFokontany]);
-
-  const handleProvince  = (v:string)=>{setSelProvince(v); setSelRegion(""); setSelDistrict(""); setSelCommune(""); setSelFokontany(""); setSelVillage("");};
-  const handleRegion    = (v:string)=>{setSelRegion(v);    setSelDistrict(""); setSelCommune(""); setSelFokontany(""); setSelVillage("");};
-  const handleDistrict  = (v:string)=>{setSelDistrict(v);  setSelCommune(""); setSelFokontany(""); setSelVillage("");};
-  const handleCommune   = (v:string)=>{setSelCommune(v);   setSelFokontany(""); setSelVillage("");};
-  const handleFokontany = (v:string)=>{setSelFokontany(v); setSelVillage("");};
-  const hasGeoFilter    = !!(selProvince||selRegion||selDistrict||selCommune||selFokontany||selVillage);
-  const resetAllFilters = ()=>{setStatusFilter("all");setSelProvince("");setSelRegion("");setSelDistrict("");setSelCommune("");setSelFokontany("");setSelVillage("");};
-
-  const visibleSirenes = useMemo(() => sirenes.filter((s:any) => {
-    if(statusFilter==="active"   && !s.isActive) return false;
-    if(statusFilter==="inactive" &&  s.isActive) return false;
-    const v = s.village;
-    if(!v) return !selVillage&&!selFokontany&&!selCommune&&!selDistrict&&!selRegion&&!selProvince;
-    const vId=String(v.id??""), fId=String(v.fokontany?.id??""), cId=String(v.commune?.id??"");
-    const dId=String(v.district?.id??""), rId=String(v.region?.id??""), pId=String(v.province?.id??"");
-    if(selVillage   && vId!==selVillage)   return false;
-    if(selFokontany && fId!==selFokontany) return false;
-    if(selCommune   && cId!==selCommune)   return false;
-    if(selDistrict  && dId!==selDistrict)  return false;
-    if(selRegion    && rId!==selRegion)    return false;
-    if(selProvince  && pId!==selProvince)  return false;
+  // ── Filtre statut ─────────────────────────────────────────────────────────────
+  const visibleSirenes = useMemo(() => sirenes.filter((s: any) => {
+    if (statusFilter === "active"   && !s.isActive) return false;
+    if (statusFilter === "inactive" &&  s.isActive) return false;
     return true;
-  }), [sirenes,statusFilter,selVillage,selFokontany,selCommune,selDistrict,selRegion,selProvince]);
+  }), [sirenes, statusFilter]);
 
-  // ── TOUTES les sirènes avec coords (plus de filtre alerte) ───────────────────
   const withCoords = useMemo(
-    () => visibleSirenes.filter((s:any) => s.latitude && s.longitude),
+    () => visibleSirenes.filter((s: any) => s.latitude && s.longitude),
     [visibleSirenes]
   );
   const allWithCoords = useMemo(
-    () => sirenes.filter((s:any) => s.latitude && s.longitude),
+    () => sirenes.filter((s: any) => s.latitude && s.longitude),
     [sirenes]
   );
 
-  // ── Init Leaflet — centré Madagascar, bounds bloqués ─────────────────────────
+  // ── Init Leaflet ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!document.getElementById("lf-css")) {
       const l = document.createElement("link"); l.id="lf-css"; l.rel="stylesheet";
@@ -662,7 +662,6 @@ export default function SireneMapAlert() {
         center: MDG_CENTER,
         zoom:   MDG_ZOOM,
         zoomControl: false,
-        // Bloquer les bounds sur Madagascar
         maxBounds: L.latLngBounds(
           L.latLng(MDG_BOUNDS.sw[0], MDG_BOUNDS.sw[1]),
           L.latLng(MDG_BOUNDS.ne[0], MDG_BOUNDS.ne[1])
@@ -699,7 +698,10 @@ export default function SireneMapAlert() {
     });
   }, [mapMode, mapReady]);
 
-  // ── Markers — toutes les sirènes, scintillent si alerte ──────────────────────
+  // ── Markers ───────────────────────────────────────────────────────────────────
+  const activeAlertsRef = useRef(activeAlerts);
+  useEffect(() => { activeAlertsRef.current = activeAlerts; }, [activeAlerts]);
+
   useEffect(() => {
     if (!mapReady || !leafletRef.current) return;
     import("leaflet").then((L: any) => {
@@ -708,8 +710,8 @@ export default function SireneMapAlert() {
       markersRef.current.clear();
 
       withCoords.forEach((s: any) => {
-        const isBlinking   = activeAlerts.has(s.id);
-        const currentAlert = activeAlerts.get(s.id);
+        const isBlinking   = activeAlertsRef.current.has(s.id);
+        const currentAlert = activeAlertsRef.current.get(s.id);
 
         const icon = L.divIcon({
           className: "",
@@ -718,41 +720,14 @@ export default function SireneMapAlert() {
         });
         const marker = L.marker([parseFloat(s.latitude), parseFloat(s.longitude)], { icon }).addTo(map);
         marker.bindPopup(buildPopupHTML(s, currentAlert), { maxWidth: 280, minWidth: 240, closeButton: false });
-        marker.on("click", () => {
-          // Pas de flyTo — juste ouvrir le popup
-          marker.openPopup();
-        });
+        marker.on("click", () => marker.openPopup());
         markersRef.current.set(s.id, marker);
-
-        if (isBlinking && currentAlert) {
-          const delay = currentAlert.endAt.getTime() - Date.now();
-          if (delay > 0) {
-            const prev = blinkTimers.current.get(s.id);
-            if (prev) clearTimeout(prev);
-            const t = setTimeout(() => {
-              const m = markersRef.current.get(s.id);
-              if (m) {
-                m.setIcon(L.divIcon({ className: "", html: sireneSVG(!!s.isActive, !!s.isOwned, false), iconSize: [44,54], iconAnchor:[22,54], popupAnchor:[0,-56] }));
-                m.setPopupContent(buildPopupHTML(s, undefined));
-              }
-              setActiveAlerts(prev => { const n = new Map(prev); n.delete(s.id); return n; });
-              setBannerAlerts(prev => prev.filter(a => a.sireneId !== s.id));
-            }, delay);
-            blinkTimers.current.set(s.id, t);
-          }
-        }
       });
 
-      // Initial fitBounds sur Madagascar (une seule fois au chargement)
-      if (!focusDoneRef.current && withCoords.length > 0 && !focusId) {
-        // Ne pas faire fitBounds — garder la vue Madagascar définie à l'init
-      }
-      // Focus si ?id= présent
       if (focusId && !focusDoneRef.current) {
         const target = withCoords.find((s: any) => s.id === focusId);
         if (target) {
           focusDoneRef.current = true;
-          // Léger pan sans zoom agressif
           setTimeout(() => {
             leafletRef.current?.panTo([parseFloat(target.latitude), parseFloat(target.longitude)]);
             setTimeout(() => markersRef.current.get(focusId)?.openPopup(), 400);
@@ -760,21 +735,55 @@ export default function SireneMapAlert() {
         }
       }
     });
-  }, [mapReady, withCoords, activeAlerts]);
+  }, [mapReady, withCoords]);
+
+  // ── Mise à jour chirurgicale des markers quand les alertes changent ──────────
+  useEffect(() => {
+    if (!mapReady || !leafletRef.current) return;
+    import("leaflet").then((L: any) => {
+      markersRef.current.forEach((marker, sireneId) => {
+        const s            = withCoords.find((x: any) => x.id === sireneId);
+        if (!s) return;
+        const isBlinking   = activeAlerts.has(sireneId);
+        const currentAlert = activeAlerts.get(sireneId);
+
+        marker.setIcon(L.divIcon({
+          className: "",
+          html: sireneSVG(!!s.isActive, !!s.isOwned, isBlinking),
+          iconSize: [44, 54], iconAnchor: [22, 54], popupAnchor: [0, -56],
+        }));
+        marker.setPopupContent(buildPopupHTML(s, currentAlert));
+      });
+    });
+  }, [activeAlerts]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   const activeCount   = sirenes.filter((s: any) =>  s.isActive).length;
   const inactiveCount = sirenes.filter((s: any) => !s.isActive).length;
-  const isFiltered    = statusFilter !== "all" || hasGeoFilter;
   const blinkCount    = activeAlerts.size;
 
-  // Sélection depuis la liste latérale → pan vers la sirène
+  // Clic sur liste latérale → pan + popup détails alerte (fond gris)
   function handleSelectFromList(n: any) {
     const sid = n.sireneId ?? n.sirene?.id;
     const sirene = sirenes.find((s: any) => s.id === sid);
     if (!sirene?.latitude || !leafletRef.current) return;
-    leafletRef.current.panTo([parseFloat(sirene.latitude), parseFloat(sirene.longitude)]);
-    setTimeout(() => markersRef.current.get(sid)?.openPopup(), 400);
+
+    import("leaflet").then((L: any) => {
+      const marker = markersRef.current.get(sid);
+      if (!marker) return;
+
+      // Remplacer temporairement le contenu du popup par les détails de l'alerte (fond gris)
+      marker.setPopupContent(buildListPopupHTML(sirene, n));
+      leafletRef.current.panTo([parseFloat(sirene.latitude), parseFloat(sirene.longitude)]);
+      setTimeout(() => marker.openPopup(), 400);
+
+      // Quand le popup se ferme, restaurer le popup normal
+      marker.once("popupclose", () => {
+        const isBlinking   = activeAlerts.has(sid);
+        const currentAlert = activeAlerts.get(sid);
+        marker.setPopupContent(buildPopupHTML(sirene, currentAlert));
+      });
+    });
   }
 
   return (
@@ -794,9 +803,9 @@ export default function SireneMapAlert() {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
             {blinkCount > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 20, padding: "4px 12px" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", animation: "blink-bg 0.5s infinite alternate" }} />
-                <span style={{ fontSize: 12, color: "#92400e", fontWeight: 600 }}>{blinkCount} alerte{blinkCount > 1 ? "s" : ""} en cours</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 20, padding: "4px 12px" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626", animation: "blink-bg 0.5s infinite alternate" }} />
+                <span style={{ fontSize: 12, color: "#991b1b", fontWeight: 600 }}>{blinkCount} alerte{blinkCount > 1 ? "s" : ""} en cours</span>
               </div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -806,28 +815,13 @@ export default function SireneMapAlert() {
           </div>
         </div>
 
-        {/* ── Toolbar filtres ── */}
+        {/* ── Toolbar (statut + basemap, sans filtres zone) ── */}
         <div style={{ padding: "10px 24px", background: "#fafbfc", borderBottom: "0.5px solid #e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginRight: 2 }}>Statut</span>
             <StatusChip value="active"   current={statusFilter} label={`Actives (${activeCount})`}     color="#16a34a" bg="#f0fdf4" onClick={setStatusFilter} />
-            <StatusChip value="inactive" current={statusFilter} label={`Inactives (${inactiveCount})`} color="#dc2626" bg="#fef2f2" onClick={setStatusFilter} />
+            <StatusChip value="inactive" current={statusFilter} label={`Inactives (${inactiveCount})`} color="#eab308" bg="#fefce8" onClick={setStatusFilter} />
           </div>
-          <div style={{ width: 1, height: 22, background: "#e2e8f0", margin: "0 4px", flexShrink: 0 }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginRight: 2 }}>Zone</span>
-            <FilterSelect label="Province"   value={selProvince}  options={provinces.map((p:any)=>({id:p.id,name:p.name}))}       onChange={handleProvince} />
-            <FilterSelect label="Région"     value={selRegion}    options={filteredRegions.map((r:any)=>({id:r.id,name:r.name}))} onChange={handleRegion}    disabled={!selProvince && provinces.length > 0} />
-            <FilterSelect label="District"   value={selDistrict}  options={filteredDistricts.map(d=>({id:d.id,name:d.name}))}     onChange={handleDistrict}  disabled={!selRegion} />
-            <FilterSelect label="Commune"    value={selCommune}   options={filteredCommunes.map(c=>({id:c.id,name:c.name}))}      onChange={handleCommune}   disabled={!selDistrict} />
-            <FilterSelect label="Fokontany"  value={selFokontany} options={filteredFokontanys.map(f=>({id:f.id,name:f.name}))}   onChange={handleFokontany} disabled={!selCommune} />
-            <FilterSelect label="Village"    value={selVillage}   options={filteredVillages.map(v=>({id:v.id,name:v.name}))}     onChange={setSelVillage}   disabled={!selFokontany} />
-          </div>
-          {isFiltered && (
-            <button onClick={resetAllFilters} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-              <RotateCcw size={12} /> Réinitialiser
-            </button>
-          )}
           <div style={{ marginLeft: "auto" }}>
             <MapToggle mode={mapMode} onChange={setMapMode} />
           </div>
@@ -842,7 +836,7 @@ export default function SireneMapAlert() {
 
             <AlertPanel alerts={bannerAlerts} sirenes={sirenes} />
 
-            {isFiltered && (
+            {statusFilter !== "all" && (
               <div style={{ position: "absolute", top: 12, left: 12, zIndex: 1000, background: "rgba(255,255,255,0.95)", border: "0.5px solid #e2e8f0", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#1e293b", fontWeight: 600, boxShadow: "0 2px 8px rgba(0,0,0,0.08)", display: "flex", alignItems: "center", gap: 6 }}>
                 <Radio size={12} color="#3b82f6" />
                 {visibleSirenes.length} sirène{visibleSirenes.length > 1 ? "s" : ""} filtrée{visibleSirenes.length > 1 ? "s" : ""}
@@ -866,24 +860,24 @@ export default function SireneMapAlert() {
             )}
           </div>
 
-          {/* ── Liste latérale 24h ── */}
+          {/* ── Liste latérale : alertes du jour (01h–23h59) ── */}
           <div style={{ width: 300, flexShrink: 0, borderLeft: "0.5px solid #e2e8f0", background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {/* Header liste */}
             <div style={{ padding: "12px 14px", borderBottom: "0.5px solid #f1f5f9", background: "#fafbfc", flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <AlertTriangle size={13} color="#ea580c" />
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>Alertes récentes</span>
-                {recentNotifs.length > 0 && (
-                  <span style={{ marginLeft: "auto", background: "#eff6ff", color: "#3b82f6", fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 10 }}>
-                    {recentNotifs.length}
+                <AlertTriangle size={13} color="#dc2626" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>Alertes du jour</span>
+                {todayNotifs.length > 0 && (
+                  <span style={{ marginLeft: "auto", background: "#fef2f2", color: "#dc2626", fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 10 }}>
+                    {todayNotifs.length}
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#94a3b8" }}>Dernières 24 heures · temps réel</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                01h00 – 23h59 · {new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}
+              </div>
             </div>
-            {/* Scroll liste */}
             <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "thin" }}>
-              <NotifSideList notifs={recentNotifs} onSelect={handleSelectFromList} />
+              <NotifSideList notifs={todayNotifs} onSelect={handleSelectFromList} sirenes={sirenes} />
             </div>
           </div>
 

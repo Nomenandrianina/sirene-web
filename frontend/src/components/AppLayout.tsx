@@ -62,7 +62,7 @@ export function AppLayout({ children, noPadding }: { children: React.ReactNode; 
       <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden">
         
         {/* header */}
-        <header className="h-14 bg-white border-b border-[#e8eaed] flex items-center justify-between px-6 sticky top-0 z-40 gap-4 shadow-sm flex-shrink-0">
+        <header className="h-14 bg-white border-b border-[#e8eaed] flex items-center justify-between px-6 sticky top-0 z-[500] gap-4 shadow-sm flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="text-xs text-[#9aa0a6]">
               Plateforme d'alertes &nbsp;/&nbsp; <strong className="text-[#1a1f2e] font-semibold">{pageLabel}</strong>

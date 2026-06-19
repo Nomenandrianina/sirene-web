@@ -87,6 +87,7 @@ import SendAlerteBngrc from "./pages/alertebngrc/SendAlerteBngrc";
 import NotificationBngrcList from "./pages/notification/Notificationbngrclist";
 import SireneMapAlert from "./pages/dashboard/SireneMapAlert";
 import SireneMapHistory from "./pages/dashboard/Sirenemaphistory";
+import AlerteStory from "./pages/notification/AlerteStory";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,7 @@ const App = () => (
               <Route path="/notifications-alerte"   element={<ProtectedRoute permission="notification-bngrc:read"><NotificationBngrcList /></ProtectedRoute>} />
               <Route path="/sirene-map-alert"   element={<ProtectedRoute permission="sirene-map-alert:read"><SireneMapAlert /></ProtectedRoute>} />
               <Route path="/sirene-map-alert-history"   element={<ProtectedRoute permission="sirene-map-alert:story"><SireneMapHistory /></ProtectedRoute>} />
+              <Route path="/alert-history"   element={<ProtectedRoute permission="sirene-map-alert:story"><AlerteStory /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

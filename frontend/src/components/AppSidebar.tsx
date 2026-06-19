@@ -65,7 +65,8 @@ const alertebngrcItem: NavItem[] = [
 const notificationsItem: NavItem[] = [
   { title: "Notifications", url: "/notifications", icon: LayoutList,    permission: "notifications:read"},
   { title: "Diffusions alerte", url: "/notifications-alerte", icon: LayoutList, permission: "notification-bngrc:read"},
-  { title: "Historique des alertes", url: "/sirene-map-alert-history", icon: History  , permission: "sirene-map-alert:story" },
+  // { title: "Historique des alertes", url: "/sirene-map-alert-history", icon: History  , permission: "sirene-map-alert:story" },
+  { title: "Historique des alertes", url: "/alert-history", icon: History  , permission: "sirene-map-alert:story" },
 ];
 
 interface AppSidebarProps {

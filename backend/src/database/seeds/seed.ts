@@ -32,20 +32,20 @@ async function runSeeders() {
     await AppDataSource.initialize();
     console.log('🔌 Database connected\n');
 
-    // await seedCustomers(AppDataSource);
+    await seedCustomers(AppDataSource);
     await seedRoles(AppDataSource);
     await seedPermissions(AppDataSource);
     await seedUsers(AppDataSource);
-    // await seedProvince(AppDataSource);
-    // await seedColorCodes(AppDataSource);
-    // await seedTimeSettings(AppDataSource);
-    // await seedSettings(AppDataSource);
-    // await seedAlertes(AppDataSource);
-    // await seedCommuneFokontanyPermissions(AppDataSource);
-    // await seedZone(AppDataSource);
-    // await seedDiffusionModule(AppDataSource);
-    // await seedDiffusionConfigs(AppDataSource);
-    // await seedFokontanyVillage(AppDataSource);
+    await seedProvince(AppDataSource);
+    await seedColorCodes(AppDataSource);
+    await seedTimeSettings(AppDataSource);
+    await seedSettings(AppDataSource);
+    await seedAlertes(AppDataSource);
+    await seedCommuneFokontanyPermissions(AppDataSource);
+    await seedZone(AppDataSource);
+    await seedDiffusionModule(AppDataSource);
+    await seedDiffusionConfigs(AppDataSource);
+    await seedFokontanyVillage(AppDataSource);
 
     console.log('\n🌱 All seeders completed!');
   } catch (error) {

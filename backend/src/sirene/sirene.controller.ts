@@ -6,6 +6,7 @@ import { SmsService } from '@/sms/sms.service';
 import { Public } from 'src/common/decarators/public.decorator';
 import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 import { ROLES } from 'src/common/constants/roles.constants';
+import { RegisterSireneDto } from './dto/register-sirene.dto';
 
 class SendAlertDto {
   message: string;
@@ -16,6 +17,17 @@ class SendAlertDto {
 export class SirenesController {
   constructor(private readonly sirenesService: SirenesService,private readonly smsService: SmsService) {}
 
+
+  // Ajouter dans sirene.controller.ts
+
+  @Public()
+  @Post('register')
+  @HttpCode(HttpStatus.OK)
+  async registerSirene(
+    @Body() dto: RegisterSireneDto,
+  ): Promise<{ created: boolean; sireneId: number }> {
+    return this.sirenesService.registerOrUpdateSirene(dto.imei, dto.fcmToken);
+  }
   
   @Get('all')
   findAllNoFilter() {
@@ -24,13 +36,13 @@ export class SirenesController {
 
   @Get()
   findAll(@Request() req) {
-    const user         = req.user;
-    const roleName     = user.role?.name?.toUpperCase();
+    const user = req.user;
+    const roleName = user.role?.name?.toUpperCase();
     const isSuperAdmin = roleName === ROLES.SUPERADMIN;
     const customerId   = user.customerId ?? user.customer?.id;
     return this.sirenesService.findAll(isSuperAdmin, customerId);
   }
-  
+
   @Get('getallformap')
   findAllForMap(@Request() req) {
     const user     = req.user;

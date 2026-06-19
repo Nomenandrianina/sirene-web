@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient }    from "@tanstack/react-query";
 import { useNavigate }                              from "react-router-dom";
-import { Bell, CheckCheck, Music, Radio }           from "lucide-react";
+import { Bell, CheckCheck, Music, Radio, Siren }    from "lucide-react";
 import type { LucideIcon }                          from "lucide-react"; // ← fix erreur TS
 import { notificationsWebApi }                      from "@/services/notificationweb.api";
 import { NotificationWeb }                          from "@/types/notificationweb";
@@ -21,10 +21,11 @@ function timeAgo(dateStr: string) {
 // ─── Config par type de notification ─────────────────────────────────────────
 // LucideIcon est le bon type pour les composants Lucide — résout l'erreur TS
 const typeConfig: Record<string, { bg: string; color: string; icon: LucideIcon; label: string }> = {
-  AUDIO_PENDING:  { bg: "#fef3c7", color: "#d97706", icon: Music,  label: "Audio en attente" },
-  AUDIO_APPROVED: { bg: "#d1fae5", color: "#059669", icon: Music,  label: "Audio approuvé"   },
-  AUDIO_REJECTED: { bg: "#fee2e2", color: "#dc2626", icon: Music,  label: "Audio refusé"     },
-  BNGRC_ALERTE:   { bg: "#fff7ed", color: "#ea580c", icon: Radio,  label: "Alerte BNGRC"     },
+  AUDIO_PENDING:      { bg: "#fef3c7", color: "#d97706", icon: Music,  label: "Audio en attente" },
+  AUDIO_APPROVED:     { bg: "#d1fae5", color: "#059669", icon: Music,  label: "Audio approuvé"   },
+  AUDIO_REJECTED:     { bg: "#fee2e2", color: "#dc2626", icon: Music,  label: "Audio refusé"     },
+  BNGRC_ALERTE:       { bg: "#fff7ed", color: "#ea580c", icon: Radio,  label: "Alerte "          },
+  SIRENE_REGISTERED:  { bg: "#fef9c3", color: "#ca8a04", icon: Siren,  label: "Nouvelle sirène"  },
 };
 const DEFAULT_CONFIG: { bg: string; color: string; icon: LucideIcon; label: string } =
   { bg: "#f1f5f9", color: "#64748b", icon: Bell, label: "Notification" };
@@ -169,7 +170,7 @@ export function NotificationBell() {
         <div style={{
           position: "absolute", top: "calc(100% + 8px)", right: 0, width: 434,
           background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 200, overflow: "hidden",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 1000, overflow: "hidden",
         }}>
 
           {/* Header dropdown */}
@@ -220,6 +221,8 @@ export function NotificationBell() {
                 const IconCmp = cfg.icon;
                 const parsed  = parseMessage(notif.message);
                 const isBngrc = notif.type === "BNGRC_ALERTE";
+                const isSirene = notif.type === "SIRENE_REGISTERED";
+                const isHighlighted = isBngrc || isSirene;
                 const isUnread = !notif.isRead;
 
                 return (
@@ -230,9 +233,9 @@ export function NotificationBell() {
                       display: "flex", alignItems: "flex-start", gap: 12,
                       padding: "12px 16px",
                       cursor: notif.url ? "pointer" : "default",
-                      background: isUnread ? (isBngrc ? "#fff7ed" : "#f8faff") : "#fff",
+                      background: isUnread ? (isHighlighted ? cfg.bg : "#f8faff") : "#fff",
                       borderBottom: "1px solid #f8fafc",
-                      borderLeft: isBngrc ? `3px solid ${cfg.color}` : "3px solid transparent",
+                      borderLeft: isHighlighted ? `3px solid ${cfg.color}` : "3px solid transparent",
                       transition: "background 0.1s",
                     }}
                     onMouseEnter={e => {
@@ -241,29 +244,29 @@ export function NotificationBell() {
                     }}
                     onMouseLeave={e => {
                       (e.currentTarget as HTMLDivElement).style.background =
-                        isUnread ? (isBngrc ? "#fff7ed" : "#f8faff") : "#fff";
+                        isUnread ? (isHighlighted ? cfg.bg : "#f8faff") : "#fff";
                     }}
                   >
                     {/* Icône */}
                     <div style={{
                       width: 34, height: 34, borderRadius: 8, background: cfg.bg,
                       display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                      ...(isBngrc && isUnread ? { animation: "notif-pulse 2s infinite" } : {}),
+                      ...(isHighlighted && isUnread ? { animation: "notif-pulse 2s infinite" } : {}),
                     }}>
                       <IconCmp size={15} color={cfg.color} />
                     </div>
 
                     {/* Contenu */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Badge type BNGRC */}
-                      {isBngrc && (
+                      {/* Badge type BNGRC / SIRENE */}
+                      {isHighlighted && (
                         <div style={{ marginBottom: 3 }}>
                           <span style={{
                             fontSize: 9, fontWeight: 700, textTransform: "uppercase",
                             letterSpacing: "0.06em", color: cfg.color,
                             background: cfg.bg, padding: "1px 6px", borderRadius: 6,
                           }}>
-                            🔊 {cfg.label}
+                            {isSirene ? "🚨" : "🔊"} {cfg.label}
                           </span>
                         </div>
                       )}
@@ -309,10 +312,10 @@ export function NotificationBell() {
                         </p>
                       )}
 
-                      {/* Lien carte pour BNGRC */}
-                      {isBngrc && notif.url && (
+                      {/* Lien d'action pour BNGRC / SIRENE */}
+                      {isHighlighted && notif.url && (
                         <p style={{ fontSize: 11, color: cfg.color, margin: "3px 0 0" }}>
-                          Voir sur la carte →
+                          {isSirene ? "Configurer la sirène →" : "Voir sur la carte →"}
                         </p>
                       )}
 
@@ -326,7 +329,7 @@ export function NotificationBell() {
                     {isUnread && (
                       <div style={{
                         width: 7, height: 7, borderRadius: "50%", flexShrink: 0, marginTop: 4,
-                        background: isBngrc ? cfg.color : "#3b82f6",
+                        background: isHighlighted ? cfg.color : "#3b82f6",
                       }} />
                     )}
                   </div>

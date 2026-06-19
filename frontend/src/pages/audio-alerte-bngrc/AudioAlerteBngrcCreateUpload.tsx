@@ -23,7 +23,7 @@ export function AudioAlerteBngrcCreateUpload() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["audio-alerte-bngrc"] });
-      navigate("/audio-alerte-bngrc");
+      navigate("/audio-alerte-catastrophe");
     },
   });
 
