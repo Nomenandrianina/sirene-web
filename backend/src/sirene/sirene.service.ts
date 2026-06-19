@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Sirene }          from './entities/sirene.entity';
@@ -6,6 +6,10 @@ import { Customer }        from '../customers/entity/customer.entity';
 import { CreateSireneDto } from './dto/create-sirene.dto';
 import { UpdateSireneDto } from './dto/update-sirene.dto';
 import { AudioAlerteBngrc } from 'src/audio-alerte-bngrc/entities/audio-alerte-bngrc.entity';
+import { ROLES } from 'src/common/constants/roles.constants';
+import { User } from 'src/users/entities/user.entity';
+import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
+import { Village } from 'src/villages/entities/village.entity';
 
 @Injectable()
 export class SirenesService {
@@ -13,11 +17,20 @@ export class SirenesService {
   @InjectRepository(Sirene)
   private readonly sireneRepo: Repository<Sirene>,
 
+  @InjectRepository(User)
+  private readonly userRepository: Repository<User>,
+
   @InjectRepository(Customer)
   private readonly customerRepo: Repository<Customer>,
   
   @InjectRepository(AudioAlerteBngrc)
   private readonly audioAlerteBngrcRepo: Repository<AudioAlerteBngrc>,
+
+  @InjectRepository(Notificationsweb)
+  private readonly notificationsWebRepository: Repository<Notificationsweb>,
+
+  @InjectRepository(Village)
+  private readonly villageRepository: Repository<Village>,
 
   ) {}
 
@@ -262,6 +275,106 @@ export class SirenesService {
     }));
   }
    
+  
+
+  async registerOrUpdateSirene(
+    imei: string,
+    fcmToken: string,
+  ): Promise<{ created: boolean; sireneId: number }> {
+    const existing = await this.sireneRepo.findOne({ where: { imei } });
+  
+    if (existing) {
+      // Si imei + fcmToken sont identiques, rien à faire
+      if (existing.fcmToken === fcmToken) {
+        return { created: false, sireneId: existing.id };
+      }
+  
+      // fcmToken a changé → on met à jour
+      await this.sireneRepo.update(existing.id, { fcmToken });
+      return { created: false, sireneId: existing.id };
+    }
+  
+    // Récupérer un village existant par défaut (le dernier créé)
+    const defaultVillage = await this.villageRepository.findOne({
+      where: {},
+      order: { id: 'DESC' },
+    });
+  
+    if (!defaultVillage) {
+      throw new InternalServerErrorException(
+        'Aucun village disponible en base pour assigner la nouvelle sirène',
+      );
+    }
+  
+    // Générer le name : "Village-01", "Village-02", ...
+    const generatedName = await this.generateSireneName(defaultVillage.name);
+  
+    const newSirene = this.sireneRepo.create({
+      imei,
+      fcmToken,
+      name: generatedName,
+      villageId: defaultVillage.id,
+      isActive: 0,
+      communicationType: 'DATA',
+    });
+  
+    const saved = await this.sireneRepo.save(newSirene);
+
+     // ─── Assigner la nouvelle sirène à tous les AudioAlerteBngrc existants ───
+    const allAudios = await this.audioAlerteBngrcRepo.find({
+      relations: ['sirenes'],
+    });
+  
+    if (allAudios.length) {
+      for (const audio of allAudios) {
+        const alreadyAssigned = audio.sirenes.some(s => s.id === saved.id);
+        if (!alreadyAssigned) {
+          audio.sirenes.push(saved);
+        }
+      }
+      await this.audioAlerteBngrcRepo.save(allAudios);
+    }
+  
+    await this.notifySuperadmins(saved);
+  
+    return { created: true, sireneId: saved.id };
+  }
+
+  private async notifySuperadmins(sirene: Sirene): Promise<void> {
+    // Récupérer tous les superadmins
+    const superadmins = await this.userRepository.find({
+      where: { role: { name: ROLES.SUPERADMIN } },
+      relations: ['role'],
+    });
+
+    if (!superadmins.length) return;
+
+    const notifications = superadmins.map((admin) =>
+      this.notificationsWebRepository.create({
+        type: 'SIRENE_REGISTERED',
+        message: `Nouvelle sirène enregistrée avec l'IMEI ${sirene.imei}. Configuration requise.`,
+        entityType: 'sirene',
+        entityId: sirene.id,
+        url: `/sirenes/${sirene.id}`,
+        isRead: false,
+        userId: admin.id,
+      }),
+    );
+
+    await this.notificationsWebRepository.save(notifications);
+  }
+
+
+  private async generateSireneName(villageName: string): Promise<string> {
+    const count = await this.sireneRepo.count({
+      where: { villageId: (await this.villageRepository.findOne({ where: { name: villageName } }))?.id },
+    });
+  
+    const nextNumber = count + 1;
+    const paddedNumber = String(nextNumber).padStart(2, '0');
+  
+    return `${villageName}-${paddedNumber}`;
+  }
 
   // ── Historique alertes ────────────────────────────────────────────────
   // Retourne les logs d'audit de type alerte pour cette sirène

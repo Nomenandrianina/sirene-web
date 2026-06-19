@@ -186,7 +186,7 @@ function AudioBngrcPlayer({ audio }: { audio: NotificationBngrc["audioBngrc"] })
           : <svg width="10" height="10" viewBox="0 0 10 10" fill="#475569"><polygon points="2,1 9,5 2,9"/></svg>}
       </button>
       <span style={{ fontSize: 11, color: "#475569", fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        🎵 {audio.name || audio.originalFilename || `Audio BNGRC #${audio.id}`}
+        🎵 {audio.name || audio.originalFilename || `Audio  #${audio.id}`}
       </span>
       <span style={{ fontSize: 10, color: "#94a3b8", flexShrink: 0 }}>
         {fmtT(progress)} / {fmtT(duration)}
@@ -470,7 +470,7 @@ export default function NotificationBngrcList() {
             </button>
 
             <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: "auto" }}>
-              {result.total} diffusion{result.total > 1 ? "s" : ""} BNGRC
+              {result.total} diffusion{result.total > 1 ? "s" : ""}
             </span>
           </div>
 
@@ -496,7 +496,7 @@ export default function NotificationBngrcList() {
                 </div>
 
                 <div className="sirene-field">
-                  <label>Catégorie BNGRC</label>
+                  <label>Catégorie </label>
                   <select value={filters.categorieAlerteBngrcId ?? ""} onChange={e => updateFilter("categorieAlerteBngrcId", e.target.value ? +e.target.value : undefined)}>
                     <option value="">— Toutes —</option>
                     {cats.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -559,7 +559,7 @@ export default function NotificationBngrcList() {
                 <NotifBngrcCard
                   key={n.id}
                   n={n}
-                  onDelete={() => { setDelError(""); setDelItem({ id: n.id, name: `Diffusion BNGRC #${n.id}` }); }}
+                  onDelete={() => { setDelError(""); setDelItem({ id: n.id, name: `Diffusion  #${n.id}` }); }}
                 />
               ))
             )}
@@ -591,7 +591,7 @@ export default function NotificationBngrcList() {
       </div>
 
       <AlerteDeleteDialog
-        open={!!delItem} label="la diffusion BNGRC" itemName={delItem?.name ?? ""}
+        open={!!delItem} label="la diffusion " itemName={delItem?.name ?? ""}
         loading={deleteMut.isPending} error={delError}
         onConfirm={() => delItem && deleteMut.mutate(delItem.id)}
         onCancel={() => { setDelItem(null); setDelError(""); deleteMut.reset(); }}

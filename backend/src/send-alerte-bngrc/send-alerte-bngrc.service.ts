@@ -347,10 +347,9 @@ export class SendAlerteBngrcService {
   }
 
   private async createBngrcNotifWeb(params: {
-    typeAlerteName: string; 
-    categorieName:  string;
-    sentCount:      number;
-    totalCount:     number;
+    typeAlerteName: string; categorieName:  string;
+    sentCount: number;
+    totalCount: number;
     senderName:     string;
     customerName:   string;
     scheduledDate:  Date;
@@ -373,17 +372,14 @@ export class SendAlerteBngrcService {
    
     if (!targets.length) return;
    
-    // ── Format date/heure ──────────────────────────────────────────────────────
-    const dateLabel = scheduledDate.toLocaleDateString('fr-FR', {
-      day:   '2-digit',
-      month: '2-digit',
-      year:  'numeric',
-    }); // ex: "14/06/2026"
-   
-    const timeLabel = scheduledDate.toLocaleTimeString('fr-FR', {
-      hour:   '2-digit',
-      minute: '2-digit',
-    }); // ex: "14:33"
+    // ── Format date/heure en UTC+3 (Madagascar) ──────────────────────────────
+    // toLocaleString dépend du TZ du serveur (souvent UTC en prod) → décalage de -2h ou -3h
+    // On réutilise toMadagascarISOString qui force UTC+3 sans dépendre du TZ système
+    const madagascarISO = toMadagascarISOString(scheduledDate); // ex: "2026-06-17T11:19"
+    const [datePart, timePart] = madagascarISO.split('T');      // ["2026-06-17", "11:19"]
+    const [mdgYear, mdgMonth, mdgDay] = datePart.split('-');
+    const dateLabel = `${mdgDay}/${mdgMonth}/${mdgYear}`;        // "17/06/2026"
+    const timeLabel = timePart;                                   // "11:19"
    
     // ── Ligne principale : TypeAlerteBngrc — CategorieAlerteBngrc — X/Y sirènes — date heure
     // Ex: "Cyclone — Alerte rouge — 3/5 sirènes — 14/06/2026 à 14:33"
