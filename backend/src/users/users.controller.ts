@@ -19,8 +19,7 @@ interface RequestWithUser extends Request {
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) {}
-
+  constructor(private readonly usersService: UsersService) {}
 
   @Audit('CREATE', 'User')
   @Post()

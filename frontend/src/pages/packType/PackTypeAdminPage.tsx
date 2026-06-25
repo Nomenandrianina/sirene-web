@@ -13,7 +13,7 @@ const DEFAULT_FORM: FormState = {
   joursAutorises: null,
   dureeMaxMinutes: 15,
   prix: 0,
-  periode: 'monthly',
+  periode: 'yearly',
   creneaux: [{ heure: 7, minute: 0 }],
 };
 
@@ -55,7 +55,7 @@ export default function PackTypeAdminPage() {
       joursAutorises: pack.joursAutorises,
       dureeMaxMinutes: pack.dureeMaxMinutes,
       prix: pack.prix,
-      periode: pack.periode,
+      periode: pack.periode ?? 'yearly',
       creneaux: pack.creneaux ?? [{ heure: 7, minute: 0 }],
     });
     setError(null);
@@ -101,12 +101,12 @@ export default function PackTypeAdminPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-medium text-gray-900">Gestion des packs</h1>
           <div className="flex gap-2">
-            <button
+            {/* <button
               onClick={handleSeed}
               className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
             >
               Seed packs de base
-            </button>
+            </button> */}
             <button
               onClick={openCreate}
               className="text-sm px-4 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
@@ -159,10 +159,10 @@ export default function PackTypeAdminPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button onClick={() => openEdit(pack)} className="text-xs text-blue-600 hover:underline mr-3">
+                      <button onClick={() => openEdit(pack)} className="text-xs px-4 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
                         Modifier
                       </button>
-                      <button onClick={() => handleDelete(pack.id)} className="text-xs text-red-400 hover:underline">
+                      <button onClick={() => handleDelete(pack.id)} className="text-xs px-4 py-1.5 rounded-lg bg-red-600 text-white hover:bg-blue-700">
                         Désactiver
                       </button>
                     </td>
@@ -346,7 +346,7 @@ export default function PackTypeAdminPage() {
                   </div>
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Période</label>
                   <div className="flex gap-3">
                     {(['monthly', 'weekly'] as const).map((p) => (
@@ -363,6 +363,14 @@ export default function PackTypeAdminPage() {
                         </span>
                       </label>
                     ))}
+                  </div>
+                </div> */}
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Période</label>
+                  <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                    <span className="text-sm text-blue-700 font-medium">Annuel</span>
+                    <span className="text-xs text-blue-400">— tous les packs sont désormais annuels</span>
                   </div>
                 </div>
               </div>

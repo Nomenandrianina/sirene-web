@@ -314,7 +314,7 @@ export class SirenesService {
       fcmToken,
       name: generatedName,
       villageId: defaultVillage.id,
-      isActive: 0,
+      isActive: 1,
       communicationType: 'DATA',
     });
   

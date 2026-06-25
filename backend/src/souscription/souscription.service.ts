@@ -1,15 +1,9 @@
-import {
-  Injectable, NotFoundException, BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException,} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Souscription, SouscriptionStatus } from '@/souscription/entities/souscription.entity';
 import { PackType, Periode } from '@/packtype/entities/packtype.entity';
-import {
-  CreateSouscriptionDto,
-  UpdateSouscriptionDto,
-  SouscriptionQueryDto,
-} from '@/souscription/dto/create-souscription.dto';
+import { CreateSouscriptionDto, UpdateSouscriptionDto, SouscriptionQueryDto,} from '@/souscription/dto/create-souscription.dto';
 import { Notification } from '@/notification/entities/notification.entity';
 import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
 import { DiffusionPlanifieeService } from 'src/diffusion-planifiee/diffusion-planifiee.service';
@@ -53,10 +47,7 @@ export class SouscriptionService {
     
  
     // Générer le planning immédiatement après création
-    const withRelations = await this.repo.findOne({
-      where: { id: saved.id },
-      relations: ['packType', 'sirenes'],
-    });
+    const withRelations = await this.repo.findOne({ where: { id: saved.id }, relations: ['packType', 'sirenes'],  });
     if (withRelations) {
       await this.planifieeService.generateForSouscription(withRelations);
     }
@@ -193,10 +184,17 @@ export class SouscriptionService {
 
   private calculateEndDate(startDate: Date, pack: PackType): Date {
     const end = new Date(startDate);
-    if (pack.periode === Periode.MONTHLY) {
-      end.setMonth(end.getMonth() + 1);
-    } else {
-      end.setDate(end.getDate() + 7);
+    switch (pack.periode) {
+      case Periode.YEARLY:
+        end.setFullYear(end.getFullYear() + 1);
+        break;
+      case Periode.MONTHLY:
+        end.setMonth(end.getMonth() + 1);
+        break;
+      case Periode.WEEKLY:
+      default:
+        end.setDate(end.getDate() + 7);
+        break;
     }
     return end;
   }

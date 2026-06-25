@@ -11,13 +11,10 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // ✅ CORS restreint avec credentials
+  const appPrefix = process.env.APP_PREFIX ?? 'backend';
+
   app.enableCors({
-    origin: [
-      'https://sirene.manager.mitao-forecast.com',
-      'http://localhost:5173',
-      'http://localhost:8080',
-    ],
+    origin: (process.env.CORS_ORIGINS ?? '').split(','),
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -26,10 +23,10 @@ async function bootstrap() {
   mkdirSync(join(process.cwd(), 'uploads', 'avatars'), { recursive: true });
 
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/backend/uploads',
+    prefix: `/${appPrefix}/uploads`,
   });
 
-  app.setGlobalPrefix('backend');
+  app.setGlobalPrefix(appPrefix);
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

@@ -57,6 +57,7 @@ export class UpdateAudioAlerteBngrcDto {
     @IsOptional()
     @MaxLength(100)
     mobileId?: string;
+    
   
     @IsOptional()
     @Transform(({ value }) => parseInt(value, 10))
@@ -72,6 +73,7 @@ export class UpdateAudioAlerteBngrcDto {
       }
       return [];
     })
+    
     @IsArray()
     @IsInt({ each: true })
     sireneIds?: number[];

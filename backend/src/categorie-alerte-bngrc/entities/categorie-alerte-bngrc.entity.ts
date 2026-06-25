@@ -13,7 +13,7 @@ export class CategorieAlerteBngrc {
     @Column({ type: 'varchar', length: 500, nullable: true })
     description: string | null;
 
-    @Column({ name: 'type_alerte_bngrc_id' })
+    @Column({ name: 'type_alerte_bngrc_id' })   
     typeAlerteBngrcId: number;
 
     // Dénormalisation optionnelle : garder l'alerteBngrcId directement

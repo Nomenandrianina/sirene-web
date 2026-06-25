@@ -17,15 +17,10 @@ class SendAlertDto {
 export class SirenesController {
   constructor(private readonly sirenesService: SirenesService,private readonly smsService: SmsService) {}
 
-
-  // Ajouter dans sirene.controller.ts
-
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.OK)
-  async registerSirene(
-    @Body() dto: RegisterSireneDto,
-  ): Promise<{ created: boolean; sireneId: number }> {
+  async registerSirene(@Body() dto: RegisterSireneDto ): Promise<{ created: boolean; sireneId: number }> {
     return this.sirenesService.registerOrUpdateSirene(dto.imei, dto.fcmToken);
   }
   
@@ -105,15 +100,4 @@ export class SirenesController {
     }
   }
 
-
-  
-  /** POST /sirenes/:id/alert — déclencher une alerte SMS */
-  // @Post(':id/alert')
-  // sendAlert(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Body() dto: SendAlertDto,
-  //   @Request() req,
-  // ) {
-  //   return this.sirenesService.sendAlert(id, dto.message, req.user.id);
-  // }
 }

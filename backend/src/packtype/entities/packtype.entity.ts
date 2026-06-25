@@ -5,6 +5,7 @@ import { Souscription } from '@/souscription/entities/souscription.entity';
 export enum Periode {
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
+  YEARLY  = 'yearly',
 }
 
 export interface Creneau {
@@ -63,7 +64,7 @@ export class PackType {
   @Column({
     type: 'enum',
     enum: Periode,
-    default: Periode.MONTHLY,
+    default: Periode.YEARLY,
   })
   periode: Periode;
 
