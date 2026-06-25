@@ -5,10 +5,11 @@ import { DiffusionPlanifiee } from './entities/diffusion-planifiee.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Souscription } from 'src/souscription/entities/souscription.entity';
 import { DiffusionConfig } from 'src/diffusion-config/entities/diffusion-config.entity';
+import { AlerteAudio } from 'src/alerte-audio/entities/alerte-audio.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DiffusionPlanifiee,DiffusionConfig]),
+    TypeOrmModule.forFeature([DiffusionPlanifiee,DiffusionConfig,AlerteAudio]),
     
   ],
   controllers: [DiffusionPlanifieeController],

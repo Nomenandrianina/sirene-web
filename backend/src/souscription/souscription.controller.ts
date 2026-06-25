@@ -3,12 +3,7 @@ import {
   Body, Param, ParseIntPipe, Query, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { SouscriptionService } from './souscription.service';
-import {
-  CreateSouscriptionDto,
-  UpdateSouscriptionDto,
-  SouscriptionQueryDto,
-  AdminCreateSouscriptionDto,
-} from './dto/create-souscription.dto';
+import { CreateSouscriptionDto,UpdateSouscriptionDto,SouscriptionQueryDto,AdminCreateSouscriptionDto,} from './dto/create-souscription.dto';
 
 @Controller('souscriptions')
 export class SouscriptionController {
@@ -73,7 +68,7 @@ export class SouscriptionController {
    * (même logique, userId et customerId fournis explicitement)
    */
   @Post('admin')
-  adminCreate(@Body() dto: AdminCreateSouscriptionDto) {
+  adminCreate(@Body() dto: AdminCreateSouscriptionDto) { 
     console.log('souscription taffa');
     return this.service.create(dto);
   }

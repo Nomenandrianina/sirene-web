@@ -1,15 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate }                           from "react-router-dom";
-import { useQuery }                              from "@tanstack/react-query";
-import {
-  ChevronLeft, Loader2, Upload, Music, Play, Pause,
-  X, FileAudio, Search, Check, ChevronDown, Clock, Radio,
-} from "lucide-react";
-import { alerteBngrcApi }          from "@/services/alertebngrc.api";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, Loader2, Upload, Music, Play, Pause, X, FileAudio, Search, Check, ChevronDown, Clock, Radio,} from "lucide-react";
+import { alerteBngrcApi } from "@/services/alertebngrc.api";
 import { typeAlerteBngrcApi }      from "@/services/typeAlerteBngrc.api";
 import { categorieAlerteBngrcApi } from "@/services/categorieAlerteBngrc.api";
 import { audioAlerteBngrcApi }     from "@/services/audioAlerteBngrc.api";
-import { sirenesApi }              from "@/services/sirene.api";
+import { sirenesApi } from "@/services/sirene.api";
 import "@/styles/sirene-form.css";
 import "@/styles/alerte-audio.css";
 
@@ -41,9 +38,7 @@ function toArr(raw: any): any[] {
 
 // ── SearchableMultiSelect (sirènes — édition uniquement) ─────────────────────
 
-function SearchableMultiSelect({
-  label, placeholder, items, selected, onChange, disabled,
-}: {
+function SearchableMultiSelect({ label, placeholder, items, selected, onChange, disabled,}: {
   label:       string;
   placeholder: string;
   items:       { id: number; name: string }[];

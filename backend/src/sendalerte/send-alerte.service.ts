@@ -10,6 +10,7 @@ import { Notification, NotificationStatus } from "@/notification/entities/notifi
 import { SmsService }          from "@/sms/sms.service";
 import { SendAlerteDto }       from "./dto/send-alerte.dto";
 import { User } from "@/users/entities/user.entity";
+import { ROLES } from "src/common/constants/roles.constants";
 
 
 function toMadagascarISOString(date: Date): string {
@@ -94,8 +95,8 @@ export class SendAlerteService {
       });
    
       const customerPriority = user?.customer?.priority;
-      const isSuperAdmin = user?.role?.name?.toLowerCase().includes('superadmin');
-   
+      const isSuperAdmin = user?.role?.name?.toUpperCase() === ROLES.SUPERADMIN;
+
       if (isSuperAdmin || customerPriority === 'urgent') {
         // Le client est urgent — il peut choisir P1 ou P2 selon l'alerte
         // alertPriority est envoyé par le frontend si le client a choisi
@@ -263,38 +264,6 @@ export class SendAlerteService {
     }
   }
 
-
-  
-  
-  // async dispatchSms(notif: Notification): Promise<void> {
-  //   if (!notif.phoneNumber) {
-  //     this.logger.warn(`Notification #${notif.id} ignorée — numéro de téléphone manquant`);
-  //     await this.notifRepo.update(notif.id, {
-  //       status:      NotificationStatus.FAILED,
-  //       observation: "Numéro de téléphone manquant",
-  //     });
-  //     return;
-  //   }
-  //   try {
-  //     const response = await this.smsService.sendSms(notif.phoneNumber, notif.message);
- 
-  //     const resourceURL: string     = response?.outboundSMSMessageRequest?.resourceURL ?? "";
-  //     const messageId: string | undefined = resourceURL ? resourceURL.split("/").pop() : undefined;
- 
-  //     await this.notifRepo.update(notif.id, {
-  //       status:         NotificationStatus.SENT,
-  //       messageId:      messageId ?? undefined,
-  //       sendingTime:    new Date(),
-  //       operatorStatus: "sent",
-  //     });
-  //   } catch (err: any) {
-  //     this.logger.error(`SMS failed for notification #${notif.id} → ${notif.phoneNumber}: ${err.message}`);
-  //     await this.notifRepo.update(notif.id, {
-  //       status:      NotificationStatus.FAILED,
-  //       observation: (err.message as string)?.slice(0, 255),
-  //     });
-  //   }
-  // }
  
   @Cron(CronExpression.EVERY_MINUTE)
   async processPlannedNotifications(): Promise<void> {

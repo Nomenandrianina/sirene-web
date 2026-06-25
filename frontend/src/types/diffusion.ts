@@ -1,6 +1,6 @@
 import { Customer } from "./customer";
 
-export type Periode = 'weekly' | 'monthly';
+export type Periode = 'weekly' | 'monthly' |'yearly';
 export type SouscriptionStatus = 'active' | 'expired' | 'suspended' | 'pending';
 export type DiffusionStatus = 'sent' | 'failed';
 

@@ -11,6 +11,7 @@ import { PasswordResetToken } from './entity/password-reset-token.entity';
 
 @Injectable()
 export class AuthService {
+  
   constructor(
     @InjectRepository(PasswordResetToken)
     private passwordResetRepo: Repository<PasswordResetToken>,
@@ -45,16 +46,16 @@ export class AuthService {
     const permissions = fullUser?.role?.permissions?.map(p => p.name) ?? [];
 
     const payload = {
-      sub:         fullUser.id,
-      email:       fullUser.email,
-      role:        { id: fullUser.role?.id, name: fullUser.role?.name },
+      sub: fullUser.id,
+      email: fullUser.email,
+      role: { id: fullUser.role?.id, name: fullUser.role?.name },
       permissions, 
       customerId:  fullUser.customer?.id ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload, {
       secret:    process.env.JWT_SECRET,
-      expiresIn: "120m",
+      expiresIn: "8h",
     });
 
     const refreshToken = this.jwtService.sign(payload, {
@@ -130,7 +131,7 @@ export class AuthService {
     //     template: 'reset-password',
     //     context: { resetLink },
     // });
-}
+  }
 
     async resetPassword(token: string, newPassword: string) {
         const tokenHash = createHash('sha256').update(token).digest('hex');

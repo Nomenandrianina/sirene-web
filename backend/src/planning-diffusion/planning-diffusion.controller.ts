@@ -122,6 +122,8 @@ export class PlanningDiffusionController {
     console.log('[trigger] dateStr =', dateStr, '| new Date() =', new Date().toISOString());
 
     const result = await this.schedulerService.processDiffusionsForDate(dateStr,null);
+
+    
     return result;
   }
 

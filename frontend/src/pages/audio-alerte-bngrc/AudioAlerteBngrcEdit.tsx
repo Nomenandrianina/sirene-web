@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams }                from "react-router-dom";
-import { AppLayout }                             from "@/components/AppLayout";
+import { useNavigate, useParams } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout";
 import { AudioAlerteBngrcUploadForm, AudioAlerteBngrcUploadFormData } from "@/components/audio-alerte-bngrc/AudioAlerteBngrcUploadForm";
-import { audioAlerteBngrcApi }                   from "@/services/audioAlerteBngrc.api";
+import { audioAlerteBngrcApi } from "@/services/audioAlerteBngrc.api";
 
 export function AudioAlerteBngrcEdit() {
     const { id }   = useParams<{ id: string }>();

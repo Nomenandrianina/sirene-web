@@ -99,7 +99,7 @@ export class AlerteAudioController {
       return res.json(data);
   }
 
-  // ✅ NOUVEAU — GET /alerte-audios/public/sync/:sireneImei
+  //  NOUVEAU — GET /alerte-audios/public/sync/:sireneImei
   // La sirène ne télécharge QUE ses propres audios
   @Public()
   @Get('public/sync/:sireneImei')
