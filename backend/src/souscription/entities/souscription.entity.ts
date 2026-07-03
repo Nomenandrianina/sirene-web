@@ -72,6 +72,9 @@ export class Souscription {
   customer: Customer;
 
 
+  @Column({ type: 'int', name: 'credits_restants', nullable: true, default: null })
+  creditsRestants: number | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

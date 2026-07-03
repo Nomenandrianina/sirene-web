@@ -1,8 +1,7 @@
-// src/components/notificationsweb/NotificationBell.tsx
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient }    from "@tanstack/react-query";
 import { useNavigate }                              from "react-router-dom";
-import { Bell, CheckCheck, Music, Radio, Siren }    from "lucide-react";
+import { Bell, CheckCheck, Music, Radio, Siren ,CalendarDays, Calendar  }    from "lucide-react";
 import type { LucideIcon }                          from "lucide-react"; // ← fix erreur TS
 import { notificationsWebApi }                      from "@/services/notificationweb.api";
 import { NotificationWeb }                          from "@/types/notificationweb";
@@ -17,16 +16,21 @@ function timeAgo(dateStr: string) {
   if (h < 24) return `il y a ${h}h`;
   return `il y a ${Math.floor(h / 24)}j`;
 }
+  
 
 // ─── Config par type de notification ─────────────────────────────────────────
 // LucideIcon est le bon type pour les composants Lucide — résout l'erreur TS
 const typeConfig: Record<string, { bg: string; color: string; icon: LucideIcon; label: string }> = {
-  AUDIO_PENDING:      { bg: "#fef3c7", color: "#d97706", icon: Music,  label: "Audio en attente" },
-  AUDIO_APPROVED:     { bg: "#d1fae5", color: "#059669", icon: Music,  label: "Audio approuvé"   },
-  AUDIO_REJECTED:     { bg: "#fee2e2", color: "#dc2626", icon: Music,  label: "Audio refusé"     },
-  BNGRC_ALERTE:       { bg: "#fff7ed", color: "#ea580c", icon: Radio,  label: "Alerte "          },
-  SIRENE_REGISTERED:  { bg: "#fef9c3", color: "#ca8a04", icon: Siren,  label: "Nouvelle sirène"  },
+  AUDIO_PENDING: { bg: "#fef3c7", color: "#d97706", icon: Music,  label: "Audio en attente" },
+  AUDIO_APPROVED: { bg: "#d1fae5", color: "#059669", icon: Music,  label: "Audio approuvé"   },
+  AUDIO_REJECTED: { bg: "#fee2e2", color: "#dc2626", icon: Music,  label: "Audio refusé"     },
+  BNGRC_ALERTE:  { bg: "#fff7ed", color: "#ea580c", icon: Radio,  label: "Alerte "          },
+  SIRENE_REGISTERED: { bg: "#fef9c3", color: "#ca8a04", icon: Siren,  label: "Nouvelle sirène"  },
+  SOUSCRIPTION_CREATED: { bg: "#eff6ff", color: "#2563eb", icon: CalendarDays, label: "Souscription activée" },
+  PLANNING_ADDED: { bg: "#f0fdf4", color: "#16a34a", icon: Calendar, label: "Planning ajouté"},
 };
+
+  
 const DEFAULT_CONFIG: { bg: string; color: string; icon: LucideIcon; label: string } =
   { bg: "#f1f5f9", color: "#64748b", icon: Bell, label: "Notification" };
 

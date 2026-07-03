@@ -71,6 +71,9 @@ export class PackType {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ type: 'int', name: 'nombre_credits', nullable: true, default: null })
+  nombreCredits: number | null;
+
   @OneToMany(() => Souscription, (s) => s.packType)
   souscriptions: Souscription[];
 

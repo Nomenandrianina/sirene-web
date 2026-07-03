@@ -1,10 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Loader2, AlertCircle, Radio, Star, Trophy,
-  CalendarDays, Gauge, MapPin, RefreshCw, FileText,
-  Eye, CheckCircle2, XCircle, PauseCircle, Hourglass,
-} from "lucide-react";
+import { Loader2, AlertCircle, Radio, Star, Trophy, CalendarDays, Gauge, MapPin, RefreshCw, FileText, Eye, CheckCircle2, XCircle, PauseCircle, Hourglass,} from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useRole } from "@/hooks/useRole";
 import { souscriptionApi } from "@/services/diffusion.api";
@@ -217,6 +213,46 @@ function SouscriptionCard({
       </div>
 
       {/* Footer actions */}
+
+      {sub.status === 'active' && (
+        <div className="px-5 py-3 border-t border-slate-100 flex items-center gap-2">
+          {/* Crédits restants */}
+          {sub.creditsRestants !== null && (
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
+              ${sub.creditsRestants === 0
+                ? 'bg-red-50 text-red-700 border-red-200'
+                : sub.creditsRestants <= Math.floor((sub.packType?.nombreCredits ?? 0) * 0.2)
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full
+                ${sub.creditsRestants === 0 ? 'bg-red-400' :
+                  sub.creditsRestants <= Math.floor((sub.packType?.nombreCredits ?? 0) * 0.2)
+                    ? 'bg-amber-400' : 'bg-emerald-400'}`}
+              />
+              {sub.creditsRestants === 0
+                ? 'Crédits épuisés'
+                : `${sub.creditsRestants} crédit${sub.creditsRestants > 1 ? 's' : ''} restant${sub.creditsRestants > 1 ? 's' : ''}`}
+            </div>
+          )}
+          {sub.creditsRestants === null && (
+            <span className="text-xs text-slate-400 italic">Crédits illimités</span>
+          )}
+      
+          {/* Spacer */}
+          <div className="flex-1" />
+      
+          {/* Bouton planning */}
+          <button
+            onClick={() => onDetail()}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+              bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+          >
+            <CalendarDays size={12} />
+            Voir le planning
+          </button>
+        </div>
+      )}
      
     </div>
   );

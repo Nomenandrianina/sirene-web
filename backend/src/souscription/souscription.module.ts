@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SouscriptionService } from './souscription.service';
 import { SouscriptionController } from './souscription.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,10 +7,12 @@ import { PackType } from '@/packtype/entities/packtype.entity';
 import { Notification } from '@/notification/entities/notification.entity';
 import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
 import { DiffusionPlanifieeModule } from 'src/diffusion-planifiee/diffusion-planifiee.module';
+import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Souscription,PackType,Notification,AlerteAudio]),
-  DiffusionPlanifieeModule, 
+  imports: [TypeOrmModule.forFeature([Souscription,PackType,Notification,AlerteAudio,Notificationsweb,User]),
+  forwardRef(() => DiffusionPlanifieeModule), 
   ],
   controllers: [SouscriptionController],
   providers: [SouscriptionService],

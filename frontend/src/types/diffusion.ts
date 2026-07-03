@@ -22,6 +22,7 @@ export interface PackType {
   prix: number;
   periode: Periode;
   isActive: boolean;
+  nombreCredits: number | null;
 }
 
 export interface SouscriptionSirene {
@@ -52,7 +53,7 @@ export interface Souscription {
   packType: PackType;
   // Stats calculées côté backend
   sirenes: SouscriptionSirene[];
-
+  creditsRestants?: number | null; 
   joursRestants?: number;
   estExpire?: boolean;
   dateFinFormatee?: string;

@@ -88,6 +88,7 @@ import NotificationBngrcList from "./pages/notification/Notificationbngrclist";
 import SireneMapAlert from "./pages/dashboard/SireneMapAlert";
 import SireneMapHistory from "./pages/dashboard/Sirenemaphistory";
 import AlerteStory from "./pages/notification/AlerteStory";
+import PlanningClientPage from "./pages/planning/Planningclientpage";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,8 @@ const App = () => (
               <Route path="/souscription/new" element={<ProtectedRoute permission="souscriptions:create"><SouscriptionNewPage /></ProtectedRoute>} />
               {/* <Route path="/souscriptionsadmins" element={<ProtectedRoute><SouscriptionsListPage /></ProtectedRoute>} /> */}
               <Route path="/planning" element={<ProtectedRoute permission="planning:read"><PlanningDiffusionPage /></ProtectedRoute>} />
+              <Route path="/planning-customer" element={<ProtectedRoute permission="planning:read"><PlanningClientPage /></ProtectedRoute>} />
+              
               <Route path="/parametrage-diffusion" element={<ProtectedRoute adminOnly><DiffusionConfigPage /></ProtectedRoute>} />
               <Route path="/Offreclient" element={<ProtectedRoute permission="offre:read"><MesOffres  /></ProtectedRoute>} />
               <Route path="/alerte-audios/:id/review" element={<ProtectedRoute permission="alerte-audios:review"><AlerteAudioReview /></ProtectedRoute>} />
