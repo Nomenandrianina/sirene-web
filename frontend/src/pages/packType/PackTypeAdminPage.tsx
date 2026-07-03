@@ -14,6 +14,7 @@ const DEFAULT_FORM: FormState = {
   dureeMaxMinutes: 15,
   prix: 0,
   periode: 'yearly',
+  nombreCredits: null, 
   creneaux: [{ heure: 7, minute: 0 }],
 };
 
@@ -57,6 +58,7 @@ export default function PackTypeAdminPage() {
       prix: pack.prix,
       periode: pack.periode ?? 'yearly',
       creneaux: pack.creneaux ?? [{ heure: 7, minute: 0 }],
+      nombreCredits: pack.nombreCredits ?? null, 
     });
     setError(null);
     setShowForm(true);
@@ -133,6 +135,7 @@ export default function PackTypeAdminPage() {
                   <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Jours/sem.</th>
                   <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Créneau max</th>
                   <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Prix</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Crédits / an</th>
                   <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Statut</th>
                   <th className="px-4 py-2.5" />
                 </tr>
@@ -153,6 +156,12 @@ export default function PackTypeAdminPage() {
                     <td className="px-4 py-3 text-gray-600">{pack.joursParSemaine}j</td>
                     <td className="px-4 py-3 text-gray-600">{pack.dureeMaxMinutes} min</td>
                     <td className="px-4 py-3 text-gray-600">{pack.prix.toLocaleString('fr-FR')} Ar</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {pack.nombreCredits != null
+                        ? pack.nombreCredits
+                        : <span className="text-xs text-gray-400 italic">Illimité</span>
+                      }
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${pack.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {pack.isActive ? 'Actif' : 'Inactif'}
@@ -346,7 +355,32 @@ export default function PackTypeAdminPage() {
                   </div>
                 </div>
 
-                {/* <div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Crédits / an
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.nombreCredits ?? ''}
+                      placeholder="Laisser vide = illimité"
+                      onChange={(e) =>
+                        set('nombreCredits', e.target.value === '' ? null : Number(e.target.value))
+                      }
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
+                    />
+                    {form.nombreCredits == null && (
+                      <span className="text-xs text-blue-500 whitespace-nowrap">Illimité</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    1 crédit = 1 diffusion sur 1 sirène. Laisser vide pour illimité.
+                  </p>
+                </div>
+                
+
+                <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Période</label>
                   <div className="flex gap-3">
                     {(['monthly', 'weekly'] as const).map((p) => (
@@ -364,15 +398,15 @@ export default function PackTypeAdminPage() {
                       </label>
                     ))}
                   </div>
-                </div> */}
+                </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Période</label>
                   <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
                     <span className="text-sm text-blue-700 font-medium">Annuel</span>
                     <span className="text-xs text-blue-400">— tous les packs sont désormais annuels</span>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {error && (

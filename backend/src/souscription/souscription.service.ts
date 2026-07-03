@@ -7,6 +7,8 @@ import { CreateSouscriptionDto, UpdateSouscriptionDto, SouscriptionQueryDto,} fr
 import { Notification } from '@/notification/entities/notification.entity';
 import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
 import { DiffusionPlanifieeService } from 'src/diffusion-planifiee/diffusion-planifiee.service';
+import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
+import { User }             from 'src/users/entities/user.entity';
 
 @Injectable()
 export class SouscriptionService {
@@ -18,6 +20,12 @@ export class SouscriptionService {
 
     private readonly planifieeService: DiffusionPlanifieeService,
 
+    @InjectRepository(Notificationsweb)
+    private readonly notifWebRepo: Repository<Notificationsweb>,
+
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+
   ) {}
 
   // ── CREATE ──────────────────────────────────────────────────────────────────
@@ -28,32 +36,65 @@ export class SouscriptionService {
     });
     if (!pack) throw new NotFoundException('Pack introuvable');
     if (!dto.sireneIds?.length) throw new BadRequestException('Au moins une sirène requise');
- 
+   
     const startDate = dto.startDate ? new Date(dto.startDate) : new Date();
     const endDate   = this.calculateEndDate(startDate, pack);
- 
+   
     const souscription = this.repo.create({
-      userId:      dto.userId,
-      customerId:  dto.customerId,
-      packTypeId:  dto.packTypeId,
-      alerteAudioId: null,
+      userId:          dto.userId,
+      customerId:      dto.customerId,
+      packTypeId:      dto.packTypeId,
+      alerteAudioId:   null,
       startDate,
       endDate,
-      status: SouscriptionStatus.ACTIVE,
-      sirenes: dto.sireneIds.map((id) => ({ id })),
+      status:          SouscriptionStatus.ACTIVE,
+      creditsRestants: pack.nombreCredits ?? null, // ← null si pack illimité
+      sirenes:         dto.sireneIds.map((id) => ({ id })),
     });
- 
+   
+    // ✅ On sauvegarde sans générer aucun planning
     const saved = await this.repo.save(souscription);
+ 
+    // Notifier les users CUSTOMER_ADMIN et CUSTOMER_OPERATOR du client
+    await this.notifyClientUsers(dto.customerId, saved.id, pack.name);
     
- 
-    // Générer le planning immédiatement après création
-    const withRelations = await this.repo.findOne({ where: { id: saved.id }, relations: ['packType', 'sirenes'],  });
-    if (withRelations) {
-      await this.planifieeService.generateForSouscription(withRelations);
-    }
- 
     return saved;
   }
+   
+
+
+  // async create(dto: CreateSouscriptionDto): Promise<Souscription> {
+  //   const pack = await this.packRepo.findOne({
+  //     where: { id: dto.packTypeId, isActive: true },
+  //   });
+  //   if (!pack) throw new NotFoundException('Pack introuvable');
+  //   if (!dto.sireneIds?.length) throw new BadRequestException('Au moins une sirène requise');
+ 
+  //   const startDate = dto.startDate ? new Date(dto.startDate) : new Date();
+  //   const endDate   = this.calculateEndDate(startDate, pack);
+ 
+  //   const souscription = this.repo.create({
+  //     userId:      dto.userId,
+  //     customerId:  dto.customerId,
+  //     packTypeId:  dto.packTypeId,
+  //     alerteAudioId: null,
+  //     startDate,
+  //     endDate,
+  //     status: SouscriptionStatus.ACTIVE,
+  //     sirenes: dto.sireneIds.map((id) => ({ id })),
+  //   });
+ 
+  //   const saved = await this.repo.save(souscription);
+    
+ 
+  //   // Générer le planning immédiatement après création
+  //   const withRelations = await this.repo.findOne({ where: { id: saved.id }, relations: ['packType', 'sirenes'],  });
+  //   if (withRelations) {
+  //     await this.planifieeService.generateForSouscription(withRelations);
+  //   }
+ 
+  //   return saved;
+  // }
 
   // ── READ ─────────────────────────────────────────────────────────────────────
 
@@ -199,9 +240,24 @@ export class SouscriptionService {
     return end;
   }
 
+  // private enrichWithStats(s: Souscription): SouscriptionWithStats {
+  //   const today       = new Date();
+  //   const endDate     = new Date(s.endDate);
+  //   const joursRestants = Math.max(
+  //     0,
+  //     Math.ceil((endDate.getTime() - today.getTime()) / 86_400_000),
+  //   );
+  //   return {
+  //     ...s,
+  //     joursRestants,
+  //     estExpire: today > endDate,
+  //     dateFinFormatee: endDate.toLocaleDateString('fr-FR'),
+  //   };
+  // }
+
   private enrichWithStats(s: Souscription): SouscriptionWithStats {
-    const today       = new Date();
-    const endDate     = new Date(s.endDate);
+    const today         = new Date();
+    const endDate       = new Date(s.endDate);
     const joursRestants = Math.max(
       0,
       Math.ceil((endDate.getTime() - today.getTime()) / 86_400_000),
@@ -209,10 +265,92 @@ export class SouscriptionService {
     return {
       ...s,
       joursRestants,
-      estExpire: today > endDate,
+      estExpire:       today > endDate,
       dateFinFormatee: endDate.toLocaleDateString('fr-FR'),
+      // creditsRestants est déjà dans ...s car c'est une colonne de l'entité
     };
   }
+
+
+  /**
+   * Décrémente de 1 le crédit d'une souscription.
+   * Appelé par DiffusionPlanifieeService lors de l'ajout d'une ligne de planning.
+   * Lance BadRequestException si crédits épuisés.
+   * Ne fait rien si creditsRestants = null (illimité).
+  */
+  async decrementCredit(souscriptionId: number): Promise<void> {
+    const s = await this.repo.findOne({ where: { id: souscriptionId } });
+    if (!s) throw new NotFoundException(`Souscription #${souscriptionId} introuvable`);
+ 
+    // null = illimité → pas de décrément
+    if (s.creditsRestants === null) return;
+ 
+    if (s.creditsRestants <= 0) {
+      throw new BadRequestException(
+        'Crédits épuisés — impossible d\'ajouter une diffusion',
+      );
+    }
+ 
+    await this.repo.update(souscriptionId, {
+      creditsRestants: s.creditsRestants - 1,
+    });
+  }
+ 
+  /**
+   * Restitue 1 crédit lors de l'annulation d'une diffusion planifiée.
+   * Ne fait rien si creditsRestants = null (illimité).
+   */
+  async restituerCredit(souscriptionId: number): Promise<void> {
+    const s = await this.repo.findOne({ where: { id: souscriptionId } });
+    if (!s) throw new NotFoundException(`Souscription #${souscriptionId} introuvable`);
+ 
+    // null = illimité → pas de restitution
+    if (s.creditsRestants === null) return;
+ 
+    await this.repo.update(souscriptionId, {
+      creditsRestants: s.creditsRestants + 1,
+    });
+  }
+
+
+  
+  // ── Nouvelle méthode privée à ajouter dans SouscriptionService ──────────────
+  private async notifyClientUsers( customerId: number, souscriptionId: number, packName: string,): Promise<void> {
+    // Charger tous les users du client avec rôle CUSTOMER_ADMIN ou CUSTOMER_OPERATOR
+    console.log("client_id :",customerId);
+    const targets = await this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.role', 'r')
+      .where('u.customer_id = :cid', { cid: customerId })
+      .andWhere('r.name IN (:...roles)', {
+        roles: ['CUSTOMER_ADMIN', 'CUSTOMER_OPERATOR'],
+      })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
+  
+    if (!targets.length) return;
+  
+    const mainText = `Nouvelle souscription — Pack ${packName} activé pour votre compte`;
+    // Format compatible parseMessage frontend : "texte||userName||customerName"
+    const message = mainText;
+  
+    const notifs = targets.map(user => {
+      const n      = new Notificationsweb();
+      n.type       = 'SOUSCRIPTION_CREATED';
+      n.message    = message;
+      n.entityType = 'souscription';
+      n.entityId   = souscriptionId;
+      n.url        = '/planning-customer';
+      n.isRead     = false;
+      n.userId     = user.id;
+      return n;
+    });
+  
+    await this.notifWebRepo.save(notifs);
+  }
+  
+ 
+
 }
 
 export interface SouscriptionWithStats extends Souscription {

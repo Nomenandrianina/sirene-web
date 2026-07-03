@@ -46,6 +46,9 @@ import {
     @ManyToOne(() => Sirene, { nullable: false })
     @JoinColumn({ name: 'sirene_id' })
     sirene: Sirene;
+
+    @Column({ name: 'alerte_audio_id', type: 'int', nullable: true, default: null })
+    alerteAudioId: number | null;
   
     /**
      * Renseigné après l'envoi SMS — FK vers notification_sirene_alerte
