@@ -279,6 +279,10 @@ export default function SouscriptionStepper({ userId, customerId, onSuccess }: S
             <p style="margin-top:8px;color:#64748b">
               📡 <strong>${selectedIds.size}</strong> sirène${selectedIds.size > 1 ? 's' : ''} associée${selectedIds.size > 1 ? 's' : ''}
             </p>
+            ${selectedPack.nombreCredits != null ? `
+            <p style="margin-top:4px;color:#7c3aed;font-size:13px">
+              💳 ${selectedPack.nombreCredits} crédits par sirène (indépendants)
+            </p>` : ''}
           </div>
         `,
         confirmButtonText: 'Voir la liste',
@@ -327,6 +331,12 @@ export default function SouscriptionStepper({ userId, customerId, onSuccess }: S
         Pack <strong className="capitalize">{selectedPack?.name}</strong> activé sur{' '}
         <strong>{selectedIds.size}</strong> sirène{selectedIds.size > 1 ? 's' : ''}.
       </p>
+
+      {selectedPack?.nombreCredits != null && (
+        <p className="text-xs text-green-600 mb-1">
+          Chaque sirène dispose de <strong>{selectedPack.nombreCredits} crédits</strong> indépendants.
+        </p>
+      )}
       <p className="text-xs text-green-500 mt-1">
         Associez vos audios aux sirènes souscrites depuis la gestion des audios.
       </p>
@@ -579,6 +589,25 @@ export default function SouscriptionStepper({ userId, customerId, onSuccess }: S
                 })}
               </div>
             </div>
+
+            {/* Crédits — un pool indépendant PAR sirène */}
+            {selectedPack?.nombreCredits != null && (
+              <div className="px-5 py-4">
+                <div className="text-xs font-medium text-slate-500 mb-2">Crédits alloués</div>
+                <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5">
+                  <span className="text-lg">💳</span>
+                  <div className="text-xs text-violet-700">
+                    <strong>{selectedPack.nombreCredits} crédits</strong> par sirène — chaque sirène
+                    sélectionnée dispose de son <strong>propre pool indépendant</strong>, non partagé.
+                    <div className="mt-1 text-violet-500">
+                      Soit <strong>{selectedPack.nombreCredits * selectedIds.size}</strong> crédits distribués
+                      au total sur {selectedIds.size} sirène{selectedIds.size > 1 ? 's' : ''}.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Total */}
             <div className="px-5 py-4 flex justify-between items-center">
               <div>
@@ -593,13 +622,20 @@ export default function SouscriptionStepper({ userId, customerId, onSuccess }: S
                 <div className="text-lg font-bold text-slate-900">
                   {Number(selectedPack?.prix).toLocaleString('fr-FR')} Ar
                 </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  Prix fixe, quel que soit le nombre de sirènes
+                </div>
               </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700 flex gap-2">
             <span className="shrink-0 mt-0.5">💡</span>
-            <span>Après confirmation, associez vos audios aux sirènes souscrites depuis la gestion des audios.</span>
+            {/* <span>Après confirmation, associez vos audios aux sirènes souscrites depuis la gestion des audios.</span> */}
+            <span>
+              Après confirmation, associez vos audios aux sirènes souscrites depuis la gestion des audios.
+              Chaque sirène gère ensuite ses diffusions et ses crédits indépendamment.
+            </span>
           </div>
 
           {error && (

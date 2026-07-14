@@ -12,13 +12,22 @@ export class DiffusionPlanifieeController {
 
   @Get('client-planning')
   getClientPlanning(
-    @Query('customerId',     ParseIntPipe) customerId:     number,
-    @Query('sireneId',       ParseIntPipe) sireneId:       number,
-    @Query('souscriptionId', ParseIntPipe) souscriptionId: number,
-    @Query('from')                         from:           string,
-    @Query('to')                           to:             string,
+    @Query('customerId')     customerIdStr:     string,
+    @Query('souscriptionId') souscriptionIdStr: string,
+    @Query('from')           from:              string,
+    @Query('to')             to:                string,
+    @Query('sireneId')       sireneIdStr?:      string,
   ) {
+    const customerId     = Number(customerIdStr);
+    const souscriptionId = Number(souscriptionIdStr);
+    const sireneId       =  Number(sireneIdStr) ;
+
     return this.diffusionPlanifieeService.getClientPlanning({ customerId, sireneId, souscriptionId, from, to });
+  }
+
+  @Patch(':id/cancel')
+  cancel(@Param('id', ParseIntPipe) id: number, @Body('cancelledBy') cancelledBy: number, ) {
+    return this.diffusionPlanifieeService.cancel(id, cancelledBy);
   }
   
   // POST /diffusion-planifiee/client-add

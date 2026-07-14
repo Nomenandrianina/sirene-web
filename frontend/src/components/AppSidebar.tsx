@@ -1,4 +1,4 @@
-import { LayoutDashboard, AlertTriangle, Radio, Bell, Users, Building2, MapPin, LogOut, ChevronLeft, ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings, TriangleAlert, Siren, History,} from "lucide-react";
+import { LayoutDashboard, AlertTriangle, Radio, Bell, Users, Building2, MapPin, LogOut, ChevronLeft, ShieldCheck, Lock, Tag, FolderOpen, Layers, Music, LayoutList, Send,MapPinCheckInside, Package, FileCheck, CalendarClock, Settings2, Settings, TriangleAlert, Siren, History, CalendarCheck, ListCheck,} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import "../styles/app-layout.css";
@@ -9,9 +9,9 @@ import { useRole } from "@/hooks/useRole";
 // Chaque item peut avoir une permission requise (optionnelle)
 // Si pas de permission → visible par tous les connectés
 interface NavItem {
-  title:      string;
-  url:        string;
-  icon:       any;
+  title:string;
+  url:  string;
+  icon: any;
   permission?: string;  // masqué si l'user n'a pas cette permission
 }
 
@@ -25,7 +25,7 @@ const mainItems: NavItem[] = [
   { title: "Pack", url: "/pack", icon: Package , permission: "pack-types:read"},
   { title: "Souscription", url: "/souscription", icon: FileCheck , permission: "souscriptions:read" },
   { title: "Planning", url: "/planning", icon: CalendarClock , permission: "planning:read" },
-  { title: "Mes plannings", url: "/planning-customer", icon: CalendarClock , permission: "planning:read" },
+  { title: "Mes plannings", url: "/planning-customer", icon: CalendarCheck , permission: "planning:read-customer" },
   { title: "Mes offres", url: "/Offreclient", icon: Tag  , permission: "offre:read" },
 ];
 
@@ -35,7 +35,7 @@ const dataItems: NavItem[] = [
   { title: "Districts", url: "/districts", icon: MapPin, permission: "districts:read" },
   { title: "Communes",  url: "/communes",  icon: MapPin, permission: "communes:read"  },
   { title: "Fokontany",  url: "/fokontany",  icon: MapPin, permission: "fokontany:read"  },
-  { title: "Villages",  url: "/villages",  icon: MapPin, permission: "villages:read"  },
+  { title: "Villages",  url: "/villages",  icon: MapPin, permission: "villages:read"  }
 ];
 
 const alertItems: NavItem[] = [
@@ -65,7 +65,7 @@ const alertebngrcItem: NavItem[] = [
 
 const notificationsItem: NavItem[] = [
   { title: "Notifications", url: "/notifications", icon: LayoutList,    permission: "notifications:read"},
-  { title: "Diffusions alerte", url: "/notifications-alerte", icon: LayoutList, permission: "notification-bngrc:read"},
+  { title: "Diffusions alerte", url: "/notifications-alerte", icon: ListCheck, permission: "notification-bngrc:read"},
   // { title: "Historique des alertes", url: "/sirene-map-alert-history", icon: History  , permission: "sirene-map-alert:story" },
   { title: "Historique des alertes", url: "/alert-history", icon: History  , permission: "sirene-map-alert:story" },
 ];

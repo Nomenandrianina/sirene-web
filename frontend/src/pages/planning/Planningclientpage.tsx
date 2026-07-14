@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { useRole } from '@/hooks/useRole';
@@ -7,12 +7,7 @@ import { souscriptionApi } from '@/services/diffusion.api';
 import { diffusionPlanifieeApi } from '@/services/diffusionplanniee.api';
 import type { Souscription } from '@/types/diffusion';
 import { usePlanningClient, JOURS_FR, fmtDate, fmtHeure, addDays, toISO, type ClientPlanningSlot, type AudioDisponible, } from '@/types/useplanningclient';
-import {
-  ChevronLeft, ChevronRight, RotateCcw, Clock, CheckCircle,
-  Loader2, X, Plus, Radio, AlertTriangle, Lock, CreditCard,
-  Pencil, Wand2, Shuffle,
-} from 'lucide-react';
-
+import { ChevronLeft, ChevronRight, RotateCcw, Clock, CheckCircle, Loader2, X, Plus, Radio, AlertTriangle, Lock, CreditCard, Pencil, Wand2, Shuffle, CalendarRange, Sparkles, PackageCheck,} from 'lucide-react';
 const STATUS_CFG = {
   planned:   { label: 'Planifié', color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-200',  dot: 'bg-blue-400'  },
   sent:      { label: 'Envoyé',   color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', dot: 'bg-green-400' },
@@ -35,6 +30,61 @@ function Toast({ message, type = 'success', onClose }: {
       <button onClick={onClose} className="ml-2 p-0.5 hover:bg-white/20 rounded transition-colors">
         <X size={13} />
       </button>
+    </div>
+  );
+}
+
+function ModalConfirmCancel({
+  item, onClose, onConfirm, cancelling,
+}: {
+  item: ClientPlanningSlot['items'][0];
+  onClose: () => void;
+  onConfirm: () => void;
+  cancelling: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="bg-red-600 px-5 py-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white">Annuler la diffusion ?</h3>
+            <p className="text-xs text-red-100 mt-0.5">
+              Diffusion du {fmtHeure(item.scheduledHeure, item.scheduledMinute)}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10">
+            <X size={16} className="text-red-100" />
+          </button>
+        </div>
+        <div className="px-5 py-4 flex flex-col gap-3">
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+            <AlertTriangle size={13} className="text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-700">
+              Cette action est irréversible. Le crédit utilisé vous sera restitué.
+            </p>
+          </div>
+          {item.audioName && (
+            <p className="text-xs text-slate-500">
+              Son prévu : <span className="font-medium text-slate-700">{item.audioName}</span>
+            </p>
+          )}
+        </div>
+        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
+            Retour
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+          >
+            {cancelling
+              ? <><Loader2 size={14} className="animate-spin" /> Annulation…</>
+              : <><X size={14} /> Confirmer l'annulation</>}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -68,7 +118,7 @@ function PlanningCell({
   slot:           ClientPlanningSlot | null;
   noCredits:      boolean;
   onClickAdd:     () => void;
-  onClickCancel:  (id: number) => void;
+  onClickCancel:  (item: ClientPlanningSlot['items'][0]) => void; // ← changé
   onClickModify:  (item: ClientPlanningSlot['items'][0]) => void;
   cancelling:     number | null;
 }) {
@@ -113,10 +163,10 @@ function PlanningCell({
           `${slot.date}T${String(item.scheduledHeure).padStart(2,'0')}:${String(item.scheduledMinute).padStart(2,'0')}:00`
         );
         const canModify = item.status === 'planned' &&
-          (scheduledAt.getTime() - Date.now()) > 24 * 3_600_000;
+          (scheduledAt.getTime() - Date.now()) >= 24 * 3_600_000;
 
         return (
-          <div key={item.id} className={`rounded-lg px-2 py-1.5 border flex flex-col gap-0.5 group ${cfg.bg} ${cfg.border}`}>
+        <div key={item.id}  className={`rounded-lg px-2 py-2 border flex flex-col gap-1 ${cfg.bg} ${cfg.border}`}>
             <div className="flex items-center justify-between gap-1">
               <div className="flex items-center gap-1.5">
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
@@ -125,30 +175,34 @@ function PlanningCell({
                 </span>
                 <span className={`text-[10px] ${cfg.color} opacity-60`}>{cfg.label}</span>
               </div>
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
-                {/* Bouton modifier audio */}
+
+              {/* ── Icônes TOUJOURS visibles (plus opacity-0) ── */}
+              <div className="flex items-center gap-1">
                 {canModify && (
                   <button
                     onClick={e => { e.stopPropagation(); onClickModify(item); }}
-                    className="p-0.5 rounded text-slate-300 hover:text-blue-500 transition-colors"
-                    title="Changer le son (disponible > 24h avant)"
+                    className="p-1 rounded-md bg-blue-100 hover:bg-blue-200 transition-colors"
+                    title="Modifier le son"
                   >
-                    <Pencil size={9} />
+                    <Pencil size={11} className="text-blue-600" />
                   </button>
                 )}
-                {/* Bouton annuler */}
                 {item.canCancel && (
                   <button
-                    onClick={e => { e.stopPropagation(); onClickCancel(item.id); }}
+                    onClick={e => { e.stopPropagation(); onClickCancel(item); }} // ← passe item entier
                     disabled={cancelling === item.id}
-                    className="p-0.5 rounded text-slate-300 hover:text-red-500 transition-colors"
+                    className="p-1 rounded-md bg-red-100 hover:bg-red-200 transition-colors"
                     title="Annuler cette diffusion"
                   >
-                    {cancelling === item.id ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
+                    {cancelling === item.id
+                      ? <Loader2 size={11} className="animate-spin text-red-500" />
+                      : <X size={11} className="text-red-500" />}
                   </button>
                 )}
               </div>
             </div>
+
+
             {item.audioName && (
               <div className="flex items-center gap-1 pl-3">
                 <span className="text-[9px] text-slate-400 truncate max-w-[90px]" title={item.audioName}>
@@ -156,6 +210,16 @@ function PlanningCell({
                 </span>
               </div>
             )}
+
+            {item.sireneName && (
+              <div className="flex items-center gap-1 pl-3">
+                <Radio size={8} className="text-slate-400 shrink-0" />
+                <span className="text-[9px] text-slate-400 truncate" title={item.sireneName}>
+                  {item.sireneName}
+                </span>
+              </div>
+            )}
+                
           </div>
         );
       })}
@@ -399,6 +463,10 @@ export default function PlanningClientPage() {
   const { customerId, userId } = useRole();
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
+  const [confirmCancelItem, setConfirmCancelItem] = useState<ClientPlanningSlot['items'][0] | null>(null);
+  const [sireneId, setSireneId] = useState<number | null>(null);
+
+
 
   const [souscriptionId, setSouscriptionId] = useState<number>(
     Number(searchParams.get('souscriptionId')) || 0
@@ -416,12 +484,22 @@ export default function PlanningClientPage() {
 
   const { data: rawSubs } = useQuery({
     queryKey: ['souscriptions', 'client', customerId],
-    queryFn:  () => souscriptionApi.getAll(customerId!),
+    queryFn:  () => souscriptionApi.getAll({customerId}),
     enabled:  !!customerId,
   });
   const souscriptions: Souscription[] = Array.isArray(rawSubs) ? rawSubs : (rawSubs as any)?.data ?? [];
   const activeSubs = souscriptions.filter(s => s.status === 'active');
   const selectedSub = activeSubs.find(s => s.id === souscriptionId) ?? activeSubs[0];
+
+  useEffect(() => {
+     if (selectedSub?.sirenes?.length) {
+       // Si l'ancien sireneId n'appartient plus à cette souscription, on reset sur la 1ère
+       const stillValid = selectedSub.sirenes.some(s => s.id === sireneId);
+       if (!stillValid) setSireneId(selectedSub.sirenes[0].id);
+     } else {
+       setSireneId(null);
+     }
+   }, [selectedSub?.id]);
 
   // ── Plus de sélecteur de sirène — propagation auto ────────────────────────
   // On charge le planning sur toutes les sirènes via souscriptionId uniquement
@@ -429,8 +507,8 @@ export default function PlanningClientPage() {
   const planning = usePlanningClient({
     customerId:     customerId ?? 0,
     souscriptionId: selectedSub?.id ?? 0,
-    sireneId:       0, // 0 = toutes les sirènes
-    enabled:        !!customerId && !!selectedSub,
+    sireneId: sireneId ?? 0,
+    enabled: !!customerId && !!selectedSub && !!sireneId,
   });
 
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -444,10 +522,15 @@ export default function PlanningClientPage() {
   const modifyMutation = useMutation({
     mutationFn: ({ diffusionId, alerteAudioId }: { diffusionId: number; alerteAudioId: number }) =>
       diffusionPlanifieeApi.clientModify({ diffusionId, alerteAudioId, customerId: customerId! }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['client-planning'] });
       setModalModify(null);
-      showToast('Son modifié avec succès');
+      const audioName = planning.audios.find(a => a.id === variables.alerteAudioId)?.name
+        ?? `Audio #${variables.alerteAudioId}`;
+      showToast(`✅ Son modifié : "${audioName}"`);
+    },
+    onError: () => {
+      showToast("❌ Erreur lors de la modification", 'error');
     },
   });
 
@@ -457,6 +540,7 @@ export default function PlanningClientPage() {
       diffusionPlanifieeApi.clientAutoGenerate({
         souscriptionId: selectedSub!.id,
         customerId:     customerId!,
+        sireneId:       sireneId!,
         audioIds,
       }),
     onSuccess: (result) => {
@@ -468,174 +552,283 @@ export default function PlanningClientPage() {
   });
 
   const handleConfirmAdd = async (audioId: number) => {
-    if (!modalSlot || !selectedSub) return;
+    if (!modalSlot || !selectedSub || !sireneId) return;
     try {
       await planning.addDiffusion({
         souscriptionId: selectedSub.id,
-        customerId:     customerId!,
-        alerteAudioId:  audioId,
-        date:           modalSlot.date,
-        heure:          modalSlot.heure,
+        customerId: customerId!,
+        alerteAudioId: audioId,
+        date: modalSlot.date,
+        heure: modalSlot.heure,
+       sireneId,
       });
       setModalSlot(null);
       const audioName = planning.audios.find(a => a.id === audioId)?.name ?? `Audio #${audioId}`;
-      showToast(`✅ "${audioName}" ajouté au créneau ${fmtHeure(modalSlot.heure, 0)} du ${fmtDate(modalSlot.date)} — toutes sirènes`);
+      showToast(`✅ "${audioName}" ajouté au créneau ${fmtHeure(modalSlot.heure, 0)} du ${fmtDate(modalSlot.date)}`);
     } catch { /* addError géré dans la modale */ }
   };
 
   const handleCancel = async (id: number) => {
     if (!userId) return;
-    await planning.cancelDiffusion(id, userId);
-    showToast('Diffusion annulée — 1 crédit restitué');
+    try {
+      await planning.cancelDiffusion(id, userId);
+      setConfirmCancelItem(null);
+      showToast('✅ Diffusion annulée — 1 crédit restitué');
+    } catch {
+      showToast("❌ Erreur lors de l'annulation", 'error');
+    }
   };
 
   return (
     <AppLayout>
-      <div className="page-wrap">
-        <div className="page-header">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">Planning des diffusions</h1>
-            <p className="page-subtitle">Gérez vos diffusions — propagation automatique sur toutes vos sirènes</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Bouton génération automatique */}
-            <button
-              onClick={() => setShowAutoGenerate(true)}
-              disabled={noCredits || !planning.audios.length}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 transition-colors"
-            >
-              <Wand2 size={12} /> Générer automatiquement
-            </button>
-            <CreditBadge restants={planning.creditsRestants} total={planning.nombreCredits} />
-          </div>
-        </div>
+        <div className="bg-gradient-to-b from-slate-50 to-white min-h-full -m-6 p-6">
+          <div className="flex flex-col gap-5">
 
-        {/* Sélecteur souscription si plusieurs */}
-        {activeSubs.length > 1 && (
-          <div className="mt-4">
-            <select value={selectedSub?.id ?? ''}
-              onChange={e => setSouscriptionId(Number(e.target.value))}
-              className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200">
-              {activeSubs.map(s => (
-                <option key={s.id} value={s.id}>{s.packType?.name ?? `Pack #${s.packTypeId}`}</option>
-              ))}
-            </select>
-          </div>
-        )}
+          {/* ── Header card ─────────────────────────────────────────────── */}
+          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-sm shadow-blue-200">
+                  <CalendarRange size={20} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-slate-900">Planning des diffusions</h1>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    Gérez vos diffusions, sirène par sirène
+                  </p>
+                </div>
+              </div>
 
-        {/* Info sirènes */}
-        {selectedSub?.sirenes && selectedSub.sirenes.length > 0 && (
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-slate-400">Sirènes couvertes :</span>
-            {selectedSub.sirenes.map(s => (
-              <span key={s.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-xs text-slate-600 border border-slate-200">
-                <Radio size={9} /> {s.name ?? `Sirène #${s.id}`}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {noCredits && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <AlertTriangle size={16} className="text-amber-500 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800">Crédits épuisés</p>
-              <p className="text-xs text-amber-600 mt-0.5">Contactez votre administrateur pour renouveler votre offre.</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAutoGenerate(true)}
+                  disabled={noCredits || !planning.audios.length || !sireneId}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold
+                    bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed
+                    transition-colors shadow-sm shadow-violet-200"
+                >
+                  <Wand2 size={13} /> Remplir automatiquement
+                </button>
+                <CreditBadge restants={planning.creditsRestants} total={planning.nombreCredits} />
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Navigation semaine */}
-        <div className="mt-4 flex items-center justify-end gap-2">
-          {!planning.isCurrentWeek && (
-            <button onClick={planning.goToCurrentWeek}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <RotateCcw size={11} /> Aujourd'hui
-            </button>
+            {/* Sélecteur souscription + pack, intégré au header */}
+            {(activeSubs.length > 1 || planning.packName) && (
+              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3 flex-wrap">
+                {planning.packName && (
+                  <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full
+                    bg-blue-50 text-blue-700 border border-blue-100">
+                    <PackageCheck size={12} /> Pack {planning.packName}
+                  </span>
+                )}
+                {activeSubs.length > 1 && (
+                  <select value={selectedSub?.id ?? ''}
+                    onChange={e => setSouscriptionId(Number(e.target.value))}
+                    className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600
+                      focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                    {activeSubs.map(s => (
+                      <option key={s.id} value={s.id}>{s.packType?.name ?? `Pack #${s.packTypeId}`}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Sirènes card ─────────────────────────────────────────────── */}
+          {selectedSub?.sirenes && selectedSub.sirenes.length > 0 && (
+            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Radio size={14} className="text-slate-400" />
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Sirènes ({selectedSub.sirenes.length})
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedSub.sirenes.map(s => {
+                  const active = s.id === sireneId;
+                  const empty = s.creditsRestants !== null && s.creditsRestants <= 0;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSireneId(s.id)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all
+                        ${active
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200 scale-[1.02]'
+                          : empty
+                            ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white hover:border-slate-300 hover:shadow-sm'}`}
+                    >
+                      <Radio size={12} className={active ? 'text-blue-100' : ''} />
+                      {s.name ?? `Sirène #${s.id}`}
+                      {s.creditsRestants !== null && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full
+                          ${active ? 'bg-white/20 text-white' : empty ? 'bg-red-100 text-red-500' : 'bg-slate-200/70 text-slate-500'}`}>
+                          {s.creditsRestants}/{s.nombreCredits}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           )}
-          <button onClick={planning.prevWeek} className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-sm font-medium text-slate-700 min-w-[160px] text-center">
-            {fmtDate(planning.from)} — {fmtDate(planning.to)}
-          </span>
-          <button onClick={planning.nextWeek} className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-            <ChevronRight size={16} />
-          </button>
-        </div>
 
-        {/* Grille */}
-        <div className="mt-5 overflow-x-auto">
-          {planning.isLoading ? (
-            <div className="flex items-center justify-center py-24 gap-2 text-slate-400">
-              <Loader2 size={22} className="animate-spin" /><span className="text-sm">Chargement…</span>
+          {/* ── Alerte crédits épuisés ───────────────────────────────────── */}
+          {noCredits && (
+            <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle size={16} className="text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Crédits épuisés pour cette sirène</p>
+                <p className="text-xs text-amber-600 mt-0.5">Contactez votre administrateur pour renouveler votre offre.</p>
+              </div>
             </div>
-          ) : !selectedSub ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
-              <Radio size={36} strokeWidth={1.2} /><p className="text-sm">Aucune souscription active</p>
+          )}
+
+          {/* ── Grille planning card ─────────────────────────────────────── */}
+          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+
+            {/* Navigation semaine */}
+            <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Clock size={14} className="text-slate-400" />
+                {fmtDate(planning.from)} — {fmtDate(planning.to)}
+              </div>
+              <div className="flex items-center gap-2">
+                {!planning.isCurrentWeek && (
+                  <button onClick={planning.goToCurrentWeek}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg
+                      border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors">
+                    <RotateCcw size={11} /> Aujourd'hui
+                  </button>
+                )}
+                <button onClick={planning.prevWeek}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors">
+                  <ChevronLeft size={15} />
+                </button>
+                <button onClick={planning.nextWeek}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors">
+                  <ChevronRight size={15} />
+                </button>
+              </div>
             </div>
-          ) : (
-            <table className="w-full border-collapse" style={{ minWidth: 700 }}>
-              <thead>
-                <tr>
-                  <th className="w-16 pb-3 text-left">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Créneau</span>
-                  </th>
-                  {days.map(({ date, label, display }) => (
-                    <th key={date} className="pb-3 px-1.5 text-center min-w-[110px]">
-                      <div className={`rounded-xl py-2 px-2 ${isToday(date) ? 'bg-blue-600' : 'bg-slate-50'}`}>
-                        <div className={`text-[10px] font-semibold uppercase tracking-wide ${isToday(date) ? 'text-blue-100' : 'text-slate-500'}`}>{label}</div>
-                        <div className={`text-sm font-bold mt-0.5 ${isToday(date) ? 'text-white' : 'text-slate-700'}`}>{display}</div>
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {planning.creneaux.map(cr => (
-                  <tr key={`${cr.heure}-${cr.minute}`}>
-                    <td className="py-2 pr-2 align-top">
-                      <div className="flex items-center gap-1 pt-1">
-                        <Clock size={11} className="text-slate-400 shrink-0" />
-                        <span className="text-xs font-semibold text-slate-500">{fmtHeure(cr.heure, cr.minute)}</span>
-                      </div>
-                    </td>
-                    {days.map(({ date }) => {
-                      const slot = planning.getSlot(date, cr.heure);
-                      return (
-                        <td key={date} className="py-2 px-1.5 align-top">
-                          <PlanningCell
-                            slot={slot}
-                            noCredits={noCredits}
-                            onClickAdd={() => { if (slot) setModalSlot({ slot, date, heure: cr.heure }); }}
-                            onClickCancel={handleCancel}
-                            onClickModify={setModalModify}
-                            cancelling={planning.cancelling}
-                          />
+
+            {/* Grille */}
+            <div className="overflow-x-auto">
+              {planning.isLoading ? (
+                <div className="flex items-center justify-center py-28 gap-2 text-slate-400">
+                  <Loader2 size={22} className="animate-spin" /><span className="text-sm">Chargement…</span>
+                </div>
+              ) : !selectedSub ? (
+                <div className="flex flex-col items-center justify-center py-28 gap-3 text-slate-300">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                    <Radio size={28} strokeWidth={1.3} />
+                  </div>
+                  <p className="text-sm text-slate-400">Aucune souscription active</p>
+                </div>
+              ) : !sireneId ? (
+                <div className="flex flex-col items-center justify-center py-28 gap-3 text-slate-300">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center">
+                    <Radio size={28} strokeWidth={1.3} />
+                  </div>
+                  <p className="text-sm text-slate-400">Sélectionnez une sirène ci-dessus</p>
+                </div>
+              ) : (
+                <table className="w-full border-collapse" style={{ minWidth: 760 }}>
+                  <thead>
+                    <tr className="bg-slate-50/70">
+                      <th className="w-20 py-3 px-4 text-left">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Créneau</span>
+                      </th>
+                      {days.map(({ date, label, display }) => (
+                        <th key={date} className="py-3 px-1.5 text-center min-w-[112px]">
+                          <div className={`rounded-xl py-2 px-2 mx-1 transition-colors
+                            ${isToday(date) ? 'bg-blue-600 shadow-sm shadow-blue-200' : 'bg-white border border-slate-100'}`}>
+                            <div className={`text-[10px] font-bold uppercase tracking-wide ${isToday(date) ? 'text-blue-100' : 'text-slate-400'}`}>
+                              {label}
+                            </div>
+                            <div className={`text-sm font-bold mt-0.5 ${isToday(date) ? 'text-white' : 'text-slate-700'}`}>
+                              {display}
+                            </div>
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {planning.creneaux.map((cr, i) => (
+                      <tr key={`${cr.heure}-${cr.minute}`} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}>
+                        <td className="py-2.5 px-4 align-top">
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                              <Clock size={11} className="text-blue-400" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600">{fmtHeure(cr.heure, cr.minute)}</span>
+                          </div>
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                        {days.map(({ date }) => {
+                          const slot = planning.getSlot(date, cr.heure);
+                          return (
+                            <td key={date} className="py-2.5 px-1.5 align-top">
+                              <PlanningCell
+                                slot={slot}
+                                noCredits={noCredits}
+                                onClickAdd={() => { if (slot) setModalSlot({ slot, date, heure: cr.heure }); }}
+                                onClickCancel={(item) => setConfirmCancelItem(item)}
+                                onClickModify={setModalModify}
+                                cancelling={planning.cancelling}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
 
-        {/* Légende */}
-        <div className="mt-4 flex items-center gap-5 flex-wrap text-xs text-slate-500">
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 rounded border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex items-center justify-center"><Plus size={7} className="text-emerald-400" /></div> Créneau libre</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 rounded bg-slate-100 border-2 border-slate-200 flex items-center justify-center"><Lock size={7} className="text-slate-300" /></div> Créneau plein</span>
-          <span className="flex items-center gap-1.5"><Pencil size={10} className="text-blue-400" /> Modifier son (survol, &gt;24h)</span>
-          <span className="flex items-center gap-1.5"><X size={10} className="text-red-400" /> Annuler (survol)</span>
-          {Object.entries(STATUS_CFG).map(([key, c]) => (
-            <span key={key} className="flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${c.dot}`} />{c.label}</span>
-          ))}
+          {/* ── Légende card ─────────────────────────────────────────────── */}
+          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm px-5 py-4">
+            <div className="flex items-center gap-5 flex-wrap text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex items-center justify-center">
+                  <Plus size={7} className="text-emerald-400" />
+                </div> Créneau libre
+              </span>
+              <span className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                  <Lock size={7} className="text-slate-300" />
+                </div> Créneau plein
+              </span>
+              <span className="flex items-center gap-1.5"><Pencil size={10} className="text-blue-400" /> Modifier son (&gt;24h)</span>
+              <span className="flex items-center gap-1.5"><X size={10} className="text-red-400" /> Annuler</span>
+              <span className="w-px h-3 bg-slate-200" />
+              {Object.entries(STATUS_CFG).map(([key, c]) => (
+                <span key={key} className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${c.dot}`} />{c.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* Modales */}
+      {/* Modales — inchangées */}
+      {confirmCancelItem && (
+        <ModalConfirmCancel
+          item={confirmCancelItem}
+          onClose={() => setConfirmCancelItem(null)}
+          onConfirm={() => handleCancel(confirmCancelItem.id)}
+          cancelling={planning.cancelling === confirmCancelItem.id}
+        />
+      )}
+
       {modalSlot && (
         <ModalAjout
           slot={modalSlot.slot} audios={planning.audios} creditsRestants={planning.creditsRestants}

@@ -13,10 +13,10 @@ const toArr = (r: any) =>
 const ALERT_GAP_MS     = 2_000;
 const POLL_INTERVAL_MS = 10_000;
 
-// Madagascar bounds
-const MDG_BOUNDS = { sw: [-26.0, 43.0], ne: [-11.5, 51.0] } as const;
-const MDG_CENTER: [number, number] = [-19.5, 46.9];
-const MDG_ZOOM   = 6;
+// Antananarivo bounds (au lieu de Madagascar entier)
+const MDG_BOUNDS = { sw: [-19.05, 47.35], ne: [-18.75, 47.65] } as const;
+const MDG_CENTER: [number, number] = [-18.8792, 47.5079]; // Antananarivo centre
+const MDG_ZOOM   = 12;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ActiveAlert {
@@ -667,7 +667,7 @@ export default function SireneMapAlert() {
           L.latLng(MDG_BOUNDS.ne[0], MDG_BOUNDS.ne[1])
         ),
         maxBoundsViscosity: 1.0,
-        minZoom: 5,
+        minZoom: 11, // au lieu de 5
       });
       leafletRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);

@@ -267,7 +267,7 @@ export default function MesOffres() {
   // relations: ['sirenes', 'sirenes.village']  dans le service NestJS
   const { data: rawSubs, isLoading, isError } = useQuery({
     queryKey: ["souscriptions", "client", customerId],
-    queryFn:  () => souscriptionApi.getAll(customerId!),
+    queryFn:  () => souscriptionApi.getAll({customerId}),
     enabled:  !!customerId,
   });
 
@@ -366,9 +366,9 @@ export default function MesOffres() {
                       <SouscriptionCard
                         key={sub.id}
                         sub={sub}
-                        onDetail={() => navigate(`/mes-offres/${sub.id}`)}
-                        onRenew={()  => navigate(`/mes-offres/${sub.id}/renouveler`)}
-                        onReport={() => navigate(`/mes-offres/${sub.id}/rapport`)}
+                        onDetail={() => navigate(`/planning-customer`)}
+                        onRenew={()  => navigate(`/planning-customer`)}
+                        onReport={() => navigate(`/planning-customer`)}
                       />
                     ))}
                   </div>

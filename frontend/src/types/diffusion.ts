@@ -31,6 +31,8 @@ export interface SouscriptionSirene {
   imei: string | null;
   isActive: number;
   phoneNumberBrain: string | null;
+  nombreCredits : number ;
+  creditsRestants: number;
   // village chargé en eager côté backend (relations: ['sirenes', 'sirenes.village'])
   village?: {
     id: number;

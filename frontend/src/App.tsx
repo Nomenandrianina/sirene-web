@@ -159,7 +159,7 @@ const App = () => (
               <Route path="/souscription/new" element={<ProtectedRoute permission="souscriptions:create"><SouscriptionNewPage /></ProtectedRoute>} />
               {/* <Route path="/souscriptionsadmins" element={<ProtectedRoute><SouscriptionsListPage /></ProtectedRoute>} /> */}
               <Route path="/planning" element={<ProtectedRoute permission="planning:read"><PlanningDiffusionPage /></ProtectedRoute>} />
-              <Route path="/planning-customer" element={<ProtectedRoute permission="planning:read"><PlanningClientPage /></ProtectedRoute>} />
+              <Route path="/planning-customer" element={<ProtectedRoute permission="planning:read-customer"><PlanningClientPage /></ProtectedRoute>} />
               
               <Route path="/parametrage-diffusion" element={<ProtectedRoute adminOnly><DiffusionConfigPage /></ProtectedRoute>} />
               <Route path="/Offreclient" element={<ProtectedRoute permission="offre:read"><MesOffres  /></ProtectedRoute>} />

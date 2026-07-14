@@ -110,7 +110,8 @@ export async function seedPermissions(dataSource: DataSource) {
     ('notification-bngrc:read'),
     ('sirene-map-alert:read'),
     ('sirene-map-alert:story'),
-    ('sirene-map:read')
+    ('sirene-map:read'),
+    ('planning:read-customer')
 
 `);
 
