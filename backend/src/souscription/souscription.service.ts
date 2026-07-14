@@ -9,6 +9,8 @@ import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
 import { DiffusionPlanifieeService } from 'src/diffusion-planifiee/diffusion-planifiee.service';
 import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
 import { User }             from 'src/users/entities/user.entity';
+import { SouscriptionSireneService } from 'src/souscription-sirene/souscription-sirene.service';
+import { SouscriptionSirene } from 'src/souscription-sirene/entities/souscription-sirene.entity';
 
 @Injectable()
 export class SouscriptionService {
@@ -26,39 +28,46 @@ export class SouscriptionService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
+    @InjectRepository(SouscriptionSirene)
+    private readonly souscriptionSireneRepo: Repository<SouscriptionSirene>,
+
   ) {}
 
   // ── CREATE ──────────────────────────────────────────────────────────────────
 
   async create(dto: CreateSouscriptionDto): Promise<Souscription> {
-    const pack = await this.packRepo.findOne({
-      where: { id: dto.packTypeId, isActive: true },
-    });
+    const pack = await this.packRepo.findOne({ where: { id: dto.packTypeId, isActive: true } });
     if (!pack) throw new NotFoundException('Pack introuvable');
     if (!dto.sireneIds?.length) throw new BadRequestException('Au moins une sirène requise');
-   
+  
     const startDate = dto.startDate ? new Date(dto.startDate) : new Date();
     const endDate   = this.calculateEndDate(startDate, pack);
-   
+  
     const souscription = this.repo.create({
-      userId:          dto.userId,
-      customerId:      dto.customerId,
-      packTypeId:      dto.packTypeId,
-      alerteAudioId:   null,
+      userId:       dto.userId,
+      customerId:   dto.customerId,
+      packTypeId:   dto.packTypeId,
+      alerteAudioId: null,
       startDate,
       endDate,
-      status:          SouscriptionStatus.ACTIVE,
-      creditsRestants: pack.nombreCredits ?? null, // ← null si pack illimité
-      sirenes:         dto.sireneIds.map((id) => ({ id })),
+      status:       SouscriptionStatus.ACTIVE,
     });
-   
-    // ✅ On sauvegarde sans générer aucun planning
     const saved = await this.repo.save(souscription);
- 
-    // Notifier les users CUSTOMER_ADMIN et CUSTOMER_OPERATOR du client
+  
+    // ── Chaque sirène reçoit son propre pool de crédits, initialisé depuis le pack ──
+    const souscriptionSirenes = dto.sireneIds.map((sireneId) =>
+      this.souscriptionSireneRepo.create({
+        souscriptionId:  saved.id,
+        sireneId,
+        nombreCredits:   pack.nombreCredits ?? null,
+        creditsRestants: pack.nombreCredits ?? null,
+      }),
+    );
+    await this.souscriptionSireneRepo.save(souscriptionSirenes);
+  
     await this.notifyClientUsers(dto.customerId, saved.id, pack.name);
-    
-    return saved;
+  
+    return this.findOne(saved.id);
   }
    
 
@@ -96,26 +105,49 @@ export class SouscriptionService {
   //   return saved;
   // }
 
+
+  private toResponse(s: Souscription) {
+    return {
+      ...s,
+      sirenes: (s.souscriptionSirenes ?? []).map(ss => ({
+        id:              ss.sirene?.id,
+        name:            ss.sirene?.name,
+        village:         ss.sirene?.village,
+        creditsRestants: ss.creditsRestants,
+        nombreCredits:   ss.nombreCredits,
+      })),
+    };
+  }
+
   // ── READ ─────────────────────────────────────────────────────────────────────
 
-  async findAll(query: SouscriptionQueryDto): Promise<Souscription[]> {
+  async findAll(query: SouscriptionQueryDto): Promise<any[]> {
     const where: any = {};
     if (query.userId)     where.userId     = query.userId;
     if (query.customerId) where.customerId = query.customerId;
     if (query.status)     where.status     = query.status;
-
-    return this.repo.find({
+  
+    const list = await this.repo.find({
       where,
-      relations: ['packType', 'sirenes',   'sirenes.village' ,'diffusionLogs','customer'],
+      relations: [
+        'packType',
+        'souscriptionSirenes',
+        'souscriptionSirenes.sirene',
+        'souscriptionSirenes.sirene.village',
+        'diffusionLogs',
+        'customer',
+      ],
       order: { createdAt: 'DESC' },
     });
+  
+    return list.map(s => this.toResponse(s));
   }
 
   async findOne(id: number): Promise<Souscription> {
     const s = await this.repo.findOne({
       where: { id },
-      relations: ['packType', 'sirenes', 'diffusionLogs'],
-    });
+      relations: ['packType', 'souscriptionSirenes', 'souscriptionSirenes.sirene', 'diffusionLogs'],
+      });
     if (!s) throw new NotFoundException(`Souscription #${id} introuvable`);
     return s;
   }
@@ -171,7 +203,7 @@ export class SouscriptionService {
   async update(id: number, dto: UpdateSouscriptionDto): Promise<Souscription> {
     const s = await this.findOne(id);
     if (dto.sireneIds) {
-      s.sirenes = dto.sireneIds.map((sid) => ({ id: sid })) as any[];
+      // s.sirenes = dto.sireneIds.map((sid) => ({ id: sid })) as any[];
     }
     Object.assign(s, {
       status:    dto.status    ?? s.status,
@@ -333,7 +365,7 @@ export class SouscriptionService {
     const mainText = `Nouvelle souscription — Pack ${packName} activé pour votre compte`;
     // Format compatible parseMessage frontend : "texte||userName||customerName"
     const message = mainText;
-  
+      
     const notifs = targets.map(user => {
       const n      = new Notificationsweb();
       n.type       = 'SOUSCRIPTION_CREATED';
@@ -341,7 +373,7 @@ export class SouscriptionService {
       n.entityType = 'souscription';
       n.entityId   = souscriptionId;
       n.url        = '/planning-customer';
-      n.isRead     = false;
+      n.isRead     = false; 
       n.userId     = user.id;
       return n;
     });
@@ -349,6 +381,30 @@ export class SouscriptionService {
     await this.notifWebRepo.save(notifs);
   }
   
+
+  async decrementCreditForSirene(souscriptionId: number, sireneId: number): Promise<void> {
+    const ss = await this.souscriptionSireneRepo.findOne({
+      where: { souscriptionId, sireneId },
+    });
+    if (!ss) throw new NotFoundException('Association souscription/sirène introuvable');
+    if (ss.creditsRestants !== null) {
+      if (ss.creditsRestants <= 0) {
+        throw new BadRequestException('Crédits épuisés pour cette sirène');
+      }
+      ss.creditsRestants -= 1;
+      await this.souscriptionSireneRepo.save(ss);
+    }
+  }
+
+  async restoreCreditForSirene(souscriptionId: number, sireneId: number): Promise<void> {
+    const ss = await this.souscriptionSireneRepo.findOne({
+      where: { souscriptionId, sireneId },
+    });
+    if (ss && ss.creditsRestants !== null) {
+      ss.creditsRestants += 1;
+      await this.souscriptionSireneRepo.save(ss);
+    }
+  }
  
 
 }

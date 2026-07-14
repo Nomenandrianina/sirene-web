@@ -2,6 +2,7 @@ import {Entity,PrimaryGeneratedColumn,Column,CreateDateColumn,UpdateDateColumn,M
 import { PackType } from '@/packtype/entities/packtype.entity';
 import { DiffusionLog } from '@/diffusion-log/entities/diffusion-log.entity';
 import { Customer } from 'src/customers/entity/customer.entity';
+import { SouscriptionSirene } from 'src/souscription-sirene/entities/souscription-sirene.entity';
 
 export enum SouscriptionStatus {
   ACTIVE    = 'active',
@@ -56,13 +57,17 @@ export class Souscription {
    * Une souscription couvre 1..N sirènes.
    * Table pivot : souscription_sirene(souscription_id, sirene_id)
    */
-  @ManyToMany('Sirene', { eager: false })
-  @JoinTable({
-    name: 'souscription_sirene',
-    joinColumn:        { name: 'souscription_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'sirene_id',        referencedColumnName: 'id' },
-  })
-  sirenes: any[];
+  // @ManyToMany('Sirene', { eager: false })
+  // @JoinTable({
+  //   name: 'souscription_sirene',
+  //   joinColumn:        { name: 'souscription_id', referencedColumnName: 'id' },
+  //   inverseJoinColumn: { name: 'sirene_id',        referencedColumnName: 'id' },
+  // })
+  // sirenes: any[];
+
+
+  @OneToMany(() => SouscriptionSirene, (ss) => ss.souscription, { eager: true, cascade: true })
+  souscriptionSirenes: SouscriptionSirene[];
 
   @OneToMany(() => DiffusionLog, (d) => d.souscription)
   diffusionLogs: DiffusionLog[];
@@ -71,9 +76,13 @@ export class Souscription {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
+  
+  @Column({ type: 'int', name: 'nombre_credits', nullable: true, default: null })
+  nombreCredits: number | null;
 
   @Column({ type: 'int', name: 'credits_restants', nullable: true, default: null })
   creditsRestants: number | null;
+
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

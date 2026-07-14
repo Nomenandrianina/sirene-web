@@ -86,6 +86,8 @@ import { AudioAlerteBngrc } from './audio-alerte-bngrc/entities/audio-alerte-bng
 import { SendAlerteBngrcModule } from './send-alerte-bngrc/send-alerte-bngrc.module';
 import { NotificationBngrcModule } from './notification-bngrc/notification-bngrc.module';
 import { NotificationBngrc } from './notification-bngrc/entities/notification-bngrc.entity';
+import { SouscriptionSireneModule } from './souscription-sirene/souscription-sirene.module';
+import { SouscriptionSirene } from './souscription-sirene/entities/souscription-sirene.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -100,12 +102,12 @@ import { NotificationBngrc } from './notification-bngrc/entities/notification-bn
         username: config.get<string>('DB_USERNAME'), 
         password: config.get<string>('DB_PASSWORD'), 
         database: config.get<string>('DB_DATABASE'),
-        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany,PackType,DiffusionLog,Souscription,PlanningDiffusion,DiffusionPlanifiee,DiffusionConfig,Notificationsweb,AlerteBngrc,TypeAlerteBngrc,CategorieAlerteBngrc,AudioAlerteBngrc,NotificationBngrc],
+        entities: [Role,Permission,User,Customer,Province,Region, District,Village,Flow,Weather,ColorCode,AlertLevel,Setting,TimeSetting,AuditLog,Sirene,Alerte,AlerteType,CategorieAlerte,SousCategorieAlerte,AlerteAudio,Notification,Commune,Fokontany,PackType,DiffusionLog,Souscription,PlanningDiffusion,DiffusionPlanifiee,DiffusionConfig,Notificationsweb,AlerteBngrc,TypeAlerteBngrc,CategorieAlerteBngrc,AudioAlerteBngrc,NotificationBngrc,SouscriptionSirene],
         synchronize: true,
       }),
     })
     ,RolesModule, PermissionsModule, UsersModule,CustomersModule,AuthModule, ProvincesModule, RegionsModule, DistrictsModule, VillagesModule, FlowsModule, WeathersModule, ColorCodeModule, AlertLevelModule, SettingsModule, TimeSettingModule,ExportModule,
-    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule, PacktypeModule, SouscriptionModule, DiffusionLogModule, PlanningDiffusionModule, DiffusionSchedulerModule,AppCommandModule, DiffusionPlanifieeModule, DiffusionConfigModule, NotificationswebModule, AlerteBngrcModule, TypeAlerteBngrcModule, CategorieAlerteBngrcModule, AudioAlerteBngrcModule, SendAlerteBngrcModule, NotificationBngrcModule
+    SmsModule,AuditLogModule, SirenesModule, AlerteModule, AlerteTypeModule, CategorieAlerteModule, SousCategorieAlerteModule, AlerteAudioModule, NotificationModule,SendAlerteModule, CommuneModule, FokontanyModule, PacktypeModule, SouscriptionModule, DiffusionLogModule, PlanningDiffusionModule, DiffusionSchedulerModule,AppCommandModule, DiffusionPlanifieeModule, DiffusionConfigModule, NotificationswebModule, AlerteBngrcModule, TypeAlerteBngrcModule, CategorieAlerteBngrcModule, AudioAlerteBngrcModule, SendAlerteBngrcModule, NotificationBngrcModule, SouscriptionSireneModule
     
   ],
   controllers: [AppController],

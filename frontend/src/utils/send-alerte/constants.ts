@@ -1,7 +1,7 @@
 import { type Scheme } from "./colorHelpers";
 
 export const STEPS = [
-  { id: 0, label: "Aléas",        desc: "Choisissez le type d'aléa" },
+  { id: 0, label: "Alertes",        desc: "Choisissez le type d'alerte" },
   { id: 1, label: "Zones",        desc: "Sélectionnez les zones géographiques cibles" },
   { id: 2, label: "Catégorie",    desc: "Choisissez la catégorie et l'audio associé" },
   { id: 3, label: "Confirmation", desc: "Vérifiez et confirmez l'envoi immédiat" },

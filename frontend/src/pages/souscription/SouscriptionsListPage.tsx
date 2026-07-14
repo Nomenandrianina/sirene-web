@@ -84,8 +84,14 @@ function SouscriptionRow({ s, onSuspend, onReactivate, onDetail }: {
   const { Icon } = cfg;
 
   // Quotas fictifs basés sur la durée (à remplacer par les vrais champs)
-  const totalDiff = (s.packType?.frequenceParJour ?? 1) * (s.packType?.joursParSemaine ?? 5) * 4;
-  const usedDiff  = Math.floor(totalDiff * 0.4); // placeholder
+  // const totalDiff = (s.packType?.frequenceParJour ?? 1) * (s.packType?.joursParSemaine ?? 5) * 4;
+  // const usedDiff  = Math.floor(totalDiff * 0.4); // placeholder
+
+    // Crédits agrégés sur toutes les sirènes de la souscription
+  const totalCredits = sirenes.reduce((sum, sr) => sum + (sr.nombreCredits ?? 0), 0);
+  const restCredits  = sirenes.reduce((sum, sr) => sum + (sr.creditsRestants ?? 0), 0);
+  const usedCredits  = totalCredits - restCredits;
+  const hasCredits   = sirenes.some(sr => sr.nombreCredits != null);
 
   return (
     <div style={{
@@ -154,10 +160,21 @@ function SouscriptionRow({ s, onSuspend, onReactivate, onDetail }: {
 
       {/* Quotas */}
       <div style={{ flex: 1, minWidth: 120 }}>
-        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+        {/* <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
           {usedDiff}/{totalDiff} diffusions
         </div>
-        <QuotaBar used={usedDiff} total={totalDiff} />
+        <QuotaBar used={usedDiff} total={totalDiff} /> */}
+        {hasCredits ? (
+          <>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+              {usedCredits}/{totalCredits} crédits utilisés (toutes sirènes)
+            </div>
+            <QuotaBar used={usedCredits} total={totalCredits} />
+          </>
+        ) : (
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>Illimité</span>
+        )}
+
       </div>
 
       {/* Sirènes */}
@@ -338,7 +355,16 @@ function DetailModal({ s, onClose, onSuspend, onReactivate }: {
                   color: '#6366f1', background: '#eef2ff',
                   padding: '3px 10px', borderRadius: 20,
                 }}>
+                  {/* <Radio size={9} /> {sr.name ?? `#${sr.id}`} */}
                   <Radio size={9} /> {sr.name ?? `#${sr.id}`}
+                  {sr.nombreCredits != null && (
+                    <span style={{
+                      color: sr.creditsRestants === 0 ? '#dc2626' : '#4338ca',
+                      fontWeight: 700, marginLeft: 2,
+                    }}>
+                      · {sr.creditsRestants}/{sr.nombreCredits}
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
@@ -405,6 +431,8 @@ export default function SouscriptionsListPage() {
   const [detailItem, setDetailItem]       = useState<(Souscription & { customer?: Customer }) | null>(null);
   const [page, setPage]                   = useState(1);
   const PER_PAGE = 10;
+
+  console.log('souscriptions :',souscriptions)
 
   useEffect(() => {
     souscriptionApi.getAll({})
