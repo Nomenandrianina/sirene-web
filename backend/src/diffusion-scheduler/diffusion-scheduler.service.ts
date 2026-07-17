@@ -181,13 +181,7 @@ export class DiffusionSchedulerService {
    * - Envoie un SMS par audio × par diffusion planifiée du groupe
    */
   
-  private async processGroup(
-    dateStr:  string,
-    sireneId: number,
-    heure:    number,
-    minute:   number,
-    items:    DiffusionPlanifiee[],
-  ): Promise<{ sent: number; skipped: number; failed: number }> {
+  private async processGroup(dateStr:  string, sireneId: number, heure: number, minute: number, items: DiffusionPlanifiee[],): Promise<{ sent: number; skipped: number; failed: number }> {
   
     let sent = 0, skipped = 0, failed = 0;
   

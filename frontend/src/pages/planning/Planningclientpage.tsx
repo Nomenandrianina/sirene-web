@@ -5,9 +5,9 @@ import { useRole } from '@/hooks/useRole';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { souscriptionApi } from '@/services/diffusion.api';
 import { diffusionPlanifieeApi } from '@/services/diffusionplanniee.api';
-import type { Souscription } from '@/types/diffusion';
+import type { PackType, Souscription } from '@/types/diffusion';
 import { usePlanningClient, JOURS_FR, fmtDate, fmtHeure, addDays, toISO, type ClientPlanningSlot, type AudioDisponible, } from '@/types/useplanningclient';
-import { ChevronLeft, ChevronRight, RotateCcw, Clock, CheckCircle, Loader2, X, Plus, Radio, AlertTriangle, Lock, CreditCard, Pencil, Wand2, Shuffle, CalendarRange, Sparkles, PackageCheck,} from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Clock, CheckCircle, Loader2, X, Plus, Radio, AlertTriangle, Lock, CreditCard, Pencil, Wand2, Shuffle, CalendarRange, Sparkles, PackageCheck, RefreshCw,} from 'lucide-react';
 const STATUS_CFG = {
   planned:   { label: 'Planifié', color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-200',  dot: 'bg-blue-400'  },
   sent:      { label: 'Envoyé',   color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', dot: 'bg-green-400' },
@@ -458,6 +458,46 @@ function ModalAutoGenerate({
   );
 }
 
+function ModalChangerPack({ packs, currentPackId, pendingPackId, onClose, onConfirm, submitting }: {
+  packs: PackType[]; currentPackId: number; pendingPackId: number | null;
+  onClose: () => void; onConfirm: (packTypeId: number) => void; submitting: boolean;
+}) {
+  const [selected, setSelected] = useState<number | null>(pendingPackId);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="bg-slate-900 px-5 py-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white">Changer de pack</h3>
+          <button onClick={onClose}><X size={16} className="text-slate-400" /></button>
+        </div>
+        <div className="px-5 py-4 flex flex-col gap-3">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700 flex gap-2">
+            <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+            Le changement ne prendra effet qu'au <strong>prochain cycle</strong> — votre pack actuel reste actif jusqu'à son échéance.
+          </div>
+          {packs.map(p => (
+            <button key={p.id} onClick={() => setSelected(p.id)}
+              disabled={p.id === currentPackId}
+              className={`rounded-xl border-2 p-3 text-left transition-all
+                ${selected === p.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}
+                ${p.id === currentPackId ? 'opacity-40 cursor-not-allowed' : 'hover:border-blue-300'}`}>
+              <div className="text-sm font-semibold capitalize">{p.name} {p.id === currentPackId && '(actuel)'}</div>
+              <div className="text-xs text-slate-500">{p.nombreCredits ?? '∞'} crédits · {Number(p.prix).toLocaleString('fr-FR')} Ar</div>
+            </button>
+          ))}
+        </div>
+        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 rounded-xl border py-2.5 text-sm">Annuler</button>
+          <button onClick={() => selected && onConfirm(selected)} disabled={!selected || submitting}
+            className="flex-1 rounded-xl bg-blue-600 text-white py-2.5 text-sm font-semibold disabled:opacity-40">
+            {submitting ? 'Envoi…' : 'Programmer le changement'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PlanningClientPage() {
   const { customerId, userId } = useRole();
@@ -465,8 +505,7 @@ export default function PlanningClientPage() {
   const qc = useQueryClient();
   const [confirmCancelItem, setConfirmCancelItem] = useState<ClientPlanningSlot['items'][0] | null>(null);
   const [sireneId, setSireneId] = useState<number | null>(null);
-
-
+  const [showChangePack, setShowChangePack]     = useState(false);
 
   const [souscriptionId, setSouscriptionId] = useState<number>(
     Number(searchParams.get('souscriptionId')) || 0
@@ -579,6 +618,23 @@ export default function PlanningClientPage() {
     }
   };
 
+  const cancelUpgradeMutation = useMutation({
+    mutationFn: (id: number) => souscriptionApi.cancelScheduledUpgrade(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['souscriptions', 'client', customerId] }); showToast('Changement annulé'); },
+  });
+  
+  const scheduleUpgradeMutation = useMutation({
+    mutationFn: ({ id, packTypeId }: { id: number; packTypeId: number }) =>
+      souscriptionApi.scheduleUpgrade(id, packTypeId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['souscriptions', 'client', customerId] });
+      setShowChangePack(false);
+      showToast('✅ Changement de pack programmé pour le prochain cycle');
+    },
+    onError: (e: any) => showToast(e?.response?.data?.message ?? 'Erreur', 'error'),
+  });
+
+
   return (
     <AppLayout>
         <div className="bg-gradient-to-b from-slate-50 to-white min-h-full -m-6 p-6">
@@ -598,6 +654,34 @@ export default function PlanningClientPage() {
                   </p>
                 </div>
               </div>
+
+                {/* Bandeau changement programmé */}
+                {selectedSub?.pendingPackType && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between gap-3 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
+                      <div className="flex items-center gap-2 text-xs text-indigo-700">
+                        <Sparkles size={14} />
+                        Passage au pack <strong className="capitalize">{selectedSub.pendingPackType.name}</strong> programmé
+                        pour le {fmtDate(toISO(addDays(new Date(selectedSub.endDate), 1)))}
+                      </div>
+                      <button
+                        onClick={() => cancelUpgradeMutation.mutate(selectedSub.id)}
+                        className="text-xs font-medium text-indigo-500 hover:text-indigo-700 underline"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bouton demande de changement */}
+                <button
+                  onClick={() => setShowChangePack(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold
+                    bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <RefreshCw size={13} /> Changer de pack
+                </button>
 
               <div className="flex items-center gap-2">
                 <button
