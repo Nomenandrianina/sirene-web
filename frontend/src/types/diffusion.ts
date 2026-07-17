@@ -61,6 +61,10 @@ export interface Souscription {
   dateFinFormatee?: string;
   createdAt: string;
   customer?: Customer;
+  autoRenew:          boolean;
+  pendingPackTypeId:  number | null;
+  pendingPackType:    PackType | null;
+  pendingRequestedAt: string | null;
 }
 
 export interface DiffusionLog {

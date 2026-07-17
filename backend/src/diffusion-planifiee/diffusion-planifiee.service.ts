@@ -603,11 +603,11 @@ export class DiffusionPlanifieeService {
         });
 
         slots.push({
-          date:                 dateStr,
-          heure:                creneau.heure,
-          minute:               creneau.minute,
+          date: dateStr,
+          heure: creneau.heure,
+          minute: creneau.minute,
           estPasse,
-          estPlein:             dureeCumulee >= dureeMaxSecondes,
+          estPlein: dureeCumulee >= dureeMaxSecondes,
           dureeCumuleeSecondes: dureeCumulee,
           dureeMaxSecondes,
           items,

@@ -10,13 +10,14 @@ import { DiffusionPlanifieeModule } from 'src/diffusion-planifiee/diffusion-plan
 import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
 import { User } from 'src/users/entities/user.entity';
 import { SouscriptionSirene } from 'src/souscription-sirene/entities/souscription-sirene.entity';
+import { SouscriptionRenewalService } from './souscription-renewal.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Souscription,PackType,Notification,AlerteAudio,Notificationsweb,User,SouscriptionSirene]),
   forwardRef(() => DiffusionPlanifieeModule,), 
   ],
   controllers: [SouscriptionController],
-  providers: [SouscriptionService],
+  providers: [SouscriptionService,SouscriptionRenewalService],
   exports: [SouscriptionService],
 
 })

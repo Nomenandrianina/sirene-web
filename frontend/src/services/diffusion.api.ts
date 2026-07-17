@@ -28,6 +28,12 @@ export const souscriptionApi = {
 
   remove: (id: number) =>
     del<void>(`/souscriptions/${id}`),
+
+  scheduleUpgrade: (id: number, packTypeId: number) =>
+    patch<Souscription>(`/souscriptions/${id}/schedule-upgrade`, { packTypeId }),
+
+  cancelScheduledUpgrade: (id: number) =>
+    del<Souscription>(`/souscriptions/${id}/schedule-upgrade`),
 };
 
 export interface CreatePackTypeDto extends Partial<PackType> {}

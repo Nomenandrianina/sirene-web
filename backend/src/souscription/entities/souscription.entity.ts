@@ -83,6 +83,21 @@ export class Souscription {
   @Column({ type: 'int', name: 'credits_restants', nullable: true, default: null })
   creditsRestants: number | null;
 
+  /** Renouvellement automatique à l'échéance (true par défaut) */
+  @Column({ type: 'boolean', name: 'auto_renew', default: true })
+  autoRenew: boolean;
+
+  /** Pack demandé par le client, appliqué au PROCHAIN cycle par le job de renouvellement */
+  @Column({ type: 'int', name: 'pending_pack_type_id', nullable: true, default: null })
+  pendingPackTypeId: number | null;
+
+  @ManyToOne(() => PackType, { nullable: true, eager: true })
+  @JoinColumn({ name: 'pending_pack_type_id' })
+  pendingPackType: PackType | null;
+
+  @Column({ type: 'timestamp', name: 'pending_requested_at', nullable: true, default: null })
+  pendingRequestedAt: Date | null;
+
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

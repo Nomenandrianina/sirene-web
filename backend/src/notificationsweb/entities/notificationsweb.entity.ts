@@ -8,19 +8,19 @@ export class Notificationsweb {
     id: number;
 
     @Column({ type: 'varchar' })
-    type: string;          // ex: 'AUDIO_PENDING', 'AUDIO_APPROVED', 'AUDIO_REJECTED'
+    type: string;          
 
     @Column({ type: 'varchar' })
     message: string;
 
     @Column({ nullable: true })
-    entityType: string;    // ex: 'alerte_audio'
+    entityType: string;  
 
     @Column({ type: 'bigint', nullable: true })
     entityId: number;
 
     @Column({ type: 'varchar', length: 500, nullable: true })
-    url: string | null;    // ex: '/alerte-audios/42'
+    url: string | null;   
 
     @Column({ type: 'boolean', default: false })
     isRead: boolean;
@@ -31,7 +31,6 @@ export class Notificationsweb {
     @ManyToOne(() => User, { nullable: true, onDelete: "NO ACTION" })
     @JoinColumn({ name: "user_id" })
     user: User;
-
 
     @CreateDateColumn({ name: "created_at" })
     createdAt: Date;
