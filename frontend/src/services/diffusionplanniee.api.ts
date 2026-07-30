@@ -34,12 +34,20 @@ export interface AudioDisponible {
 }
 
 export interface ClientPlanningResponse {
+  frequenceParJour: null;
   souscriptionId:    number;
   sireneId:          number;
   creditsRestants:   number | null;
   nombreCredits:     number | null;
+  joursParSemaine:     number | null;
   packName:           string; 
   creneaux:          { heure: number; minute: number }[];
+  joursQuota: {                           // ← ajout
+    date:                 string;
+    countJour:            number;
+    jourComplet:          boolean;
+    quotaSemaineAtteint:  boolean;
+  }[];
   dureeMaxMinutes:   number;
   audiosDisponibles: AudioDisponible[];
   slots:             ClientPlanningSlot[];
@@ -98,7 +106,7 @@ export const diffusionPlanifieeApi = {
    * Retourne le planning d'une sirène pour une semaine,
    * avec disponibilité de chaque créneau et audios disponibles.
    */
-  getClientPlanning: (params: GetClientPlanningParams) =>
+  getClientPlanning: (params: GetClientPlanningParams) : Promise<ClientPlanningResponse>  =>
     get<ClientPlanningResponse>('/diffusion-planifiee/client-planning', { params }),
 
   /**

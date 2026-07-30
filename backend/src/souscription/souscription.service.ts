@@ -8,7 +8,7 @@ import { Notification } from '@/notification/entities/notification.entity';
 import { AlerteAudio } from '@/alerte-audio/entities/alerte-audio.entity';
 import { DiffusionPlanifieeService } from 'src/diffusion-planifiee/diffusion-planifiee.service';
 import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
-import { User }             from 'src/users/entities/user.entity';
+import { User } from 'src/users/entities/user.entity';
 import { SouscriptionSireneService } from 'src/souscription-sirene/souscription-sirene.service';
 import { SouscriptionSirene } from 'src/souscription-sirene/entities/souscription-sirene.entity';
 
@@ -345,8 +345,13 @@ export class SouscriptionService {
   }
 
 
-  
-  // ── Nouvelle méthode privée à ajouter dans SouscriptionService ──────────────
+  /**
+   * Fonction pour enregistrer les notifications web pour le client et admin
+   * @param customerId 
+   * @param souscriptionId 
+   * @param packName 
+   * @returns 
+   */
   private async notifyClientUsers( customerId: number, souscriptionId: number, packName: string,): Promise<void> {
     // Charger tous les users du client avec rôle CUSTOMER_ADMIN ou CUSTOMER_OPERATOR
     console.log("client_id :",customerId);
@@ -406,6 +411,78 @@ export class SouscriptionService {
     }
   }
  
+
+  // souscription.service.ts
+
+  async scheduleUpgrade(souscriptionId: number, customerId: number, newPackTypeId: number): Promise<Souscription> {
+    const s = await this.repo.findOne({ where: { id: souscriptionId, customerId } }); // ⚠️ customerId doit venir de req.user, pas du body
+    if (!s) throw new NotFoundException('Souscription introuvable');
+    if (s.status !== SouscriptionStatus.ACTIVE) {
+      throw new BadRequestException('Seule une souscription active peut être modifiée');
+    }
+    if (newPackTypeId === s.packTypeId && !s.pendingPackTypeId) {
+      throw new BadRequestException('Ce pack est déjà votre pack actuel');
+    }
+
+    const newPack = await this.packRepo.findOne({ where: { id: newPackTypeId, isActive: true } });
+    if (!newPack) throw new NotFoundException('Pack introuvable ou inactif');
+
+    s.pendingPackTypeId  = newPackTypeId;
+    s.pendingRequestedAt = new Date();
+    await this.repo.save(s);
+
+    await this.notifySuperAdminsPackChangeRequested(s, newPack);
+
+    return this.findOne(s.id);
+  }
+
+  async cancelScheduledUpgrade(souscriptionId: number, customerId: number): Promise<Souscription> {
+    const s = await this.repo.findOne({ where: { id: souscriptionId, customerId } });
+    if (!s) throw new NotFoundException('Souscription introuvable');
+    s.pendingPackTypeId  = null;
+    s.pendingRequestedAt = null;
+    await this.repo.save(s);
+    return this.findOne(s.id);
+  }
+
+  /**
+   * Fonction pour enregistrer les notifications web pour les superadmins
+   * lors d'une demande de changement de pack par un client
+   * @param souscription  la souscription concernée (avec customer + packType chargés)
+   * @param newPack       le pack demandé
+   * @returns
+   */
+  private async notifySuperAdminsPackChangeRequested(souscription: Souscription,newPack: PackType,): Promise<void> {
+    // Charger tous les users avec rôle SUPERADMIN
+    const targets = await this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.role', 'r')
+      .where('r.name = :role', { role: 'SUPERADMIN' }) // ⚠️ vérifiez le nom exact du rôle en base
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
+
+    if (!targets.length) return;
+
+    const customerName = souscription.customer?.name ?? `Client #${souscription.customerId}`;
+    const currentPackName = souscription.packType?.name ?? `Pack #${souscription.packTypeId}`;
+
+    const mainText = `${customerName} demande à passer du pack ${currentPackName} au pack ${newPack.name} au prochain cycle`;
+    const message = mainText;
+
+    const notifs = targets.map(user => {
+      const n      = new Notificationsweb();
+      n.type       = 'SOUSCRIPTION_UPGRADE_REQUESTED';
+      n.message    = message;
+      n.entityType = 'souscription';
+      n.entityId   = souscription.id;
+      n.url        = '/souscription';
+      n.isRead     = false;
+      n.userId     = user.id;
+      return n;
+    });
+
+    await this.notifWebRepo.save(notifs);
+  }
 
 }
 

@@ -194,7 +194,7 @@ function SouscriptionCard({
             )}
           </div>
         </div>
-
+        
         {/* Zones couvertes : sirènes → villages */}
         <div>
           <div className="flex items-center gap-1.5 mb-2">

@@ -14,7 +14,7 @@ const STATUS_CFG: Record<DPStatus, {
   planned:   { label: 'Planifié', color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-200',  dot: 'bg-blue-400',  Icon: Clock       },
   sent:      { label: 'Envoyé',   color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', dot: 'bg-green-400', Icon: CheckCircle },
   cancelled: { label: 'Annulé',   color: 'text-red-500',   bg: 'bg-red-50',   border: 'border-red-200',   dot: 'bg-red-400',   Icon: XCircle     },
-  skipped:   { label: 'Ignoré',   color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-300', Icon: SkipForward },
+  skipped:   { label: 'q',   color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-300', Icon: SkipForward },
 };
 
 const MOIS_FR = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
@@ -30,7 +30,7 @@ function isToday(iso: string) { return iso === toISO(new Date()); }
 function StatusChip({ status }: { status: DPStatus }) {
   const c = STATUS_CFG[status];
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${c.bg} ${c.color} border ${c.border}`}>
+    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-white/70 ${c.color} border ${c.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />
       {c.label}
     </span>
@@ -68,94 +68,50 @@ function groupBySousCat(items: PlanningItem[]): CellGroup[] {
   return Array.from(map.values());
 }
 
-// ── Card par groupe (souscatégorie + client) ──────────────────────────────────
-function PlanningCard({
-  group,
-  onSelect,
-  onCancel,
-  cancelling,
-  isSuperAdmin,
-}: {
-  group:       CellGroup;
-  onSelect:    (i: PlanningItem) => void;
-  onCancel:    (id: number) => void;
-  cancelling:  number | null;
-  isSuperAdmin?: boolean;
+// ── Card par groupe (souscatégorie + client) ─────────────────────────────────
+// Le groupe reste neutre (peut contenir plusieurs sirènes de statuts différents),
+// mais chaque item à l'intérieur reprend le style coloré "plein" de la vue client.
+function PlanningCard({ group, onSelect, onCancel, cancelling, hideClientName, }: {
+  group:          CellGroup;
+  onSelect:       (i: PlanningItem) => void;
+  onCancel:       (id: number) => void;
+  cancelling:     number | null;
+  hideClientName?: boolean;
 }) {
-
-  console.log('group :',group)
-  // Statut dominant : si au moins un item est planned → planned ; sinon le plus fréquent
-  const dominant = (group.items.find(i => i.status === 'planned')
-    ?? group.items.find(i => i.status === 'sent')
-    ?? group.items[0]).status;
-
-  const c = STATUS_CFG[dominant];
-
   // Le clic sur la card ouvre le drawer du premier item
-  // (ou on peut ouvrir un drawer de groupe — voir drawer ci-dessous)
   const firstItem = group.items[0];
-
-  const canCancelAny = group.items.some(i => i.canCancel);
 
   return (
     <div
       onClick={() => onSelect(firstItem)}
-      className={`rounded-lg border px-2.5 py-2 cursor-pointer hover:shadow-sm transition-all group
-        ${c.bg} ${c.border}`}
+      className="rounded-xl border border-slate-200 bg-white px-2 py-2 cursor-pointer hover:shadow-md hover:border-slate-300 transition-all"
     >
-      {/* Ligne 1 : souscatégorie + statut */}
-      <div className="flex items-start justify-between gap-1">
-        <div className="min-w-0 flex-1">
-
-          {/* Souscatégorie */}
-          <div className={`text-xs font-semibold truncate flex items-center gap-1 ${c.color}`}>
-            <Tag size={10} className="shrink-0" />
-            {group.sousCategorieNom ?? 'Sans catégorie'}
-          </div>
-
-          {/* Client (superadmin ou toujours visible selon besoin) */}
-          {group.customerName && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <User size={9} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] text-slate-500 truncate">{group.customerName}</span>
-            </div>
-          )}
-
-          {/* Sirènes associées */}
-          <div className="mt-1.5 flex flex-col gap-0.5">
-            {group.items.map(item => (
-              <SireneRow
-                key={item.id}
-                item={item}
-                onCancel={onCancel}
-                cancelling={cancelling}
-              />
-            ))}
-          </div>
+      {/* En-tête groupe : souscatégorie + client */}
+      <div className="flex items-center justify-between gap-1 mb-1.5">
+        <div className="text-xs font-semibold truncate flex items-center gap-1 text-slate-700">
+          <Tag size={10} className="shrink-0 text-slate-400" />
+          {group.sousCategorieNom ?? 'Sans catégorie'}
         </div>
       </div>
 
-      {/* Statut global */}
-      <div className="mt-1.5 flex items-center justify-between">
-        <StatusChip status={dominant} />
-        {/* Lien notifs si au moins un item envoyé */}
-        {group.items.some(i => i.notificationId) && (
-          <a
-            href={`/notifications?souscriptionId=${firstItem.souscriptionId}`}
-            onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1 text-[10px] text-blue-500 hover:text-blue-700"
-            title="Voir les notifications"
-          >
-            <Bell size={10} />
-            {group.items.filter(i => i.notificationId).length}
-          </a>
-        )}
+      {!hideClientName && group.customerName && (
+        <div className="flex items-center gap-1 mb-1.5">
+          <User size={9} className="text-slate-400 shrink-0" />
+          <span className="text-[10px] font-medium text-slate-500 truncate">{group.customerName}</span>
+        </div>
+      )}
+
+      {/* Une sous-carte colorée par sirène/item, façon vue client */}
+      <div className="flex flex-col gap-1">
+        {group.items.map(item => (
+          <SireneRow key={item.id} item={item} onCancel={onCancel} cancelling={cancelling} />
+        ))}
       </div>
     </div>
   );
 }
 
-// ── Ligne sirène à l'intérieur d'une card ────────────────────────────────────
+// ── Sous-carte par item (sirène) — reprend le style plein de la vue client ───
 function SireneRow({
   item,
   onCancel,
@@ -165,38 +121,58 @@ function SireneRow({
   onCancel:   (id: number) => void;
   cancelling: number | null;
 }) {
+  const cfg = STATUS_CFG[item.status];
+
   return (
-    <div className="flex items-center justify-between gap-1 group/row">
-      <div className="flex items-center gap-1 min-w-0">
+    <div className={`rounded-lg px-2 py-1.5 border flex flex-col gap-1 ${cfg.bg} ${cfg.border}`}>
+      {/* Ligne 1 : statut + heure + bouton annuler (toujours visible) */}
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+          <span className={`text-[10px] font-bold ${cfg.color}`}>
+            {CRENEAU_LABELS[item.scheduledHeure]}
+          </span>
+          <span className={`text-[10px] ${cfg.color} opacity-60 truncate`}>{cfg.label}</span>
+        </div>
+        {item.canCancel && (
+          <button
+            onClick={e => { e.stopPropagation(); onCancel(item.id); }}
+            disabled={cancelling === item.id}
+            className="shrink-0 p-1 rounded-md bg-white/70 hover:bg-red-100 disabled:opacity-50 transition-colors"
+            title="Annuler cette diffusion"
+          >
+            {cancelling === item.id
+              ? <Loader2 size={10} className="animate-spin text-red-500" />
+              : <X size={10} className="text-red-500" />}
+          </button>
+        )}
+      </div>
+
+      {/* Sirène */}
+      <div className="flex items-center gap-1 pl-3">
         <Radio size={9} className="text-slate-400 shrink-0" />
         <span className="text-[10px] text-slate-600 truncate">
           {item.sireneName ?? `Sirène #${item.sireneId}`}
         </span>
-        {/* Lien notif individuel si envoyé */}
-        {item.status === 'sent' && item.notificationId && (
-          <a
-            href={`/notifications?id=${item.notificationId}`}
-            onClick={e => e.stopPropagation()}
-            className="ml-1 text-[10px] text-blue-400 hover:text-blue-600 shrink-0"
-            title="Voir la notification"
-          >
-            <ExternalLink size={9} />
-          </a>
-        )}
       </div>
-      {/* Bouton annulation individuelle */}
-      {item.canCancel && (
-        <button
-          onClick={e => { e.stopPropagation(); onCancel(item.id); }}
-          disabled={cancelling === item.id}
-          className="shrink-0 p-0.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50
-            transition-colors opacity-0 group-hover/row:opacity-100"
-          title="Annuler cette diffusion"
+
+      {/* Audio */}
+      {item.alerteAudioName && (
+        <div className="flex items-center gap-1 pl-3">
+          <span className="text-[9px] text-slate-400 truncate">🔊 {item.alerteAudioName}</span>
+        </div>
+      )}
+
+      {/* Lien notif individuel si envoyé */}
+      {item.status === 'sent' && item.notificationId && (
+        <a
+          href={`/notifications?id=${item.notificationId}`}
+          onClick={e => e.stopPropagation()}
+          className="text-[9px] text-blue-500 hover:text-blue-700 pl-3 flex items-center gap-1"
+          title="Voir la notification"
         >
-          {cancelling === item.id
-            ? <Loader2 size={10} className="animate-spin" />
-            : <X size={10} />}
-        </button>
+          <ExternalLink size={9} /> Notification
+        </a>
       )}
     </div>
   );
@@ -411,6 +387,10 @@ export default function PlanningDiffusionPage() {
     filterSireneId:   isSuperAdmin ? filterSireneId   : undefined,
   });
 
+  // Quand un seul client est filtré (ou qu'on n'est pas superadmin), le nom du
+  // client est redondant sur chaque card → on l'affiche plus dans la grille.
+  const hideClientName = !isSuperAdmin || !!filterCustomerId;
+
   const handleCancel = async (id: number) => {
     if (!userId) return;
     await planning.cancelItem(id, userId);
@@ -436,217 +416,239 @@ export default function PlanningDiffusionPage() {
 
   return (
     <AppLayout>
-      <div className="page-wrap">
+      <div className="bg-gradient-to-b from-slate-50 to-white min-h-full -m-6 p-6">
+        <div className="flex flex-col gap-5">
 
-        {/* ── Header ── */}
-        <div className="page-header">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">Planning des diffusions</h1>
-            <p className="page-subtitle">
-              {isSuperAdmin
-                ? 'Vue globale — toutes les diffusions planifiées'
-                : 'Vos diffusions de la semaine'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {isSuperAdmin && (
-              <div className="flex gap-1.5">
-                {[
-                  { label: "Tester aujourd'hui", date: 'today'    },
-                  { label: 'Tester demain',       date: 'tomorrow' },
-                ].map(({ label, date }) => (
-                  <button
-                    key={date}
-                    onClick={() => handleTrigger(date)}
-                    disabled={planning.triggering}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
-                      border border-purple-200 bg-purple-50 text-purple-700
-                      hover:bg-purple-100 disabled:opacity-50 transition-colors"
-                  >
-                    {planning.triggering
-                      ? <Loader2 size={11} className="animate-spin" />
-                      : <Send size={11} />}
-                    {label}
-                  </button>
-                ))}
+          {/* ── Header card ─────────────────────────────────────────────── */}
+          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900">Planning des diffusions</h1>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {isSuperAdmin
+                    ? 'Vue globale — toutes les diffusions planifiées'
+                    : 'Vos diffusions de la semaine'}
+                </p>
               </div>
-            )}
 
-            {!planning.isCurrentWeek && (
-              <button
-                onClick={planning.goToCurrentWeek}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-              >
-                <RotateCcw size={12} /> Aujourd'hui
-              </button>
-            )}
-            <button onClick={planning.prevWeek}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-medium text-slate-700 min-w-[160px] text-center">
-              {fmtDate(toISO(planning.weekStart))} — {fmtDate(toISO(planning.weekEnd))}
-            </span>
-            <button onClick={planning.nextWeek}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-
-          {/* Filtres admin */}
-          {isSuperAdmin && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                value={filterCustomerId ?? ''}
-                onChange={e => setFilterCustomerId(e.target.value ? Number(e.target.value) : undefined)}
-                className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600
-                  hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="">— Tous les clients —</option>
-                {customers.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
-                ))}
-              </select>
-
-              <select
-                value={filterSireneId ?? ''}
-                onChange={e => setFilterSireneId(e.target.value ? Number(e.target.value) : undefined)}
-                className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600
-                  hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="">— Toutes les sirènes —</option>
-                {(sirenes as any[])?.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name ?? s.imei}</option>
-                ))}
-              </select>
-
-              {(filterCustomerId || filterSireneId) && (
-                <button
-                  onClick={() => { setFilterCustomerId(undefined); setFilterSireneId(undefined); }}
-                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg
-                    border border-slate-200 text-slate-500 hover:bg-slate-50"
-                >
-                  <X size={11} /> Réinitialiser
-                </button>
+              {isSuperAdmin && (
+                <div className="flex gap-1.5">
+                  {[
+                    { label: "Tester aujourd'hui", date: 'today'    },
+                    { label: 'Tester demain',       date: 'tomorrow' },
+                  ].map(({ label, date }) => (
+                    <button
+                      key={date}
+                      onClick={() => handleTrigger(date)}
+                      disabled={planning.triggering}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+                        border border-purple-200 bg-purple-50 text-purple-700
+                        hover:bg-purple-100 disabled:opacity-50 transition-colors"
+                    >
+                      {planning.triggering
+                        ? <Loader2 size={11} className="animate-spin" />
+                        : <Send size={11} />}
+                      {label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Résultat trigger */}
-        {triggerResult && (
-          <div className="mt-3 rounded-xl border border-purple-200 bg-purple-50 px-4 py-2.5 text-sm text-purple-700 flex items-center justify-between">
-            {triggerResult}
-            <button onClick={() => setTriggerResult(null)}><X size={14} /></button>
-          </div>
-        )}
-
-        {/* Stats */}
-        {stats && (
-          <div className="mt-5 grid grid-cols-5 gap-3">
-            {[
-              { label: 'Total',     value: stats.total,     color: 'text-slate-700', bg: 'bg-slate-50', border: 'border-slate-200' },
-              { label: 'Planifiés', value: stats.planned,   color: 'text-blue-700',  bg: 'bg-blue-50',  border: 'border-blue-200'  },
-              { label: 'Envoyés',   value: stats.sent,      color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' },
-              { label: 'Annulés',   value: stats.cancelled, color: 'text-red-600',   bg: 'bg-red-50',   border: 'border-red-200'   },
-              { label: 'Ignorés',   value: stats.skipped,   color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200' },
-            ].map(({ label, value, color, bg, border }) => (
-              <div key={label} className={`rounded-xl border ${border} ${bg} px-4 py-3`}>
-                <div className={`text-2xl font-bold ${color}`}>{value}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{label}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Grille */}
-        <div className="mt-5 overflow-x-auto">
-          {planning.loading ? (
-            <div className="flex items-center justify-center py-24">
-              <Loader2 size={24} className="animate-spin text-blue-400" />
-              <span className="ml-2 text-sm text-slate-400">Chargement…</span>
-            </div>
-          ) : (
-            <table className="w-full border-collapse" style={{ minWidth: 800 }}>
-              <thead>
-                <tr>
-                  <th className="w-20 pb-3 text-left">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Créneau</span>
-                  </th>
-                  {days.map(({ date, label, display }) => (
-                    <th key={date} className="pb-3 px-1.5 text-center min-w-[130px]">
-                      <div className={`rounded-xl py-2 px-3 ${isToday(date) ? 'bg-blue-600' : 'bg-slate-50'}`}>
-                        <div className={`text-xs font-semibold uppercase tracking-wide ${isToday(date) ? 'text-blue-100' : 'text-slate-500'}`}>
-                          {label}
-                        </div>
-                        <div className={`text-sm font-bold mt-0.5 ${isToday(date) ? 'text-white' : 'text-slate-700'}`}>
-                          {display}
-                        </div>
-                      </div>
-                    </th>
+            {/* Filtres admin, intégrés au header */}
+            {isSuperAdmin && (
+              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+                <select
+                  value={filterCustomerId ?? ''}
+                  onChange={e => setFilterCustomerId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600
+                    hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">— Tous les clients —</option>
+                  {customers.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name ?? c.email}</option>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {CRENEAUX.map(heure => (
-                  <tr key={heure}>
-                    <td className="py-2 pr-3 align-top">
-                      <div className="flex items-center gap-1.5 pt-1">
-                        <Clock size={12} className="text-slate-400 shrink-0" />
-                        <span className="text-xs font-semibold text-slate-500">{CRENEAU_LABELS[heure]}</span>
-                      </div>
-                    </td>
-                    {days.map(({ date }) => {
-                      const slot   = planning.getSlot(date, heure);
-                      const isPast = new Date(`${date}T${String(heure).padStart(2, '0')}:00:00`) < new Date();
-                      const groups = slot ? groupBySousCat(slot.items) : [];
+                </select>
 
-                      return (
-                        <td key={date} className="py-2 px-1.5 align-top">
-                          <div className={`min-h-[64px] rounded-xl border-2 p-1.5 transition-colors
-                            ${groups.length
-                              ? 'border-transparent bg-white'
-                              : isPast
-                                ? 'border-dashed border-slate-100 bg-slate-50/30'
-                                : 'border-dashed border-slate-200 bg-slate-50'}`}
-                          >
-                            {groups.length ? (
-                              <div className="space-y-1.5">
-                                {groups.map((group, idx) => (
-                                  <PlanningCard
-                                    key={`${group.sousCategorieId}-${group.customerId}-${idx}`}
-                                    group={group}
-                                    onSelect={setSelected}
-                                    onCancel={handleCancel}
-                                    cancelling={planning.cancelling}
-                                    isSuperAdmin={isSuperAdmin}
-                                  />
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center h-full min-h-[56px]">
-                                {!isPast && <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />}
-                              </div>
-                            )}
+                <select
+                  value={filterSireneId ?? ''}
+                  onChange={e => setFilterSireneId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600
+                    hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">— Toutes les sirènes —</option>
+                  {(sirenes as any[])?.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name ?? s.imei}</option>
+                  ))}
+                </select>
+
+                {(filterCustomerId || filterSireneId) && (
+                  <button
+                    onClick={() => { setFilterCustomerId(undefined); setFilterSireneId(undefined); }}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg
+                      border border-slate-200 text-slate-500 hover:bg-slate-50"
+                  >
+                    <X size={11} /> Réinitialiser
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Résultat trigger */}
+          {triggerResult && (
+            <div className="rounded-2xl border border-purple-200 bg-purple-50 px-4 py-2.5 text-sm text-purple-700 flex items-center justify-between shadow-sm">
+              {triggerResult}
+              <button onClick={() => setTriggerResult(null)}><X size={14} /></button>
+            </div>
+          )}
+
+          {/* ── Stats card ───────────────────────────────────────────────── */}
+          {stats && (
+            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
+              <div className="grid grid-cols-5 gap-3">
+                {[
+                  { label: 'Total',     value: stats.total,     color: 'text-slate-700', bg: 'bg-slate-50', border: 'border-slate-200' },
+                  { label: 'Planifiés', value: stats.planned,   color: 'text-blue-700',  bg: 'bg-blue-50',  border: 'border-blue-200'  },
+                  { label: 'Envoyés',   value: stats.sent,      color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' },
+                  { label: 'Annulés',   value: stats.cancelled, color: 'text-red-600',   bg: 'bg-red-50',   border: 'border-red-200'   },
+                  { label: 'Ignorés',   value: stats.skipped,   color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200' },
+                ].map(({ label, value, color, bg, border }) => (
+                  <div key={label} className={`rounded-xl border ${border} ${bg} px-4 py-3`}>
+                    <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Grille planning card ─────────────────────────────────────── */}
+          <div className="rounded-2xl bg-gradient-to-b from-slate-50/80 to-white border border-slate-200 shadow-sm overflow-hidden">
+
+            {/* Navigation semaine */}
+            <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Clock size={14} className="text-slate-400" />
+                {fmtDate(toISO(planning.weekStart))} — {fmtDate(toISO(planning.weekEnd))}
+              </div>
+              <div className="flex items-center gap-2">
+                {!planning.isCurrentWeek && (
+                  <button onClick={planning.goToCurrentWeek}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg
+                      border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors">
+                    <RotateCcw size={11} /> Aujourd'hui
+                  </button>
+                )}
+                <button onClick={planning.prevWeek}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors">
+                  <ChevronLeft size={15} />
+                </button>
+                <button onClick={planning.nextWeek}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors">
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+
+            {/* Grille */}
+            <div className="overflow-x-auto">
+              {planning.loading ? (
+                <div className="flex items-center justify-center py-24 gap-2 text-slate-400">
+                  <Loader2 size={22} className="animate-spin" /><span className="text-sm">Chargement…</span>
+                </div>
+              ) : (
+                <table className="w-full border-collapse" style={{ minWidth: 800 }}>
+                  <thead>
+                    <tr className="bg-slate-50/70">
+                      <th className="w-20 py-3 px-4 text-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Créneau</span>
+                      </th>
+                      {days.map(({ date, label, display }) => (
+                        <th key={date} className="py-3 px-1.5 text-center min-w-[130px]">
+                          <div className={`rounded-xl py-2 px-2 mx-1 transition-colors
+                            ${isToday(date) ? 'bg-blue-600 shadow-sm shadow-blue-200' : 'bg-white border border-slate-100'}`}>
+                            <div className={`text-[10px] font-bold uppercase tracking-wide ${isToday(date) ? 'text-blue-100' : 'text-slate-400'}`}>
+                              {label}
+                            </div>
+                            <div className={`text-sm font-bold mt-0.5 ${isToday(date) ? 'text-white' : 'text-slate-700'}`}>
+                              {display}
+                            </div>
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CRENEAUX.map((heure, i) => (
+                      <tr
+                        key={heure}
+                        className={`${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}
+                          ${i > 0 ? 'border-t-2 border-slate-100' : ''}`}
+                      >
+                        <td className="py-3 px-4 align-middle">
+                          <div className="flex flex-col items-center justify-center gap-1 text-center">
+                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                              <Clock size={12} className="text-blue-400" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600">{CRENEAU_LABELS[heure]}</span>
                           </div>
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                        {days.map(({ date }) => {
+                          const slot   = planning.getSlot(date, heure);
+                          const isPast = new Date(`${date}T${String(heure).padStart(2, '0')}:00:00`) < new Date();
+                          const groups = slot ? groupBySousCat(slot.items) : [];
 
-        {/* Légende */}
-        <div className="mt-4 flex items-center gap-5 flex-wrap">
-          {(Object.entries(STATUS_CFG) as [DPStatus, typeof STATUS_CFG[DPStatus]][]).map(([key, c]) => (
-            <span key={key} className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className={`w-2 h-2 rounded-full ${c.dot}`} /> {c.label}
-            </span>
-          ))}
+                          return (
+                            <td key={date} className="py-2.5 px-1.5 align-top">
+                              <div className={`min-h-[72px] rounded-xl p-1.5 transition-colors
+                                ${groups.length
+                                  ? 'bg-white'
+                                  : isPast
+                                    ? 'border-2 border-dashed border-slate-100 bg-slate-50/20'
+                                    : 'border-2 border-dashed border-slate-200 bg-white'}`}
+                              >
+                                {groups.length ? (
+                                  <div className="space-y-1.5">
+                                    {groups.map((group, idx) => (
+                                      <PlanningCard
+                                        key={`${group.sousCategorieId}-${group.customerId}-${idx}`}
+                                        group={group}
+                                        onSelect={setSelected}
+                                        onCancel={handleCancel}
+                                        cancelling={planning.cancelling}
+                                        hideClientName={hideClientName}
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center h-full min-h-[56px]">
+                                    {!isPast && <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          {/* ── Légende card ─────────────────────────────────────────────── */}
+          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm px-5 py-4">
+            <div className="flex items-center gap-5 flex-wrap text-xs text-slate-500">
+              {(Object.entries(STATUS_CFG) as [DPStatus, typeof STATUS_CFG[DPStatus]][]).map(([key, c]) => (
+                <span key={key} className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${c.dot}`} /> {c.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
 

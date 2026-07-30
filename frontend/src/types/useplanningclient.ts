@@ -99,6 +99,18 @@ export function usePlanningClient(params: UsePlanningClientParams) {
     [data],
   );
 
+  // ── AJOUT ICI — à l'intérieur de la fonction, data est accessible ────────
+  const getDayStatus = useCallback(
+    (date: string): 'ouvert' | 'jour_complet' | 'quota_semaine_atteint' => {
+      const q = data?.joursQuota.find(j => j.date === date);
+      if (!q) return 'ouvert';
+      if (q.jourComplet) return 'jour_complet';
+      if (q.quotaSemaineAtteint) return 'quota_semaine_atteint';
+      return 'ouvert';
+    },
+    [data],
+  );
+
   return {
     data,
     slots:           data?.slots             ?? [],
@@ -108,6 +120,9 @@ export function usePlanningClient(params: UsePlanningClientParams) {
     nombreCredits:   data?.nombreCredits     ?? null,
     packName:        data?.packName          ?? null,
     dureeMaxMinutes: data?.dureeMaxMinutes   ?? 15,
+    frequenceParJour: data?.frequenceParJour ?? null,   // ← ajout
+    joursParSemaine: data?.joursParSemaine ?? null,
+    getDayStatus,                                       // ← ajout
     isLoading,
     error,
     weekStart,

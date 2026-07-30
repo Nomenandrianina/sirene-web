@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
 import { initFirebase } from './config/firebase';
+const cookieParser = require('cookie-parser');
 
 
 async function bootstrap() {
@@ -13,6 +14,7 @@ async function bootstrap() {
 
   const appPrefix = process.env.APP_PREFIX ?? 'backend';
 
+  app.use(cookieParser());
   app.enableCors({
     origin: (process.env.CORS_ORIGINS ?? '').split(','),
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
