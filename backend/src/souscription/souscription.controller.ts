@@ -1,9 +1,7 @@
-import {
-  Controller, Get, Post, Patch, Delete,
-  Body, Param, ParseIntPipe, Query, HttpCode, HttpStatus,
-} from '@nestjs/common';
+import {  Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, Query, HttpCode, HttpStatus, Req, } from '@nestjs/common';
 import { SouscriptionService } from './souscription.service';
 import { CreateSouscriptionDto,UpdateSouscriptionDto,SouscriptionQueryDto,AdminCreateSouscriptionDto,} from './dto/create-souscription.dto';
+import { ScheduleUpgradeDto } from './dto/schedule-upgrade.dto';
 
 @Controller('souscriptions')
 export class SouscriptionController {
@@ -69,7 +67,6 @@ export class SouscriptionController {
    */
   @Post('admin')
   adminCreate(@Body() dto: AdminCreateSouscriptionDto) { 
-    console.log('souscription taffa');
     return this.service.create(dto);
   }
 
@@ -77,10 +74,7 @@ export class SouscriptionController {
    * PATCH /souscriptions/:id
    */
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateSouscriptionDto,
-  ) {
+  update( @Param('id', ParseIntPipe) id: number,@Body() dto: UpdateSouscriptionDto) {
     return this.service.update(id, dto);
   }
 
@@ -92,6 +86,33 @@ export class SouscriptionController {
   @Patch(':id/reactivate')
   reactivate(@Param('id', ParseIntPipe) id: number) {
     return this.service.reactivate(id);
+  }
+
+  /**
++   * PATCH /souscriptions/:id/schedule-upgrade
++   * Le client demande un changement de pack — appliqué au prochain cycle
++   */
+  @Patch(':id/schedule-upgrade')
+  scheduleUpgrade(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any, // ⚠️ adaptez selon votre décorateur d'auth existant (ex: @CurrentUser())
+    @Body() dto: ScheduleUpgradeDto,
+  ) {
+    const customerId = req.user.customerId; // ⚠️ jamais dto.customerId — vérifiez que req.user est bien peuplé par votre JwtAuthGuard
+    return this.service.scheduleUpgrade(id, customerId, dto.packTypeId);
+  }
+
+  /**
+   * DELETE /souscriptions/:id/schedule-upgrade
+   * Le client annule sa demande de changement en attente
+   */
+  @Delete(':id/schedule-upgrade')
+  cancelScheduledUpgrade(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    const customerId = req.user.customerId;
+    return this.service.cancelScheduledUpgrade(id, customerId);
   }
 
   @Delete(':id')

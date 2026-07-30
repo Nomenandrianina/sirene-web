@@ -201,6 +201,7 @@ function MapPicker({
   return <div ref={mapRef} style={{ width: '100%', height: '100%' }} />;
 }
 
+
 // ── Stepper principal ─────────────────────────────────────────────────────────
 export default function SouscriptionStepper({ userId, customerId, onSuccess }: StepperProps) {
   const [step, setStep]               = useState(0);

@@ -64,7 +64,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem("auth_user");
     setUser(null);
     navigate("/login");
@@ -74,6 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) { setLoading(false); return; }
+
 
       // Garder votre endpoint existant — s'assurer qu'il retourne role.permissions[]
       const res = await api.get("/users/profile");
@@ -89,7 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (access: string, refresh: string) => {
     localStorage.setItem(TOKEN_KEY, access);
-    localStorage.setItem(REFRESH_KEY, refresh);
     await loadUser();
     navigate("/");
   };

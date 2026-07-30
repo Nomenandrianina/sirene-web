@@ -11,7 +11,7 @@ export interface CreateSireneDto {
     villageId:         number;
     isActive?:         number;
     customerIds?:      number[];
-    communicationType?:      string;
+    communicationType?:string;
     fcmToken?: string | null;
   }
 

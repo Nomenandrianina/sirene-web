@@ -5,6 +5,7 @@ import { useRole } from '@/hooks/useRole';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { souscriptionApi } from '@/services/diffusion.api';
 import { diffusionPlanifieeApi } from '@/services/diffusionplanniee.api';
+import { packTypeApi } from '@/services/diffusion.api';
 import type { PackType, Souscription } from '@/types/diffusion';
 import { usePlanningClient, JOURS_FR, fmtDate, fmtHeure, addDays, toISO, type ClientPlanningSlot, type AudioDisponible, } from '@/types/useplanningclient';
 import { ChevronLeft, ChevronRight, RotateCcw, Clock, CheckCircle, Loader2, X, Plus, Radio, AlertTriangle, Lock, CreditCard, Pencil, Wand2, Shuffle, CalendarRange, Sparkles, PackageCheck, RefreshCw,} from 'lucide-react';
@@ -34,14 +35,7 @@ function Toast({ message, type = 'success', onClose }: {
   );
 }
 
-function ModalConfirmCancel({
-  item, onClose, onConfirm, cancelling,
-}: {
-  item: ClientPlanningSlot['items'][0];
-  onClose: () => void;
-  onConfirm: () => void;
-  cancelling: boolean;
-}) {
+function ModalConfirmCancel({ item, onClose, onConfirm, cancelling, }: { item: ClientPlanningSlot['items'][0]; onClose: () => void; onConfirm: () => void; cancelling: boolean; }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -112,11 +106,11 @@ function CreditBadge({ restants, total }: { restants: number | null; total: numb
 }
 
 // ── Cellule planning ──────────────────────────────────────────────────────────
-function PlanningCell({
-  slot, noCredits, onClickAdd, onClickCancel, onClickModify, cancelling,
-}: {
+function PlanningCell({ slot, noCredits, dayLocked,dayLockReason, onClickAdd, onClickCancel, onClickModify, cancelling,}: {
   slot:           ClientPlanningSlot | null;
   noCredits:      boolean;
+  dayLocked:      boolean;
+  dayLockReason:  'jour_complet' | 'quota_semaine_atteint' | 'ouvert';
   onClickAdd:     () => void;
   onClickCancel:  (item: ClientPlanningSlot['items'][0]) => void; // ← changé
   onClickModify:  (item: ClientPlanningSlot['items'][0]) => void;
@@ -132,6 +126,20 @@ function PlanningCell({
       <span className="text-[10px] text-slate-200">—</span>
     </div>
   );
+
+  // ── NOUVEAU : jour verrouillé par le quota du pack ──────────────────────
+  if (dayLocked && !hasItems && !estPasse) {
+    const label = dayLockReason === 'jour_complet'
+      ? 'Jour complet (quota du pack)'
+      : 'Quota de la semaine atteint';
+    return (
+      <div className="min-h-[72px] rounded-xl border-2 border-slate-200 bg-slate-100 flex flex-col items-center justify-center gap-1 cursor-not-allowed">
+        <Lock size={13} className="text-slate-300" />
+        <span className="text-[10px] text-slate-400 font-medium text-center px-1">{label}</span>
+      </div>
+    );
+  }
+
 
   if (noCredits && !hasItems && !estPasse) return (
     <div onClick={onClickAdd} className="min-h-[72px] rounded-xl border-2 border-amber-200 bg-amber-50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-amber-100 transition-colors">
@@ -224,7 +232,7 @@ function PlanningCell({
         );
       })}
 
-      {!estPlein && !estPasse && !noCredits && (
+      {!estPlein && !estPasse && !noCredits && !dayLocked && (
         <button onClick={onClickAdd}
           className="w-full rounded-lg border border-dashed border-emerald-200 py-1 text-[10px] text-emerald-400 hover:text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 transition-all flex items-center justify-center gap-1">
           <Plus size={9} /> Ajouter un autre son
@@ -529,6 +537,11 @@ export default function PlanningClientPage() {
   const souscriptions: Souscription[] = Array.isArray(rawSubs) ? rawSubs : (rawSubs as any)?.data ?? [];
   const activeSubs = souscriptions.filter(s => s.status === 'active');
   const selectedSub = activeSubs.find(s => s.id === souscriptionId) ?? activeSubs[0];
+
+  const { data: packs = [] } = useQuery({
+     queryKey: ['pack-types', 'active'],
+     queryFn:  () => packTypeApi.getAll(true),
+  });
 
   useEffect(() => {
      if (selectedSub?.sirenes?.length) {
@@ -843,33 +856,29 @@ export default function PlanningClientPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {planning.creneaux.map((cr, i) => (
-                      <tr key={`${cr.heure}-${cr.minute}`} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}>
-                        <td className="py-2.5 px-4 align-top">
-                          <div className="flex items-center gap-1.5 pt-1">
-                            <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                              <Clock size={11} className="text-blue-400" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600">{fmtHeure(cr.heure, cr.minute)}</span>
-                          </div>
-                        </td>
-                        {days.map(({ date }) => {
-                          const slot = planning.getSlot(date, cr.heure);
-                          return (
-                            <td key={date} className="py-2.5 px-1.5 align-top">
-                              <PlanningCell
-                                slot={slot}
-                                noCredits={noCredits}
-                                onClickAdd={() => { if (slot) setModalSlot({ slot, date, heure: cr.heure }); }}
-                                onClickCancel={(item) => setConfirmCancelItem(item)}
-                                onClickModify={setModalModify}
-                                cancelling={planning.cancelling}
-                              />
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                  {planning.creneaux.map((cr, i) => (
+                    <tr key={`${cr.heure}-${cr.minute}`} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}>
+                      <td className="py-2.5 px-4 align-top">{/* ... inchangé ... */}</td>
+                      {days.map(({ date }) => {
+                        const slot = planning.getSlot(date, cr.heure);
+                        const dayStatus = planning.getDayStatus(date);
+                        return (
+                          <td key={date} className="py-2.5 px-1.5 align-top">
+                            <PlanningCell
+                              slot={slot}
+                              noCredits={noCredits}
+                              dayLocked={dayStatus !== 'ouvert'}
+                              dayLockReason={dayStatus}
+                              onClickAdd={() => { if (slot) setModalSlot({ slot, date, heure: cr.heure }); }}
+                              onClickCancel={(item) => setConfirmCancelItem(item)}
+                              onClickModify={setModalModify}
+                              cancelling={planning.cancelling}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
                   </tbody>
                 </table>
               )}
@@ -912,7 +921,7 @@ export default function PlanningClientPage() {
           cancelling={planning.cancelling === confirmCancelItem.id}
         />
       )}
-
+    
       {modalSlot && (
         <ModalAjout
           slot={modalSlot.slot} audios={planning.audios} creditsRestants={planning.creditsRestants}
@@ -941,6 +950,18 @@ export default function PlanningClientPage() {
           generateError={autoGenerateMutation.error ? (autoGenerateMutation.error as any)?.response?.data?.message ?? 'Erreur' : null}
         />
       )}
+
+
+    {showChangePack && selectedSub && (
+      <ModalChangerPack
+        packs={packs}
+        currentPackId={selectedSub.packTypeId}
+        pendingPackId={selectedSub.pendingPackTypeId ?? null}
+        onClose={() => setShowChangePack(false)}
+        onConfirm={(packTypeId) => scheduleUpgradeMutation.mutate({ id: selectedSub.id, packTypeId })}
+        submitting={scheduleUpgradeMutation.isPending}
+      />
+    )}
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
     </AppLayout>

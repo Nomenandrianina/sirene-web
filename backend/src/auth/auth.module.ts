@@ -12,6 +12,7 @@ import { APP_GUARD } from '@nestjs/core/constants';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { PasswordResetToken } from './entity/password-reset-token.entity';
+import { RefreshToken } from 'src/refresh-token/entities/refresh-token.entity';
 // import { MailModule } from 'src/mail/mail.module';
 // import { MailService } from 'src/mail/mail.service';
 
@@ -20,6 +21,7 @@ import { PasswordResetToken } from './entity/password-reset-token.entity';
     TypeOrmModule.forFeature([
       PasswordResetToken,
       User,
+      RefreshToken
     ]),
     UsersModule,
     PassportModule,
@@ -27,10 +29,13 @@ import { PasswordResetToken } from './entity/password-reset-token.entity';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService): JwtModuleOptions => {
-        const secret = config.get<string>('JWT_SECRET') ?? 'default_secret';
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET manquant : impossible de démarrer l\'application');
+        }
         return {
           secret,
-          signOptions: { expiresIn: '15m' },
+          signOptions: { expiresIn: '8h' }, // cohérent avec login(), voir remarque plus bas
         };
       },
     }),
