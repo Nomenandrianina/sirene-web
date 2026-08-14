@@ -61,7 +61,8 @@ function ZoneList({ sirenes }: { sirenes: SouscriptionSirene[] }) {
   if (!sirenes || sirenes.length === 0) {
     return <span className="text-slate-300 text-xs italic">Aucune sirène associée</span>;
   }
-
+  
+  // console.log('all_sirene: ',sirenes)
   const MAX_VISIBLE = 3;
   const visible  = sirenes.slice(0, MAX_VISIBLE);
   const overflow = sirenes.length - MAX_VISIBLE;
@@ -79,7 +80,7 @@ function ZoneList({ sirenes }: { sirenes: SouscriptionSirene[] }) {
           >
             <Radio size={10} />
             {sirene.name ?? `Sirène #${sirene.id}`}
-            {!sirene.isActive && <span className="text-[10px] text-red-400 ml-0.5">(inactive)</span>}
+            {/* {!sirene.isActive && <span className="text-[10px] text-red-400 ml-0.5">(inactive)</span>} */}
           </span>
 
           {/* Flèche + Village */}
@@ -125,6 +126,8 @@ function SouscriptionCard({
   const isActive   = sub.status === "active";
   const isExpiring = isActive && days <= 14;
   const timeBarColor = isExpiring ? "bg-amber-400" : "bg-emerald-500";
+
+  console.log('sub.sirenes :',sub.sirenes)
 
   return (
     <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col transition hover:shadow-md
@@ -270,6 +273,8 @@ export default function MesOffres() {
     queryFn:  () => souscriptionApi.getAll({customerId}),
     enabled:  !!customerId,
   });
+
+  console.log('all_data ==>',rawSubs)
 
   const souscriptions: Souscription[] = Array.isArray(rawSubs)
     ? rawSubs

@@ -17,9 +17,17 @@ import { SouscriptionSirene } from 'src/souscription-sirene/entities/souscriptio
 // ── Helpers date ──────────────────────────────────────────────────────────────
 
 /** "2026-04-15" */
+// function toDateStr(d: Date): string {
+//   return d.toISOString().split('T')[0];
+// }
+
 function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
+
 
 function addDays(d: Date, n: number): Date {
   const r = new Date(d);
@@ -946,8 +954,7 @@ export class DiffusionPlanifieeService {
         .andWhere('dp.sirene_id = :sireneId', { sireneId: dto.sireneId })
         .andWhere('dp.status IN (:...statuses)', {
           statuses: [DiffusionPlanifieeStatus.PLANNED, DiffusionPlanifieeStatus.SENT],
-        })
-        .getRawMany();
+        }).getRawMany();
 
       for (const r of rows) {
         const dateStr = normalizeDateStr(r.date);        // ← fix

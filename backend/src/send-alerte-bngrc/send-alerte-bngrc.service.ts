@@ -7,10 +7,11 @@ import { SmsService }       from '@/sms/sms.service';
 import { SendAlerteBngrcDto } from './dto/send-alerte-bngrc.dto';
 import { AudioAlerteBngrc, AudioBngrcStatus } from '@/audio-alerte-bngrc/entities/audio-alerte-bngrc.entity';
 import { CategorieAlerteBngrc } from '@/categorie-alerte-bngrc/entities/categorie-alerte-bngrc.entity';
-import { NotificationBngrc, NotificationBngrcStatus } from '@/notification-bngrc/entities/notification-bngrc.entity';
+import { NotificationBngrc, NotificationBngrcStatus, PlaybackAckStatus } from '@/notification-bngrc/entities/notification-bngrc.entity';
 import { User } from '@/users/entities/user.entity';
 import { ROLES } from 'src/common/constants/roles.constants';
 import { Notificationsweb }   from '@/notificationsweb/entities/notificationsweb.entity';
+import { PlaybackAckDto } from 'src/notification-bngrc/dto/playback-ack.dto';
 
 // ── Heure Madagascar (UTC+3) ──────────────────────────────────────────────────
 function toMadagascarISOString(date: Date): string {
@@ -50,17 +51,12 @@ export class SendAlerteBngrcService {
 
   // ── Construction du message — même format que l'existant ─────────────────
   // "<mobileId> <repeatCount> <repeatInterval> <priority> <dateMadagascar>"
-  private buildMessage(
-    mobileId:      string,
-    repeatCount  = 1,
-    repeatInterval?: string,
-    priority:    'P1' | 'P2' = 'P1', // BNGRC = urgence → P1 par défaut
-    scheduledDate?: Date,
-  ): string {
+  private buildMessage(mobileId: string,  repeatCount = 1,  repeatInterval?: string,  priority: 'P1' | 'P2' = 'P1',  scheduledDate?: Date,  notifId?: number,): string {
     const datePart = ' ' + toMadagascarISOString(scheduledDate ?? new Date());
+    const idPart   = notifId != null ? ` ${notifId}` : '';
     return repeatCount <= 1
-      ? `${mobileId} ${repeatCount} 0 ${priority}${datePart}`
-      : `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${datePart}`;
+      ? `${mobileId} ${repeatCount} 0 ${priority}${idPart}${datePart}`
+      : `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${idPart}${datePart}`;
   }
 
   // ── Envoi principal ───────────────────────────────────────────────────────
@@ -184,14 +180,10 @@ export class SendAlerteBngrcService {
       }
 
       const mobileId = audio.mobileId ?? `BNGRC_CAT_${categorieAlerteBngrcId}`;
-      const message  = this.buildMessage(
-        mobileId, repeatCount, repeatInterval, finalPriority, scheduledDate,
-      );
-
-      this.logger.log(`[BNGRC Sirène #${sirene.id}] message: ${message}`);
+     
 
       const notif = new NotificationBngrc();
-      notif.message                = message;
+      notif.message                = "";
       notif.sireneId               = sirene.id;
       notif.audioBngrcId           = audio.id;           // ← AudioAlerteBngrc, pas AlerteAudio
       notif.categorieAlerteBngrcId = categorieAlerteBngrcId; // ← catégorie BNGRC, pas sousCatégorie
@@ -200,12 +192,20 @@ export class SendAlerteBngrcService {
       notif.type                   = `BNGRC — ${categorie.name}`;
       notif.userId                 = userId ?? null;
       notif.status                 = NotificationBngrcStatus.PENDING;
-      notif.sendingTimeAfterAlerte = sendingTimeAfterAlerte
-        ? new Date(sendingTimeAfterAlerte)
-        : null;
+      notif.playbackStatus         = null; 
+      notif.sendingTimeAfterAlerte = sendingTimeAfterAlerte  ? new Date(sendingTimeAfterAlerte) : null;
       notif.sendingTime            = new Date();
 
       const saved = await this.notifRepo.save(notif);
+
+      const message = this.buildMessage( mobileId, repeatCount, repeatInterval, finalPriority, scheduledDate, saved.id,);
+
+      saved.message = message;
+      await this.notifRepo.update(saved.id, { message });
+
+
+      this.logger.log(`[BNGRC Sirène #${sirene.id}] message: ${message}`);
+
       await this.dispatchNotification(saved, sirene);
       sent++;
 
@@ -346,20 +346,9 @@ export class SendAlerteBngrcService {
     return { sireneCount: sirenes.length, sirenes };
   }
 
-  private async createBngrcNotifWeb(params: {
-    typeAlerteName: string; categorieName:  string;
-    sentCount: number;
-    totalCount: number;
-    senderName:     string;
-    customerName:   string;
-    scheduledDate:  Date;
-  }): Promise<void> {
-    const {
-      typeAlerteName, categorieName,
-      sentCount, totalCount,
-      senderName, customerName,
-      scheduledDate,
-    } = params;
+  private async createBngrcNotifWeb(params: { typeAlerteName: string; categorieName:  string; sentCount: number; totalCount: number; senderName:     string; customerName:   string; scheduledDate:  Date;}): Promise<void> {
+    
+    const { typeAlerteName, categorieName, sentCount, totalCount,senderName, customerName, scheduledDate,} = params;
    
     const targets = await this.userRepo
       .createQueryBuilder('u')
@@ -405,5 +394,40 @@ export class SendAlerteBngrcService {
    
     await this.notifWebRepo.save(notifs);
   }
+
+
+  private readonly PLAYBACK_RANK: Record<PlaybackAckStatus, number> = {
+    [PlaybackAckStatus.RECEIVED]: 1,
+    [PlaybackAckStatus.PLAYING]:  2,
+    [PlaybackAckStatus.PLAYED]:   3,
+    [PlaybackAckStatus.FAILED]:   3,
+  };
+  
+  async acknowledgePlayback(id: number, dto: PlaybackAckDto): Promise<{ updated: boolean }> {
+    const notif = await this.notifRepo.findOne({ where: { id } });
+    if (!notif) throw new NotFoundException(`Notification #${id} introuvable`);
+  
+    const currentRank = notif.playbackStatus ? this.PLAYBACK_RANK[notif.playbackStatus] : 0;
+    const newRank     = this.PLAYBACK_RANK[dto.status];
+    if (newRank < currentRank) {
+      this.logger.warn(`[BNGRC] Ack ignoré (régression) #${id}: ${notif.playbackStatus} → ${dto.status}`);
+      return { updated: false };
+    }
+  
+    const now = dto.timestamp ? new Date(dto.timestamp) : new Date();
+    const update: Partial<NotificationBngrc> = { playbackStatus: dto.status };
+  
+    if (dto.status === PlaybackAckStatus.RECEIVED) update.playbackReceivedAt = now;
+    if (dto.status === PlaybackAckStatus.PLAYING)  update.playbackStartedAt  = now;
+    if (dto.status === PlaybackAckStatus.PLAYED)   update.playbackEndedAt    = now;
+    if (dto.status === PlaybackAckStatus.FAILED) {
+      update.playbackEndedAt = now;
+      update.playbackError   = dto.errorReason?.slice(0, 255) ?? null;
+    }
+  
+    await this.notifRepo.update(id, update);
+    return { updated: true };
+  }
+
   
 }

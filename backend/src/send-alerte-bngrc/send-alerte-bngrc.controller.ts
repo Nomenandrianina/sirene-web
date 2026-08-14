@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query, ParseIntPipe ,Headers, UnauthorizedException } from '@nestjs/common';
 import { SendAlerteBngrcService } from './send-alerte-bngrc.service';
 import { CreateSendAlerteBngrcDto } from './dto/create-send-alerte-bngrc.dto';
 import { UpdateSendAlerteBngrcDto } from './dto/update-send-alerte-bngrc.dto';
 import { SendAlerteBngrcDto } from './dto/send-alerte-bngrc.dto';
+import { Public } from '@/common/decarators/public.decorator';
+import { PlaybackAckDto } from '@/notification-bngrc/dto/playback-ack.dto';
 
 @Controller('send-alerte-bngrc')
 export class SendAlerteBngrcController {
@@ -12,6 +14,16 @@ export class SendAlerteBngrcController {
   send(@Body() dto: SendAlerteBngrcDto, @Request() req: any) {
     dto.userId = req.user?.sub ?? req.user?.id;
     return this.service.sendAlerteBngrc(dto);
+  }
+
+
+  @Public()
+  @Post(':id/ack')
+  ack( @Param('id', ParseIntPipe) id: number, @Body() dto: PlaybackAckDto, @Headers('x-api-key') apiKey: string, ) {
+    if (apiKey !== process.env.FCM_API_KEY) {
+      throw new UnauthorizedException('Clé API invalide');
+    }
+    return this.service.acknowledgePlayback(id, dto);
   }
 
   // Prévisualisation des sirènes touchées — même interface que /send-alerte/preview
