@@ -20,6 +20,14 @@ export enum OrangeBngrcStatus {
     DELIVERED_TO_TERMINAL = 'DeliveredToTerminal',
 }
 
+export enum PlaybackAckStatus {
+    RECEIVED = 'received',
+    PLAYING  = 'playing',
+    PLAYED   = 'played',
+    FAILED   = 'failed',
+}
+
+
 @Entity('notification_sirene_alerte_bngrc')
 export class NotificationBngrc {
     @PrimaryGeneratedColumn()
@@ -92,6 +100,21 @@ export class NotificationBngrc {
     // Heure d'envoi planifiée (null = envoi immédiat)
     @Column({ name: 'sending_time_after_alerte', type: 'datetime', nullable: true })
     sendingTimeAfterAlerte: Date | null;
+
+    @Column({ name: 'playback_status', type: 'enum', enum: PlaybackAckStatus, nullable: true })
+    playbackStatus: PlaybackAckStatus | null;
+
+    @Column({ name: 'playback_received_at', type: 'datetime', nullable: true })
+    playbackReceivedAt: Date | null;
+
+    @Column({ name: 'playback_started_at', type: 'datetime', nullable: true })
+    playbackStartedAt: Date | null;
+
+    @Column({ name: 'playback_ended_at', type: 'datetime', nullable: true })
+    playbackEndedAt: Date | null;
+
+    @Column({ name: 'playback_error', type: 'varchar', length: 255, nullable: true })
+    playbackError: string | null;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

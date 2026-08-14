@@ -31,6 +31,7 @@ export class SirenesController {
 
   @Get()
   findAll(@Request() req) {
+    console.log('process.env.FCM_API_KEY :',process.env.FCM_API_KEY);
     const user = req.user;
     const roleName = user.role?.name?.toUpperCase();
     const isSuperAdmin = roleName === ROLES.SUPERADMIN;

@@ -2,562 +2,71 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { useRole } from '@/hooks/useRole';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { souscriptionApi } from '@/services/diffusion.api';
-import { diffusionPlanifieeApi } from '@/services/diffusionplanniee.api';
-import { packTypeApi } from '@/services/diffusion.api';
-import type { PackType, Souscription } from '@/types/diffusion';
-import { usePlanningClient, JOURS_FR, fmtDate, fmtHeure, addDays, toISO, type ClientPlanningSlot, type AudioDisponible, } from '@/types/useplanningclient';
-import { ChevronLeft, ChevronRight, RotateCcw, Clock, CheckCircle, Loader2, X, Plus, Radio, AlertTriangle, Lock, CreditCard, Pencil, Wand2, Shuffle, CalendarRange, Sparkles, PackageCheck, RefreshCw,} from 'lucide-react';
-const STATUS_CFG = {
-  planned:   { label: 'Planifié', color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-200',  dot: 'bg-blue-400'  },
-  sent:      { label: 'Envoyé',   color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', dot: 'bg-green-400' },
-  cancelled: { label: 'Annulé',   color: 'text-red-500',   bg: 'bg-red-50',   border: 'border-red-200',   dot: 'bg-red-400'   },
-  skipped:   { label: 'Ignoré',   color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-300' },
-} as const;
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { souscriptionApi, packTypeApi } from '@/services/diffusion.api';
+import type { Souscription } from '@/types/diffusion';
+import { usePlanningClient, JOURS_FR, fmtDate, fmtHeure, addDays, toISO, type ClientPlanningSlot,} from '@/types/useplanningclient';
+import { ChevronLeft, ChevronRight, RotateCcw, Clock, Loader2, Radio, AlertTriangle, Wand2, CalendarRange, Sparkles, PackageCheck, RefreshCw, Plus, Lock, Pencil, X,} from 'lucide-react';
+import { Toast } from '@/components/planning/Toast';
+import { CreditBadge } from '@/components/planning/CreditBadge';
+import { PlanningCell } from '@/components/planning/PlanningCell';
+import { ModalConfirmCancel } from '@/components/planning/ModalConfirmCancel';
+import { ModalAjout } from '@/components/planning/ModalAjout';
+import { ModalModifier } from '@/components/planning/ModalModifier';
+import { ModalAutoGenerate } from '@/components/planning/ModalAutoGenerate';
+import { ModalChangerPack } from '@/components/planning/ModalChangerPack';
+import { usePlanningMutations } from './hooks/usePlanningMutations';
+import { STATUS_CFG } from './constants';
+import { isToday } from './utils';
 
-function isToday(iso: string) { return iso === toISO(new Date()); }
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function Toast({ message, type = 'success', onClose }: {
-  message: string; type?: 'success' | 'error'; onClose: () => void;
-}) {
-  return (
-    <div className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3
-      px-4 py-3 rounded-xl shadow-lg animate-in slide-in-from-bottom-4 duration-300
-      ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-      <CheckCircle size={16} className="shrink-0" />
-      <span className="text-sm font-medium">{message}</span>
-      <button onClick={onClose} className="ml-2 p-0.5 hover:bg-white/20 rounded transition-colors">
-        <X size={13} />
-      </button>
-    </div>
-  );
-}
-
-function ModalConfirmCancel({ item, onClose, onConfirm, cancelling, }: { item: ClientPlanningSlot['items'][0]; onClose: () => void; onConfirm: () => void; cancelling: boolean; }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="bg-red-600 px-5 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-white">Annuler la diffusion ?</h3>
-            <p className="text-xs text-red-100 mt-0.5">
-              Diffusion du {fmtHeure(item.scheduledHeure, item.scheduledMinute)}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10">
-            <X size={16} className="text-red-100" />
-          </button>
-        </div>
-        <div className="px-5 py-4 flex flex-col gap-3">
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-            <AlertTriangle size={13} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-700">
-              Cette action est irréversible. Le crédit utilisé vous sera restitué.
-            </p>
-          </div>
-          {item.audioName && (
-            <p className="text-xs text-slate-500">
-              Son prévu : <span className="font-medium text-slate-700">{item.audioName}</span>
-            </p>
-          )}
-        </div>
-        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
-            Retour
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={cancelling}
-            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
-          >
-            {cancelling
-              ? <><Loader2 size={14} className="animate-spin" /> Annulation…</>
-              : <><X size={14} /> Confirmer l'annulation</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Badge crédit ──────────────────────────────────────────────────────────────
-function CreditBadge({ restants, total }: { restants: number | null; total: number | null }) {
-  if (restants === null) return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-200">
-      <CreditCard size={12} className="text-violet-500" />
-      <span className="text-xs font-semibold text-violet-700">Illimité</span>
-    </div>
-  );
-  const pct = total ? Math.round((restants / total) * 100) : 0;
-  const isLow = pct <= 20;
-  const isEmpty = restants === 0;
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border
-      ${isEmpty ? 'bg-red-50 border-red-200' : isLow ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-      <CreditCard size={12} className={isEmpty ? 'text-red-500' : isLow ? 'text-amber-500' : 'text-emerald-500'} />
-      <span className={`text-xs font-semibold ${isEmpty ? 'text-red-700' : isLow ? 'text-amber-700' : 'text-emerald-700'}`}>
-        {restants} crédit{restants > 1 ? 's' : ''}{total ? ` / ${total}` : ''}
-      </span>
-    </div>
-  );
-}
-
-// ── Cellule planning ──────────────────────────────────────────────────────────
-function PlanningCell({ slot, noCredits, dayLocked,dayLockReason, onClickAdd, onClickCancel, onClickModify, cancelling,}: {
-  slot:           ClientPlanningSlot | null;
-  noCredits:      boolean;
-  dayLocked:      boolean;
-  dayLockReason:  'jour_complet' | 'quota_semaine_atteint' | 'ouvert';
-  onClickAdd:     () => void;
-  onClickCancel:  (item: ClientPlanningSlot['items'][0]) => void; // ← changé
-  onClickModify:  (item: ClientPlanningSlot['items'][0]) => void;
-  cancelling:     number | null;
-}) {
-  if (!slot) return <div className="min-h-[72px] rounded-xl border-2 border-dashed border-slate-100 bg-slate-50/30" />;
-
-  const { estPasse, estPlein, items } = slot;
-  const hasItems = items.length > 0;
-
-  if (estPasse && !hasItems) return (
-    <div className="min-h-[72px] rounded-xl border-2 border-dashed border-slate-100 bg-slate-50/20 flex items-center justify-center">
-      <span className="text-[10px] text-slate-200">—</span>
-    </div>
-  );
-
-  // ── NOUVEAU : jour verrouillé par le quota du pack ──────────────────────
-  if (dayLocked && !hasItems && !estPasse) {
-    const label = dayLockReason === 'jour_complet'
-      ? 'Jour complet (quota du pack)'
-      : 'Quota de la semaine atteint';
-    return (
-      <div className="min-h-[72px] rounded-xl border-2 border-slate-200 bg-slate-100 flex flex-col items-center justify-center gap-1 cursor-not-allowed">
-        <Lock size={13} className="text-slate-300" />
-        <span className="text-[10px] text-slate-400 font-medium text-center px-1">{label}</span>
-      </div>
-    );
-  }
-
-
-  if (noCredits && !hasItems && !estPasse) return (
-    <div onClick={onClickAdd} className="min-h-[72px] rounded-xl border-2 border-amber-200 bg-amber-50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-amber-100 transition-colors">
-      <AlertTriangle size={14} className="text-amber-400" />
-      <span className="text-[10px] text-amber-600 font-medium">Crédits épuisés</span>
-    </div>
-  );
-
-  if (estPlein && !hasItems) return (
-    <div className="min-h-[72px] rounded-xl border-2 border-slate-200 bg-slate-100 flex flex-col items-center justify-center gap-1 cursor-not-allowed">
-      <Lock size={13} className="text-slate-300" />
-      <span className="text-[10px] text-slate-400">Créneau plein</span>
-    </div>
-  );
-
-  if (!hasItems) return (
-    <div onClick={onClickAdd} className="min-h-[72px] rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-emerald-100 hover:border-emerald-400 transition-all group">
-      <Plus size={16} className="text-emerald-400 group-hover:text-emerald-600 transition-colors" />
-      <span className="text-[10px] text-emerald-500 group-hover:text-emerald-700 font-medium">Ajouter</span>
-    </div>
-  );
-
-  return (
-    <div className="min-h-[72px] rounded-xl border-2 border-transparent bg-white p-1.5 flex flex-col gap-1.5">
-      {items.map(item => {
-        const cfg = STATUS_CFG[item.status];
-        // Vérifier si modification possible (>24h avant)
-        const scheduledAt = new Date(
-          `${slot.date}T${String(item.scheduledHeure).padStart(2,'0')}:${String(item.scheduledMinute).padStart(2,'0')}:00`
-        );
-        const canModify = item.status === 'planned' &&
-          (scheduledAt.getTime() - Date.now()) >= 24 * 3_600_000;
-
-        return (
-        <div key={item.id}  className={`rounded-lg px-2 py-2 border flex flex-col gap-1 ${cfg.bg} ${cfg.border}`}>
-            <div className="flex items-center justify-between gap-1">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
-                <span className={`text-[10px] font-bold tabular-nums ${cfg.color}`}>
-                  {fmtHeure(item.scheduledHeure, item.scheduledMinute)}
-                </span>
-                <span className={`text-[10px] ${cfg.color} opacity-60`}>{cfg.label}</span>
-              </div>
-
-              {/* ── Icônes TOUJOURS visibles (plus opacity-0) ── */}
-              <div className="flex items-center gap-1">
-                {canModify && (
-                  <button
-                    onClick={e => { e.stopPropagation(); onClickModify(item); }}
-                    className="p-1 rounded-md bg-blue-100 hover:bg-blue-200 transition-colors"
-                    title="Modifier le son"
-                  >
-                    <Pencil size={11} className="text-blue-600" />
-                  </button>
-                )}
-                {item.canCancel && (
-                  <button
-                    onClick={e => { e.stopPropagation(); onClickCancel(item); }} // ← passe item entier
-                    disabled={cancelling === item.id}
-                    className="p-1 rounded-md bg-red-100 hover:bg-red-200 transition-colors"
-                    title="Annuler cette diffusion"
-                  >
-                    {cancelling === item.id
-                      ? <Loader2 size={11} className="animate-spin text-red-500" />
-                      : <X size={11} className="text-red-500" />}
-                  </button>
-                )}
-              </div>
-            </div>
-
-
-            {item.audioName && (
-              <div className="flex items-center gap-1 pl-3">
-                <span className="text-[9px] text-slate-400 truncate max-w-[90px]" title={item.audioName}>
-                  🔊 {item.audioName}
-                </span>
-              </div>
-            )}
-
-            {item.sireneName && (
-              <div className="flex items-center gap-1 pl-3">
-                <Radio size={8} className="text-slate-400 shrink-0" />
-                <span className="text-[9px] text-slate-400 truncate" title={item.sireneName}>
-                  {item.sireneName}
-                </span>
-              </div>
-            )}
-                
-          </div>
-        );
-      })}
-
-      {!estPlein && !estPasse && !noCredits && !dayLocked && (
-        <button onClick={onClickAdd}
-          className="w-full rounded-lg border border-dashed border-emerald-200 py-1 text-[10px] text-emerald-400 hover:text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 transition-all flex items-center justify-center gap-1">
-          <Plus size={9} /> Ajouter un autre son
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── Modale ajout ──────────────────────────────────────────────────────────────
-function ModalAjout({
-  slot, audios, creditsRestants, onClose, onConfirm, adding, addError,
-}: {
-  slot: ClientPlanningSlot; audios: AudioDisponible[]; creditsRestants: number | null;
-  onClose: () => void; onConfirm: (audioId: number) => Promise<void>;
-  adding: boolean; addError: string | null;
-}) {
-  const [audioId, setAudioId] = useState<number | ''>('');
-  const selectedAudio = audios.find(a => a.id === Number(audioId));
-  const dureeRestante = slot.dureeMaxSecondes - slot.dureeCumuleeSecondes;
-  const audioFit = selectedAudio?.duration ? selectedAudio.duration <= dureeRestante : true;
-  const noCredits = creditsRestants !== null && creditsRestants <= 0;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-slate-900 px-5 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-white">Ajouter une diffusion</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {fmtDate(slot.date)} · {fmtHeure(slot.heure, slot.minute)} — toutes les sirènes
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-            <X size={16} className="text-slate-400" />
-          </button>
-        </div>
-        <div className="px-5 py-4 flex flex-col gap-4">
-          {creditsRestants !== null && (
-            <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${noCredits ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
-              <CreditCard size={16} className={noCredits ? 'text-red-500' : 'text-emerald-500'} />
-              <div>
-                <p className={`text-xs font-semibold ${noCredits ? 'text-red-700' : 'text-emerald-700'}`}>
-                  {noCredits ? "Crédits épuisés" : `${creditsRestants} crédit${creditsRestants > 1 ? 's' : ''} disponible${creditsRestants > 1 ? 's' : ''}`}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">1 crédit pour toutes vos sirènes</p>
-              </div>
-            </div>
-          )}
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-xs font-medium text-slate-500">Espace créneau</span>
-              <span className="text-xs text-slate-400">
-                {Math.floor(slot.dureeCumuleeSecondes/60)}min {slot.dureeCumuleeSecondes%60}s / {Math.floor(slot.dureeMaxSecondes/60)}min
-              </span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full rounded-full bg-blue-400 transition-all"
-                style={{ width: `${Math.min(100, (slot.dureeCumuleeSecondes/slot.dureeMaxSecondes)*100)}%` }} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Son à diffuser</label>
-            {audios.length === 0 ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-                Aucun audio approuvé disponible.
-              </div>
-            ) : (
-              <select value={audioId} onChange={e => setAudioId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-                <option value="">— Choisir un son —</option>
-                {audios.map(a => (
-                  <option key={a.id} value={a.id}>{a.name ?? `Audio #${a.id}`}{a.duration ? ` (${Math.round(a.duration)}s)` : ''}</option>
-                ))}
-              </select>
-            )}
-          </div>
-          {selectedAudio && !audioFit && (
-            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
-              <AlertTriangle size={13} className="text-red-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-red-700">Cet audio dépasse l'espace restant ({Math.floor(dureeRestante/60)}min {dureeRestante%60}s).</p>
-            </div>
-          )}
-          {addError && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{addError}</div>}
-        </div>
-        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">Annuler</button>
-          <button onClick={async () => { if (audioId) await onConfirm(Number(audioId)); }}
-            disabled={!audioId || adding || noCredits || (selectedAudio ? !audioFit : false) || audios.length === 0}
-            className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-            {adding ? <><Loader2 size={14} className="animate-spin" /> Enregistrement…</> : <><CheckCircle size={14} /> Valider — −1 crédit</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Modale modifier audio ─────────────────────────────────────────────────────
-function ModalModifier({
-  item, audios, onClose, onConfirm, modifying, modifyError,
-}: {
-  item: ClientPlanningSlot['items'][0]; audios: AudioDisponible[];
-  onClose: () => void; onConfirm: (audioId: number) => Promise<void>;
-  modifying: boolean; modifyError: string | null;
-}) {
-  const [audioId, setAudioId] = useState<number | ''>(item.alerteAudioId ?? '');
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-blue-700 px-5 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-white">Modifier le son</h3>
-            <p className="text-xs text-blue-200 mt-0.5">
-              Diffusion du {fmtHeure(item.scheduledHeure, item.scheduledMinute)}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10">
-            <X size={16} className="text-blue-200" />
-          </button>
-        </div>
-        <div className="px-5 py-4 flex flex-col gap-4">
-          <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5">
-            <Pencil size={13} className="text-blue-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-blue-700">
-              Vous pouvez changer le son tant qu'il reste plus de 24h avant la diffusion.
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">Nouveau son</label>
-            <select value={audioId} onChange={e => setAudioId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-              <option value="">— Choisir un son —</option>
-              {audios.map(a => (
-                <option key={a.id} value={a.id}>{a.name ?? `Audio #${a.id}`}{a.duration ? ` (${Math.round(a.duration)}s)` : ''}</option>
-              ))}
-            </select>
-          </div>
-          {modifyError && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{modifyError}</div>}
-        </div>
-        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm text-slate-600 hover:bg-slate-50">Annuler</button>
-          <button onClick={async () => { if (audioId) await onConfirm(Number(audioId)); }}
-            disabled={!audioId || modifying || audioId === item.alerteAudioId}
-            className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2">
-            {modifying ? <><Loader2 size={14} className="animate-spin" /> Modification…</> : <><CheckCircle size={14} /> Confirmer</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Modale génération automatique ─────────────────────────────────────────────
-function ModalAutoGenerate({
-  audios, creditsRestants, onClose, onConfirm, generating, generateError,
-}: {
-  audios: AudioDisponible[]; creditsRestants: number | null;
-  onClose: () => void; onConfirm: (audioIds: number[]) => Promise<void>;
-  generating: boolean; generateError: string | null;
-}) {
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  const toggle = (id: number) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="bg-violet-700 px-5 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Wand2 size={15} /> Générer automatiquement
-            </h3>
-            <p className="text-xs text-violet-200 mt-0.5">
-              Le système répartit aléatoirement les sons sélectionnés sur le mois restant
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10"><X size={16} className="text-violet-200" /></button>
-        </div>
-        <div className="px-5 py-4 flex flex-col gap-4">
-          {creditsRestants !== null && (
-            <div className="flex items-center gap-2 rounded-xl bg-violet-50 border border-violet-200 px-4 py-3">
-              <CreditCard size={14} className="text-violet-500" />
-              <p className="text-xs text-violet-700 font-medium">
-                {creditsRestants} crédit{creditsRestants > 1 ? 's' : ''} disponible{creditsRestants > 1 ? 's' : ''}
-                {' '}— 1 crédit par créneau généré
-              </p>
-            </div>
-          )}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">
-              Sons à distribuer ({selectedIds.length} sélectionné{selectedIds.length > 1 ? 's' : ''})
-            </label>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
-              {audios.map(a => (
-                <label key={a.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors
-                  ${selectedIds.includes(a.id)
-                    ? 'border-violet-300 bg-violet-50'
-                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
-                  <input type="checkbox" checked={selectedIds.includes(a.id)} onChange={() => toggle(a.id)}
-                    className="accent-violet-600" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">{a.name ?? `Audio #${a.id}`}</p>
-                    {a.duration && <p className="text-xs text-slate-400">{Math.round(a.duration)}s</p>}
-                  </div>
-                  <Shuffle size={11} className="text-slate-300 shrink-0" />
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-500">
-            <p>🎲 Les sons sélectionnés seront distribués <strong>aléatoirement</strong> sur chaque créneau disponible du mois restant, pour toutes vos sirènes.</p>
-          </div>
-          {generateError && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{generateError}</div>}
-        </div>
-        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm text-slate-600 hover:bg-slate-50">Annuler</button>
-          <button onClick={async () => { if (selectedIds.length) await onConfirm(selectedIds); }}
-            disabled={!selectedIds.length || generating}
-            className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2">
-            {generating ? <><Loader2 size={14} className="animate-spin" /> Génération…</> : <><Wand2 size={14} /> Générer</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ModalChangerPack({ packs, currentPackId, pendingPackId, onClose, onConfirm, submitting }: {
-  packs: PackType[]; currentPackId: number; pendingPackId: number | null;
-  onClose: () => void; onConfirm: (packTypeId: number) => void; submitting: boolean;
-}) {
-  const [selected, setSelected] = useState<number | null>(pendingPackId);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        <div className="bg-slate-900 px-5 py-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Changer de pack</h3>
-          <button onClick={onClose}><X size={16} className="text-slate-400" /></button>
-        </div>
-        <div className="px-5 py-4 flex flex-col gap-3">
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700 flex gap-2">
-            <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-            Le changement ne prendra effet qu'au <strong>prochain cycle</strong> — votre pack actuel reste actif jusqu'à son échéance.
-          </div>
-          {packs.map(p => (
-            <button key={p.id} onClick={() => setSelected(p.id)}
-              disabled={p.id === currentPackId}
-              className={`rounded-xl border-2 p-3 text-left transition-all
-                ${selected === p.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}
-                ${p.id === currentPackId ? 'opacity-40 cursor-not-allowed' : 'hover:border-blue-300'}`}>
-              <div className="text-sm font-semibold capitalize">{p.name} {p.id === currentPackId && '(actuel)'}</div>
-              <div className="text-xs text-slate-500">{p.nombreCredits ?? '∞'} crédits · {Number(p.prix).toLocaleString('fr-FR')} Ar</div>
-            </button>
-          ))}
-        </div>
-        <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-xl border py-2.5 text-sm">Annuler</button>
-          <button onClick={() => selected && onConfirm(selected)} disabled={!selected || submitting}
-            className="flex-1 rounded-xl bg-blue-600 text-white py-2.5 text-sm font-semibold disabled:opacity-40">
-            {submitting ? 'Envoi…' : 'Programmer le changement'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Page principale ───────────────────────────────────────────────────────────
 export default function PlanningClientPage() {
   const { customerId, userId } = useRole();
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
+
   const [confirmCancelItem, setConfirmCancelItem] = useState<ClientPlanningSlot['items'][0] | null>(null);
   const [sireneId, setSireneId] = useState<number | null>(null);
-  const [showChangePack, setShowChangePack]     = useState(false);
-
+  const [showChangePack, setShowChangePack] = useState(false);
   const [souscriptionId, setSouscriptionId] = useState<number>(
     Number(searchParams.get('souscriptionId')) || 0
   );
-
-  const [modalSlot, setModalSlot]         = useState<{ slot: ClientPlanningSlot; date: string; heure: number } | null>(null);
-  const [modalModify, setModalModify]     = useState<ClientPlanningSlot['items'][0] | null>(null);
+  const [modalSlot, setModalSlot] = useState<{ slot: ClientPlanningSlot; date: string; heure: number } | null>(null);
+  const [modalModify, setModalModify] = useState<ClientPlanningSlot['items'][0] | null>(null);
   const [showAutoGenerate, setShowAutoGenerate] = useState(false);
-  const [toast, setToast]                 = useState<{ msg: string; type?: 'success'|'error' } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type?: 'success' | 'error' } | null>(null);
 
-  const showToast = (msg: string, type: 'success'|'error' = 'success') => {
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   };
 
+  // ── Souscriptions & packs ──────────────────────────────────────────────
   const { data: rawSubs } = useQuery({
     queryKey: ['souscriptions', 'client', customerId],
-    queryFn:  () => souscriptionApi.getAll({customerId}),
-    enabled:  !!customerId,
+    queryFn: () => souscriptionApi.getAll({ customerId }),
+    enabled: !!customerId,
   });
   const souscriptions: Souscription[] = Array.isArray(rawSubs) ? rawSubs : (rawSubs as any)?.data ?? [];
   const activeSubs = souscriptions.filter(s => s.status === 'active');
   const selectedSub = activeSubs.find(s => s.id === souscriptionId) ?? activeSubs[0];
 
   const { data: packs = [] } = useQuery({
-     queryKey: ['pack-types', 'active'],
-     queryFn:  () => packTypeApi.getAll(true),
+    queryKey: ['pack-types', 'active'],
+    queryFn: () => packTypeApi.getAll(true),
   });
 
   useEffect(() => {
-     if (selectedSub?.sirenes?.length) {
-       // Si l'ancien sireneId n'appartient plus à cette souscription, on reset sur la 1ère
-       const stillValid = selectedSub.sirenes.some(s => s.id === sireneId);
-       if (!stillValid) setSireneId(selectedSub.sirenes[0].id);
-     } else {
-       setSireneId(null);
-     }
-   }, [selectedSub?.id]);
+    if (selectedSub?.sirenes?.length) {
+      const stillValid = selectedSub.sirenes.some(s => s.id === sireneId);
+      if (!stillValid) setSireneId(selectedSub.sirenes[0].id);
+    } else {
+      setSireneId(null);
+    }
+  }, [selectedSub?.id]);
 
-  // ── Plus de sélecteur de sirène — propagation auto ────────────────────────
-  // On charge le planning sur toutes les sirènes via souscriptionId uniquement
-  // Le hook retourne les slots groupés par date/heure (toutes sirènes confondues)
+  // ── Planning (toutes sirènes de la souscription) ───────────────────────
   const planning = usePlanningClient({
-    customerId:     customerId ?? 0,
+    customerId: customerId ?? 0,
     souscriptionId: selectedSub?.id ?? 0,
     sireneId: sireneId ?? 0,
     enabled: !!customerId && !!selectedSub && !!sireneId,
@@ -570,39 +79,21 @@ export default function PlanningClientPage() {
 
   const noCredits = planning.creditsRestants !== null && planning.creditsRestants <= 0;
 
-  // ── Mutation : modifier un audio ─────────────────────────────────────────
-  const modifyMutation = useMutation({
-    mutationFn: ({ diffusionId, alerteAudioId }: { diffusionId: number; alerteAudioId: number }) =>
-      diffusionPlanifieeApi.clientModify({ diffusionId, alerteAudioId, customerId: customerId! }),
-    onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: ['client-planning'] });
-      setModalModify(null);
-      const audioName = planning.audios.find(a => a.id === variables.alerteAudioId)?.name
-        ?? `Audio #${variables.alerteAudioId}`;
-      showToast(`✅ Son modifié : "${audioName}"`);
-    },
-    onError: () => {
-      showToast("❌ Erreur lors de la modification", 'error');
-    },
+  // ── Mutations secondaires (modifier / auto-générer / changer de pack) ──
+  const {
+    modifyMutation, autoGenerateMutation, cancelUpgradeMutation, scheduleUpgradeMutation,
+  } = usePlanningMutations({
+    customerId,
+    souscriptionId: selectedSub?.id,
+    sireneId,
+    audios: planning.audios,
+    showToast,
+    onModifySuccess: () => setModalModify(null),
+    onAutoGenerateSuccess: () => setShowAutoGenerate(false),
+    onUpgradeScheduled: () => setShowChangePack(false),
   });
 
-  // ── Mutation : génération automatique ────────────────────────────────────
-  const autoGenerateMutation = useMutation({
-    mutationFn: (audioIds: number[]) =>
-      diffusionPlanifieeApi.clientAutoGenerate({
-        souscriptionId: selectedSub!.id,
-        customerId:     customerId!,
-        sireneId:       sireneId!,
-        audioIds,
-      }),
-    onSuccess: (result) => {
-      qc.invalidateQueries({ queryKey: ['client-planning'] });
-      qc.invalidateQueries({ queryKey: ['souscriptions'] });
-      setShowAutoGenerate(false);
-      showToast(`✅ ${result.generated} diffusion${result.generated > 1 ? 's' : ''} générée${result.generated > 1 ? 's' : ''} automatiquement`);
-    },
-  });
-
+  // ── Handlers liés au planning lui-même (add / cancel) ───────────────────
   const handleConfirmAdd = async (audioId: number) => {
     if (!modalSlot || !selectedSub || !sireneId) return;
     try {
@@ -612,12 +103,14 @@ export default function PlanningClientPage() {
         alerteAudioId: audioId,
         date: modalSlot.date,
         heure: modalSlot.heure,
-       sireneId,
+        sireneId,
       });
       setModalSlot(null);
       const audioName = planning.audios.find(a => a.id === audioId)?.name ?? `Audio #${audioId}`;
       showToast(`✅ "${audioName}" ajouté au créneau ${fmtHeure(modalSlot.heure, 0)} du ${fmtDate(modalSlot.date)}`);
-    } catch { /* addError géré dans la modale */ }
+    } catch {
+      /* addError géré dans la modale */
+    }
   };
 
   const handleCancel = async (id: number) => {
@@ -631,29 +124,12 @@ export default function PlanningClientPage() {
     }
   };
 
-  const cancelUpgradeMutation = useMutation({
-    mutationFn: (id: number) => souscriptionApi.cancelScheduledUpgrade(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['souscriptions', 'client', customerId] }); showToast('Changement annulé'); },
-  });
-  
-  const scheduleUpgradeMutation = useMutation({
-    mutationFn: ({ id, packTypeId }: { id: number; packTypeId: number }) =>
-      souscriptionApi.scheduleUpgrade(id, packTypeId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['souscriptions', 'client', customerId] });
-      setShowChangePack(false);
-      showToast('✅ Changement de pack programmé pour le prochain cycle');
-    },
-    onError: (e: any) => showToast(e?.response?.data?.message ?? 'Erreur', 'error'),
-  });
-
-
   return (
     <AppLayout>
-        <div className="bg-gradient-to-b from-slate-50 to-white min-h-full -m-6 p-6">
-          <div className="flex flex-col gap-5">
+      <div className="bg-gradient-to-b from-slate-50 to-white min-h-full -m-6 p-6">
+        <div className="flex flex-col gap-5">
 
-          {/* ── Header card ─────────────────────────────────────────────── */}
+          {/* ── Header card ─────────────────────────────────────────── */}
           <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 sm:p-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex items-start gap-3">
@@ -668,33 +144,31 @@ export default function PlanningClientPage() {
                 </div>
               </div>
 
-                {/* Bandeau changement programmé */}
-                {selectedSub?.pendingPackType && (
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <div className="flex items-center justify-between gap-3 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
-                      <div className="flex items-center gap-2 text-xs text-indigo-700">
-                        <Sparkles size={14} />
-                        Passage au pack <strong className="capitalize">{selectedSub.pendingPackType.name}</strong> programmé
-                        pour le {fmtDate(toISO(addDays(new Date(selectedSub.endDate), 1)))}
-                      </div>
-                      <button
-                        onClick={() => cancelUpgradeMutation.mutate(selectedSub.id)}
-                        className="text-xs font-medium text-indigo-500 hover:text-indigo-700 underline"
-                      >
-                        Annuler
-                      </button>
+              {selectedSub?.pendingPackType && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between gap-3 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs text-indigo-700">
+                      <Sparkles size={14} />
+                      Passage au pack <strong className="capitalize">{selectedSub.pendingPackType.name}</strong> programmé
+                      pour le {fmtDate(toISO(addDays(new Date(selectedSub.endDate), 1)))}
                     </div>
+                    <button
+                      onClick={() => cancelUpgradeMutation.mutate(selectedSub.id)}
+                      className="text-xs font-medium text-indigo-500 hover:text-indigo-700 underline"
+                    >
+                      Annuler
+                    </button>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Bouton demande de changement */}
-                <button
-                  onClick={() => setShowChangePack(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold
-                    bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <RefreshCw size={13} /> Changer de pack
-                </button>
+              <button
+                onClick={() => setShowChangePack(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold
+                  bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <RefreshCw size={13} /> Changer de pack
+              </button>
 
               <div className="flex items-center gap-2">
                 <button
@@ -710,7 +184,6 @@ export default function PlanningClientPage() {
               </div>
             </div>
 
-            {/* Sélecteur souscription + pack, intégré au header */}
             {(activeSubs.length > 1 || planning.packName) && (
               <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3 flex-wrap">
                 {planning.packName && (
@@ -733,7 +206,7 @@ export default function PlanningClientPage() {
             )}
           </div>
 
-          {/* ── Sirènes card ─────────────────────────────────────────────── */}
+          {/* ── Sirènes card ─────────────────────────────────────────── */}
           {selectedSub?.sirenes && selectedSub.sirenes.length > 0 && (
             <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -772,7 +245,7 @@ export default function PlanningClientPage() {
             </div>
           )}
 
-          {/* ── Alerte crédits épuisés ───────────────────────────────────── */}
+          {/* ── Alerte crédits épuisés ───────────────────────────────── */}
           {noCredits && (
             <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
               <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
@@ -785,10 +258,9 @@ export default function PlanningClientPage() {
             </div>
           )}
 
-          {/* ── Grille planning card ─────────────────────────────────────── */}
+          {/* ── Grille planning card ─────────────────────────────────── */}
           <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
 
-            {/* Navigation semaine */}
             <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Clock size={14} className="text-slate-400" />
@@ -813,7 +285,6 @@ export default function PlanningClientPage() {
               </div>
             </div>
 
-            {/* Grille */}
             <div className="overflow-x-auto">
               {planning.isLoading ? (
                 <div className="flex items-center justify-center py-28 gap-2 text-slate-400">
@@ -856,36 +327,36 @@ export default function PlanningClientPage() {
                     </tr>
                   </thead>
                   <tbody>
-                  {planning.creneaux.map((cr, i) => (
-                    <tr key={`${cr.heure}-${cr.minute}`} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}>
-                      <td className="py-2.5 px-4 align-top">{/* ... inchangé ... */}</td>
-                      {days.map(({ date }) => {
-                        const slot = planning.getSlot(date, cr.heure);
-                        const dayStatus = planning.getDayStatus(date);
-                        return (
-                          <td key={date} className="py-2.5 px-1.5 align-top">
-                            <PlanningCell
-                              slot={slot}
-                              noCredits={noCredits}
-                              dayLocked={dayStatus !== 'ouvert'}
-                              dayLockReason={dayStatus}
-                              onClickAdd={() => { if (slot) setModalSlot({ slot, date, heure: cr.heure }); }}
-                              onClickCancel={(item) => setConfirmCancelItem(item)}
-                              onClickModify={setModalModify}
-                              cancelling={planning.cancelling}
-                            />
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                    {planning.creneaux.map((cr, i) => (
+                      <tr key={`${cr.heure}-${cr.minute}`} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}>
+                        <td className="py-2.5 px-4 align-top">{/* ... inchangé ... */}</td>
+                        {days.map(({ date }) => {
+                          const slot = planning.getSlot(date, cr.heure);
+                          const dayStatus = planning.getDayStatus(date);
+                          return (
+                            <td key={date} className="py-2.5 px-1.5 align-top">
+                              <PlanningCell
+                                slot={slot}
+                                noCredits={noCredits}
+                                dayLocked={dayStatus !== 'ouvert'}
+                                dayLockReason={dayStatus}
+                                onClickAdd={() => { if (slot) setModalSlot({ slot, date, heure: cr.heure }); }}
+                                onClickCancel={(item) => setConfirmCancelItem(item)}
+                                onClickModify={setModalModify}
+                                cancelling={planning.cancelling}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               )}
             </div>
           </div>
 
-          {/* ── Légende card ─────────────────────────────────────────────── */}
+          {/* ── Légende card ─────────────────────────────────────────── */}
           <div className="rounded-2xl bg-white border border-slate-200 shadow-sm px-5 py-4">
             <div className="flex items-center gap-5 flex-wrap text-xs text-slate-500">
               <span className="flex items-center gap-1.5">
@@ -912,7 +383,7 @@ export default function PlanningClientPage() {
         </div>
       </div>
 
-      {/* Modales — inchangées */}
+      {/* ── Modales ──────────────────────────────────────────────────── */}
       {confirmCancelItem && (
         <ModalConfirmCancel
           item={confirmCancelItem}
@@ -921,7 +392,7 @@ export default function PlanningClientPage() {
           cancelling={planning.cancelling === confirmCancelItem.id}
         />
       )}
-    
+
       {modalSlot && (
         <ModalAjout
           slot={modalSlot.slot} audios={planning.audios} creditsRestants={planning.creditsRestants}
@@ -930,6 +401,7 @@ export default function PlanningClientPage() {
           addError={planning.addError?.response?.data?.message ?? planning.addError?.message ?? null}
         />
       )}
+
       {modalModify && (
         <ModalModifier
           item={modalModify} audios={planning.audios}
@@ -941,6 +413,7 @@ export default function PlanningClientPage() {
           modifyError={modifyMutation.error ? (modifyMutation.error as any)?.response?.data?.message ?? 'Erreur' : null}
         />
       )}
+
       {showAutoGenerate && (
         <ModalAutoGenerate
           audios={planning.audios} creditsRestants={planning.creditsRestants}
@@ -951,17 +424,16 @@ export default function PlanningClientPage() {
         />
       )}
 
-
-    {showChangePack && selectedSub && (
-      <ModalChangerPack
-        packs={packs}
-        currentPackId={selectedSub.packTypeId}
-        pendingPackId={selectedSub.pendingPackTypeId ?? null}
-        onClose={() => setShowChangePack(false)}
-        onConfirm={(packTypeId) => scheduleUpgradeMutation.mutate({ id: selectedSub.id, packTypeId })}
-        submitting={scheduleUpgradeMutation.isPending}
-      />
-    )}
+      {showChangePack && selectedSub && (
+        <ModalChangerPack
+          packs={packs}
+          currentPackId={selectedSub.packTypeId}
+          pendingPackId={selectedSub.pendingPackTypeId ?? null}
+          onClose={() => setShowChangePack(false)}
+          onConfirm={(packTypeId) => scheduleUpgradeMutation.mutate({ id: selectedSub.id, packTypeId })}
+          submitting={scheduleUpgradeMutation.isPending}
+        />
+      )}
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
     </AppLayout>
