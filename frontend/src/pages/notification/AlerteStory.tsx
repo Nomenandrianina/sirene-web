@@ -4,11 +4,7 @@ import { AppLayout }             from "@/components/AppLayout";
 import { notificationsBngrcApi } from "@/services/notificationBngrc.api";
 import { NotificationBngrc }      from "@/types/notificationBngrc";
 import { audioAlerteBngrcApi }   from "@/services/audioAlerteBngrc.api";
-import {
-  Search, Filter, X, ChevronLeft, ChevronRight, ChevronDown,
-  Bell, Calendar, MapPin, Radio, Layers, Tag, AlertTriangle,
-  Clock, CheckCircle, XCircle, HelpCircle, RotateCcw,
-} from "lucide-react";
+import { Search, Filter, X, ChevronLeft, ChevronRight, ChevronDown, Bell, Calendar, MapPin, Radio, Layers, Tag, AlertTriangle, Clock, CheckCircle, XCircle, HelpCircle, RotateCcw,} from "lucide-react";
 import "@/styles/page.css";
 import "@/styles/utilisateurs.css";
 
@@ -199,7 +195,7 @@ function ExpandedRow({ n }: { n: any }) {
 
   return (
     <tr>
-      <td colSpan={7} style={{ padding: 0, background: "#fafbfc" }}>
+      <td colSpan={11} style={{ padding: 0, background: "#fafbfc" }}>
         <div style={{ padding: "14px 20px", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: n.audioBngrc ? 10 : 0 }}>
             {block("Aléa",        typeName)}
@@ -212,6 +208,12 @@ function ExpandedRow({ n }: { n: any }) {
             {block("Envoyé par",  sender)}
             {block("Envoyé le",   fmtDateTime(n.sendingTime))}
             {n.sirene && block("Sirène", n.sirene.name ?? n.sirene.imei ?? `#${n.sireneId}`)}
+
+            {n.playbackReceivedAt && block("Reçu par la sirène le", fmtDateTime(n.playbackReceivedAt))}
+            {n.playbackStartedAt  && block("Lecture démarrée le",   fmtDateTime(n.playbackStartedAt))}
+            {n.playbackEndedAt    && block("Lecture terminée le",   fmtDateTime(n.playbackEndedAt))}
+            {n.playbackError      && block("Erreur de lecture",     n.playbackError)}
+
           </div>
           {n.audioBngrc && (
             <div style={{ marginTop: 4 }}>
@@ -373,6 +375,39 @@ export default function AlerteStory() {
     });
   }
 
+  // ─── Config statuts de lecture ─────────────────────────────────────────────
+  const PLAYBACK_CFG: Record<string, { label: string; color: string; bg: string; Icon: any }> = {
+    received: { label: "Reçu par la sirène", color: "#0891b2", bg: "#e0f2fe", Icon: Clock },
+    playing:  { label: "Lecture en cours",   color: "#7c3aed", bg: "#f5f3ff", Icon: Clock },
+    played:   { label: "Diffusé", color: "#059669", bg: "#d1fae5", Icon: CheckCircle },
+    failed:   { label: "Non diffusé", color: "#dc2626", bg: "#fee2e2", Icon: XCircle },
+    timeout:  { label: "Interrompu", color: "#ea580c", bg: "#fff7ed", Icon: AlertTriangle },
+  };
+
+  function PlaybackBadge({ status }: { status?: string | null }) {
+    if (!status) {
+      return (
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: 4,
+          fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20,
+          color: "#94a3b8", background: "#f1f5f9", whiteSpace: "nowrap",
+        }}>
+          <HelpCircle size={10} /> En attente
+        </span>
+      );
+    }
+    const cfg = PLAYBACK_CFG[status] ?? PLAYBACK_CFG.failed;
+    return (
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20,
+        color: cfg.color, background: cfg.bg, whiteSpace: "nowrap",
+      }}>
+        <cfg.Icon size={10} /> {cfg.label}
+      </span>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="page-wrap">
@@ -513,6 +548,7 @@ export default function AlerteStory() {
                   <tr>
                     <th style={{ width: 32 }}></th>
                     <th>Statut</th>
+                    <th>Lecture</th>
                     <th>Aléa / Catégorie</th>
                     <th>Sirène</th>
                     <th>Région</th>
@@ -555,6 +591,7 @@ export default function AlerteStory() {
 
                         {/* Statut */}
                         <td><StatusBadge status={n.status} /></td>
+                        <td><PlaybackBadge status={n.playbackStatus} /></td> 
 
                         {/* Aléa + catégorie */}
                         <td>

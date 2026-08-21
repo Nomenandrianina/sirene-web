@@ -1,15 +1,23 @@
-import {
-  Controller, Get, Delete, Patch,
-  Param, Query, Body, ParseIntPipe,
-} from "@nestjs/common";
+import { Controller, Get, Delete, Patch, Param, Query, Body, ParseIntPipe,Headers, Post, UnauthorizedException} from "@nestjs/common";
 import { NotificationService } from "./notification.service";
 import { NotificationStatus } from "./entities/notification.entity";
 import { UpdateNotificationStatusDto } from "./dto/update-notification.dto";
+import { PlaybackAckDto } from "./dto/playback-ack.dto";
+import { Public } from '@/common/decarators/public.decorator';
 
 @Controller("notifications")
 export class NotificationController {
   constructor(private readonly service: NotificationService) {}
 
+  @Public()
+  @Post(':id/ack')
+  updateStatusReadingAudio( @Param('id', ParseIntPipe) id: number, @Body() dto: PlaybackAckDto, @Headers('x-api-key') apiKey: string,) {
+    if (apiKey !== process.env.FCM_API_KEY) {
+      throw new UnauthorizedException('Clé API invalide');
+    }
+    return this.service.acknowledgePlayback(id, dto);
+  }
+  
   @Get()
     findAll(  @Query("sireneId") sireneId?: string,
       @Query("status") status?: NotificationStatus,
@@ -66,4 +74,6 @@ export class NotificationController {
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
+
+
 }

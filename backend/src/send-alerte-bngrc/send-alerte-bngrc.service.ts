@@ -401,10 +401,11 @@ export class SendAlerteBngrcService {
     [PlaybackAckStatus.PLAYING]:  2,
     [PlaybackAckStatus.PLAYED]:   3,
     [PlaybackAckStatus.FAILED]:   3,
+    [PlaybackAckStatus.TIMEOUT]:   3,
   };
   
   async acknowledgePlayback(id: number, dto: PlaybackAckDto): Promise<{ updated: boolean }> {
-    const notif = await this.notifRepo.findOne({ where: { id } });
+    const notif = await this.notifRepo.findOne({ where: { id } , relations: ['sirene', 'categorieAlerteBngrc', 'categorieAlerteBngrc.type'],});
     if (!notif) throw new NotFoundException(`Notification #${id} introuvable`);
   
     const currentRank = notif.playbackStatus ? this.PLAYBACK_RANK[notif.playbackStatus] : 0;
@@ -426,8 +427,59 @@ export class SendAlerteBngrcService {
     }
   
     await this.notifRepo.update(id, update);
+
+      // ── Notif cloche web uniquement sur statut terminal (succès ou échec) ─────
+    if (dto.status === PlaybackAckStatus.PLAYED || dto.status === PlaybackAckStatus.FAILED) {
+      await this.createBngrcPlaybackNotifWeb({
+        sireneName:   notif.sirene?.name ?? notif.sirene?.imei ?? `#${notif.sireneId}`,
+        typeName:     notif.categorieAlerteBngrc?.type?.name ?? '',
+        categorieName: notif.categorieAlerteBngrc?.name ?? '',
+        success:      dto.status === PlaybackAckStatus.PLAYED,
+        timestamp:    now,
+      });
+    }
+    
     return { updated: true };
   }
 
+
+  private async createBngrcPlaybackNotifWeb(params: {  sireneName:    string; typeName:      string; categorieName: string; success:       boolean; timestamp:     Date  }): Promise<void> {
+    const { sireneName, typeName, categorieName, success, timestamp } = params;
+  
+    const targets = await this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.role', 'r')
+      .where('r.name IN (:...roles)', {
+        roles: [ROLES.SUPERADMIN, ROLES.BNGRC_ALERTE, ROLES.BNGRC_CONTROL],
+      })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
+  
+    if (!targets.length) return;
+  
+    const madagascarISO = toMadagascarISOString(timestamp);
+    const [datePart, timePart] = madagascarISO.split('T');
+    const [mdgYear, mdgMonth, mdgDay] = datePart.split('-');
+    const dateLabel = `${mdgDay}/${mdgMonth}/${mdgYear}`;
+  
+    const alerteLabel = typeName ? `${typeName} — ${categorieName}` : categorieName;
+    const statusLabel = success ? 'diffusée avec succès' : 'non diffusée (échec)';
+  
+    const mainText = `${alerteLabel} — Sirène ${sireneName} — ${statusLabel} — ${dateLabel} à ${timePart}`;
+    const message  = [mainText, '', ''].join('||'); // pas d'expéditeur/client ici, c'est un accusé auto
+  
+    const notifs = targets.map(user => {
+      const n      = new Notificationsweb();
+      n.type       = success ? 'BNGRC_PLAYBACK_SUCCESS' : 'BNGRC_PLAYBACK_FAILED';
+      n.message    = message;
+      n.entityType = 'notification_sirene_alerte_bngrc';
+      n.url        = '/notifications-alerte'; // ou la route de votre AlerteStory
+      n.isRead     = false;
+      n.userId     = user.id;
+      return n;
+    });
+  
+    await this.notifWebRepo.save(notifs);
+  }
   
 }
