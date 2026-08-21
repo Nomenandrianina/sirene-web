@@ -21,7 +21,7 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 });
 
-const PER_PAGE = 10;
+const PER_PAGE = 15;
 
 export default function SireneList() {
   const navigate    = useNavigate();
@@ -57,7 +57,7 @@ export default function SireneList() {
   });
 
   // ── Confirmation + exécution : suppression ──
-  async function handleDelete(s: Sirene) {
+  async function handleDelete(s: Sirene) {f
     const result = await Swal.fire({
       title: "Supprimer cette sirène ?",
       text: `${s.name ?? s.imei ?? "Sirène #" + s.id} sera définitivement supprimée.`,

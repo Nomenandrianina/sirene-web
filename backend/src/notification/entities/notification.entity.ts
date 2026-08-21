@@ -21,6 +21,14 @@ export enum OrangeStatus {
   DELIVERED_TO_TERMINAL  = "DeliveredToTerminal",
 }
 
+export enum PlaybackAckStatus {
+  RECEIVED = 'received',
+  PLAYING  = 'playing',
+  PLAYED   = 'played',
+  FAILED   = 'failed',
+  TIMEOUT  = 'timeout',
+}
+
 @Entity("notification_sirene_alerte")
 export class Notification {
   @PrimaryGeneratedColumn()
@@ -102,4 +110,20 @@ export class Notification {
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
+
+  @Column({ name: 'playback_status', type: 'enum', enum: PlaybackAckStatus, nullable: true })
+  playbackStatus: PlaybackAckStatus | null;
+
+  @Column({ name: 'playback_received_at', type: 'datetime', nullable: true })
+  playbackReceivedAt: Date | null;
+
+  @Column({ name: 'playback_started_at', type: 'datetime', nullable: true })
+  playbackStartedAt: Date | null;
+
+  @Column({ name: 'playback_ended_at', type: 'datetime', nullable: true })
+  playbackEndedAt: Date | null;
+
+  @Column({ name: 'playback_error', type: 'varchar', length: 255, nullable: true })
+  playbackError: string | null;
+
 }

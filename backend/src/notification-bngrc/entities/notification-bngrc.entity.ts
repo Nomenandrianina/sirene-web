@@ -25,6 +25,7 @@ export enum PlaybackAckStatus {
     PLAYING  = 'playing',
     PLAYED   = 'played',
     FAILED   = 'failed',
+    TIMEOUT  = 'timeout'
 }
 
 

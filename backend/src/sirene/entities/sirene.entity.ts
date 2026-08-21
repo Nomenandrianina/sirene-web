@@ -7,10 +7,10 @@ import { Notification } from '@/notification/entities/notification.entity';
 export class Sirene {
   @PrimaryGeneratedColumn()
   id: number;
-
+  
   @Column({ type: 'varchar', length: 45, nullable: true })
   name: string | null;
-
+  
   @Column({ type: 'varchar', length: 45, nullable: true , unique: true })
   imei: string | null;
 

@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException ,Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Between, FindOptionsWhere } from "typeorm";
-import { Notification, NotificationStatus } from "./entities/notification.entity";
+import { Notification, NotificationStatus, PlaybackAckStatus } from "./entities/notification.entity";
 import { CreateNotificationDto } from "./dto/create-notification.dto";
 import { UpdateNotificationStatusDto } from "./dto/update-notification.dto";
+import { PlaybackAckDto } from "./dto/playback-ack.dto";
+import { Notificationsweb } from "src/notificationsweb/entities/notificationsweb.entity";
+import { User } from "src/users/entities/user.entity";
+import { ROLES } from "src/common/constants/roles.constants";
 
 export interface NotificationFilters {
   sireneId?: number;
@@ -17,12 +21,24 @@ export interface NotificationFilters {
   customerId?: number;
 }
 
+
+function toMadagascarISOString(date: Date): string {
+  // UTC+3 — Indian/Antananarivo
+  const offset = 3 * 60; // minutes
+  const local  = new Date(date.getTime() + offset * 60 * 1000);
+  return local.toISOString().slice(0, 16); // "2026-04-21T15:05"
+}
+
+
 @Injectable()
 export class NotificationService {
-  constructor(
-    @InjectRepository(Notification)
-    private readonly repo: Repository<Notification>,
-  ) {}
+
+  private readonly logger = new Logger(NotificationService.name);
+
+  constructor
+  (@InjectRepository(Notification) private readonly repo: Repository<Notification>, 
+  @InjectRepository(User) private readonly userRepo: Repository<User>,
+  @InjectRepository(Notificationsweb) private readonly notifWebRepo: Repository<Notificationsweb> ) {}
 
   async findAll(filters: NotificationFilters = {}) {
     const { sireneId, status, startDate, endDate, sousCategorieAlerteId,  userId, customerId, page = 1, limit = 15 } = filters;
@@ -123,4 +139,110 @@ export class NotificationService {
   
     return { total, sent, failed, pending };
   }
+
+
+  private readonly PLAYBACK_RANK: Record<PlaybackAckStatus, number> = {
+    [PlaybackAckStatus.RECEIVED]: 1,
+    [PlaybackAckStatus.PLAYING]:  2,
+    [PlaybackAckStatus.PLAYED]:   3,
+    [PlaybackAckStatus.FAILED]:   3,
+    [PlaybackAckStatus.TIMEOUT]:  3,
+  };
+  
+  async acknowledgePlayback(id: number, dto: PlaybackAckDto): Promise<{ updated: boolean }> {
+    const notif = await this.repo.findOne({
+      where: { id },
+      relations: ['sirene', 'sousCategorie'],
+    });
+    if (!notif) throw new NotFoundException(`Notification #${id} introuvable`);
+  
+    const currentRank = notif.playbackStatus ? this.PLAYBACK_RANK[notif.playbackStatus] : 0;
+    const newRank     = this.PLAYBACK_RANK[dto.status];
+    if (newRank < currentRank) {
+      this.logger.warn(`[IEC] Ack ignoré (régression) #${id}: ${notif.playbackStatus} → ${dto.status}`);
+      return { updated: false };
+    }
+  
+    const now = dto.timestamp ? new Date(dto.timestamp) : new Date();
+    const update: Partial<Notification> = { playbackStatus: dto.status };
+  
+    if (dto.status === PlaybackAckStatus.RECEIVED) update.playbackReceivedAt = now;
+    if (dto.status === PlaybackAckStatus.PLAYING)  update.playbackStartedAt  = now;
+    if (dto.status === PlaybackAckStatus.PLAYED)   update.playbackEndedAt    = now;
+    if (dto.status === PlaybackAckStatus.FAILED) {
+      update.playbackEndedAt = now;
+      update.playbackError   = dto.errorReason?.slice(0, 255) ?? null;
+    }
+  
+    await this.repo.update(id, update);
+  
+    // ── Notif cloche web — uniquement sur statut terminal (succès ou échec) ───
+    if (dto.status === PlaybackAckStatus.PLAYED || dto.status === PlaybackAckStatus.FAILED) {
+      await this.createIecPlaybackNotifWeb({
+        customerId:    notif.customerId,
+        sireneName:    notif.sirene?.name ?? notif.sirene?.imei ?? `#${notif.sireneId}`,
+        sousCategName: notif.sousCategorie?.name ?? '',
+        success:       dto.status === PlaybackAckStatus.PLAYED,
+        timestamp:     now,
+      });
+    }
+  
+    return { updated: true };
+  }
+  
+  // ── Notif cloche — SUPERADMIN + CUSTOMER_ADMIN/CUSTOMER_OPERATOR du même client ─
+  private async createIecPlaybackNotifWeb(params: {customerId:    number | null; sireneName: string; sousCategName: string; success: boolean; timestamp: Date;}): Promise<void> {
+    const { customerId, sireneName, sousCategName, success, timestamp } = params;
+  
+    // 1. SUPERADMIN — voit toutes les diffusions, peu importe le client
+    const superAdmins = await this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.role', 'r')
+      .where('r.name = :role', { role: ROLES.SUPERADMIN })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
+  
+    // 2. CUSTOMER_ADMIN / CUSTOMER_OPERATOR — uniquement ceux du client concerné
+    let customerUsers: User[] = [];
+    if (customerId) {
+      customerUsers = await this.userRepo
+        .createQueryBuilder('u')
+        .leftJoin('u.role', 'r')
+        .where('r.name IN (:...roles)', { roles: [ROLES.CUSTOMER_ADMIN, ROLES.CUSTOMER_OPERATOR] })
+        .andWhere('u.customer_id = :customerId', { customerId })
+        .andWhere('u.deletedAt IS NULL')
+        .getMany();
+    }
+  
+    // 3. Fusion + dédoublonnage (au cas où un superadmin aurait aussi un customerId)
+    const targetsMap = new Map<number, User>();
+    [...superAdmins, ...customerUsers].forEach(u => targetsMap.set(u.id, u));
+    const targets = Array.from(targetsMap.values());
+  
+    if (!targets.length) return;
+  
+    const madagascarISO = toMadagascarISOString(timestamp);
+    const [datePart, timePart] = madagascarISO.split('T');
+    const [mdgYear, mdgMonth, mdgDay] = datePart.split('-');
+    const dateLabel = `${mdgDay}/${mdgMonth}/${mdgYear}`;
+  
+    const label       = sousCategName || 'Diffusion';
+    const statusLabel = success ? 'diffusée avec succès' : 'non diffusée (échec)';
+    const mainText    = `${label} — Sirène ${sireneName} — ${statusLabel} — ${dateLabel} à ${timePart}`;
+    const message     = [mainText, '', ''].join('||');
+  
+    const notifs = targets.map(user => {
+      const n      = new Notificationsweb();
+      n.type       = success ? 'IEC_PLAYBACK_SUCCESS' : 'IEC_PLAYBACK_FAILED';
+      n.message    = message;
+      n.entityType = 'notification_sirene_alerte';
+      n.url        = '/notifications-alerte'; 
+      n.isRead     = false;
+      n.userId     = user.id;
+      return n;
+    });
+  
+    await this.notifWebRepo.save(notifs);
+  }
+  
 }

@@ -21,6 +21,8 @@ export interface NotificationFilters {
     lastPage: number;
   }
    
+export type PlaybackAckStatus = 'received' | 'playing' | 'played' | 'failed' | 'timeout';
+
 
 export interface Notification {
     id: number;
@@ -46,4 +48,10 @@ export interface Notification {
     sousCategorie?: { id: number; name: string };
     user?:          { id: number; first_name: string; last_name: string };
     Customer?: { id: number; name:string }
+
+    playbackStatus?:     PlaybackAckStatus | null;
+    playbackReceivedAt?: string | null;
+    playbackStartedAt?:  string | null;
+    playbackEndedAt?:    string | null;
+    playbackError?:      string | null;
 }

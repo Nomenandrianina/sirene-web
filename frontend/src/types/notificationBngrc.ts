@@ -18,6 +18,7 @@ export interface NotificationBngrcFilters {
   userId?:                 number;
   page?:                   number;
   limit?:                  number;
+
 }
 
 // ── Réponse paginée ───────────────────────────────────────────────────────────
@@ -26,8 +27,10 @@ export interface NotificationBngrcListResponse {
   data:     NotificationBngrc[];
   total:    number;
   page:     number;
-  lastPage: number;
+  lastPage: number; 
 }
+
+export type PlaybackAckStatus = 'received' | 'playing' | 'played' | 'failed' | 'timeout';
 
 // ── Entité principale ─────────────────────────────────────────────────────────
 
@@ -43,6 +46,12 @@ export interface NotificationBngrc {
   observation?:            string;
   sendingTimeAfterAlerte?: string;
   createdAt:               string;
+
+  playbackStatus?:     PlaybackAckStatus | null;
+  playbackReceivedAt?: string | null;
+  playbackStartedAt?:  string | null;
+  playbackEndedAt?:    string | null;
+  playbackError?:      string | null;
 
   // Clés étrangères
   sireneId:               number;

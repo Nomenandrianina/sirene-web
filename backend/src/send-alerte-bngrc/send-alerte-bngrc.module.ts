@@ -10,6 +10,7 @@ import { Sirene } from 'src/sirene/entities/sirene.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationBngrc } from 'src/notification-bngrc/entities/notification-bngrc.entity';
 import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb.entity';
+import { PlaybackTimeoutTask } from './playback-timeout.task';
 
 @Module({
   imports: [
@@ -20,6 +21,6 @@ import { Notificationsweb } from 'src/notificationsweb/entities/notificationsweb
     SmsModule,
   ],
   controllers: [SendAlerteBngrcController],
-  providers: [SendAlerteBngrcService],
+  providers: [SendAlerteBngrcService,PlaybackTimeoutTask],
 })
 export class SendAlerteBngrcModule {}

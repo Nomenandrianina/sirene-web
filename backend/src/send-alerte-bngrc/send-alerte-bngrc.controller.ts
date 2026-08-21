@@ -16,7 +16,7 @@ export class SendAlerteBngrcController {
     return this.service.sendAlerteBngrc(dto);
   }
 
-
+  
   @Public()
   @Post(':id/ack')
   ack( @Param('id', ParseIntPipe) id: number, @Body() dto: PlaybackAckDto, @Headers('x-api-key') apiKey: string, ) {
@@ -28,11 +28,7 @@ export class SendAlerteBngrcController {
 
   // Prévisualisation des sirènes touchées — même interface que /send-alerte/preview
   @Get('preview')
-  preview(
-    @Query('provinceIds')  provinceIds?:  string,
-    @Query('regionIds')    regionIds?:    string,
-    @Query('districtIds')  districtIds?:  string,
-    @Query('villageIds')   villageIds?:   string,
+  preview( @Query('provinceIds')  provinceIds?:  string,  @Query('regionIds')    regionIds?:    string,  @Query('districtIds')  districtIds?:  string,  @Query('villageIds')   villageIds?:   string,
   ) {
     return this.service.preview({
       provinceIds:  provinceIds  ? provinceIds.split(',').map(Number)  : [],

@@ -94,11 +94,7 @@ export class DiffusionSchedulerService {
     }
   }
 
-  private registerCronJob(
-    name:     string,
-    cronExpr: string,
-    regionId: number | null,
-  ): void {
+  private registerCronJob( name: string, cronExpr: string, regionId: number | null, ): void {
     const job = new CronJob(
       cronExpr,
       async () => {
@@ -180,7 +176,6 @@ export class DiffusionSchedulerService {
    * - Calcule l'offset cumulé par audio dans le créneau
    * - Envoie un SMS par audio × par diffusion planifiée du groupe
    */
-  
   private async processGroup(dateStr:  string, sireneId: number, heure: number, minute: number, items: DiffusionPlanifiee[],): Promise<{ sent: number; skipped: number; failed: number }> {
   
     let sent = 0, skipped = 0, failed = 0;
@@ -238,17 +233,19 @@ export class DiffusionSchedulerService {
       );
   
       // ── 3. Construire le message SMS ──────────────────────────────────────
-      const message = this.buildMessage(
-        audio.mobileId ?? `AUDIO_${audio.id}`,
-        1,
-        undefined,
-        'P2',
-        scheduledAt,
-      );
+      // const message = this.buildMessage(
+      //   audio.mobileId ?? `AUDIO_${audio.id}`,
+      //   1,
+      //   undefined,
+      //   'P2',
+      //   scheduledAt,
+      // );
+
+      const scheduledLabel = `${dateStr}T` + `${String(dp.scheduledHeure).padStart(2, '0')}:` +  `${String(dp.scheduledMinute).padStart(2, '0')}`;
   
       // ── 4. Créer et envoyer la notification ───────────────────────────────
       const notif = this.notifRepo.create({
-        message,
+        message:'',
         sireneId,
         alerteAudioId:         audio.id,
         sousCategorieAlerteId: null,
@@ -263,6 +260,12 @@ export class DiffusionSchedulerService {
       });
   
       const saved = await this.notifRepo.save(notif);
+
+      // ── 4. Construire le message final avec l'id maintenant connu ──────────────
+      const message = this.buildMessage(audio.mobileId ?? `AUDIO_${audio.id}`,  1, undefined, 'P2', scheduledAt, saved.id,scheduledLabel);
+      saved.message = message;
+      await this.notifRepo.update(saved.id, { message });
+
       const ok    = await this.dispatchNotification(saved, sirene);
   
       if (ok) {
@@ -272,26 +275,18 @@ export class DiffusionSchedulerService {
         failed++;
       }
     }
-  
     return { sent, skipped, failed };
   }
 
  
   // ── HELPERS ───────────────────────────────────────────────────────────────
  
-  private buildMessage(mobileId: string,
-    repeatCount = 1,
-    repeatInterval?: number,
-    priority: 'P1' | 'P2' = 'P2',
-    scheduledDate?: Date,
-  ): string {
-    const datePart = scheduledDate
-      ? ' ' + toMadagascarISOString(scheduledDate)
-      : ' ' + toMadagascarISOString(new Date());
-  
+  private buildMessage( mobileId: string,  repeatCount = 1,  repeatInterval?: number,  priority: 'P1' | 'P2' = 'P2',  scheduledDate?: Date,  notifId?: number,  scheduledLabel?: string,): string {
+    const datePart = ' ' + (scheduledLabel ?? toMadagascarISOString(scheduledDate ?? new Date()));
+    const idPart    = notifId != null ? ` ${notifId}` : '';
     return repeatCount <= 1
-      ? `${mobileId} ${repeatCount} 0 ${priority}${datePart}`
-      : `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${datePart}`;
+      ? `${mobileId} ${repeatCount} 0 ${priority}${idPart}${datePart}`
+      : `${mobileId} ${repeatCount} ${repeatInterval ?? '0'} ${priority}${idPart}${datePart}`;
   }
 
 
