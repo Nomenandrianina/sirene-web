@@ -176,7 +176,7 @@ async findAllbyCustomer(customerId?: number) {
       if (!dto.alerteId) {
         this.deleteFile(file.path);
         throw new BadRequestException('alerteId requis pour créer une sous-catégorie');
-      }
+      } 
   
       const newSousCat = this.sousCatRepo.create({
         name:              dto.newSousCatName.trim(),

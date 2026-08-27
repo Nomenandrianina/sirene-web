@@ -11,5 +11,5 @@ export const ROLES = {
   // Rôles auto-validés
   export const AUTO_APPROVED_ROLES = [
     ROLES.SUPERADMIN,
-    ROLES.CUSTOMER_ADMIN,
+    // ROLES.CUSTOMER_ADMIN,
   ];
