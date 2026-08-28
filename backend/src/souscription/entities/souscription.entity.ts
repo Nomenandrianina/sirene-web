@@ -53,19 +53,6 @@ export class Souscription {
   @JoinColumn({ name: 'pack_type_id' })
   packType: PackType;
 
-  /**
-   * Une souscription couvre 1..N sirènes.
-   * Table pivot : souscription_sirene(souscription_id, sirene_id)
-   */
-  // @ManyToMany('Sirene', { eager: false })
-  // @JoinTable({
-  //   name: 'souscription_sirene',
-  //   joinColumn:        { name: 'souscription_id', referencedColumnName: 'id' },
-  //   inverseJoinColumn: { name: 'sirene_id',        referencedColumnName: 'id' },
-  // })
-  // sirenes: any[];
-
-
   @OneToMany(() => SouscriptionSirene, (ss) => ss.souscription, { eager: true, cascade: true })
   souscriptionSirenes: SouscriptionSirene[];
 

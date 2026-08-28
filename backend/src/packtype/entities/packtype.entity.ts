@@ -1,5 +1,4 @@
-import { Entity,PrimaryGeneratedColumn,Column,CreateDateColumn,UpdateDateColumn,OneToMany,
-} from 'typeorm';
+import { Entity,PrimaryGeneratedColumn,Column,CreateDateColumn,UpdateDateColumn,OneToMany,} from 'typeorm';
 import { Souscription } from '@/souscription/entities/souscription.entity';
 
 export enum Periode {
