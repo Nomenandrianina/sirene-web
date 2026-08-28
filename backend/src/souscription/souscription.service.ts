@@ -19,7 +19,7 @@ export class SouscriptionService {
     private readonly repo: Repository<Souscription>,
     @InjectRepository(PackType)
     private readonly packRepo: Repository<PackType>,
-
+    
     private readonly planifieeService: DiffusionPlanifieeService,
 
     @InjectRepository(Notificationsweb)
@@ -302,7 +302,7 @@ export class SouscriptionService {
       // creditsRestants est déjà dans ...s car c'est une colonne de l'entité
     };
   }
-
+  
 
   /**
    * Décrémente de 1 le crédit d'une souscription.

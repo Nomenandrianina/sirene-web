@@ -20,7 +20,6 @@ import { SouscriptionSirene } from 'src/souscription-sirene/entities/souscriptio
 // function toDateStr(d: Date): string {
 //   return d.toISOString().split('T')[0];
 // }
-
 function toDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

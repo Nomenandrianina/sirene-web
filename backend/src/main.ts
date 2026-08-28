@@ -21,7 +21,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
-
+  
   mkdirSync(join(process.cwd(), 'uploads', 'avatars'), { recursive: true });
 
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
